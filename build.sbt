@@ -4,7 +4,7 @@ import com.lihaoyi.workbench.Plugin._
 
 scalaVersion in ThisBuild := "2.11.8"
 
-lazy val dancher = crossProject.in(file("."))
+lazy val dancher = project.in(file("."))
   .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "dancher",
@@ -19,15 +19,11 @@ lazy val dancher = crossProject.in(file("."))
     requiresDOM     := true,
     scalaJSUseRhino := false,
     libraryDependencies ++= Seq(
+      "org.scalaz"   %%% "scalaz-core" % "7.2.2",
       "org.scala-js" %%% "scalajs-dom" % "0.9.0",
-      "com.lihaoyi" %%% "utest" % "0.4.3" % "test"
+      "com.lihaoyi"  %%% "utest"       % "0.4.3"  % "test"
     ),
     bootSnippet := "com.github.unisay.dancher.App().main();",
     refreshBrowsers <<= refreshBrowsers.triggeredBy(fastOptJS in Compile)
   )
   .settings(workbenchSettings:_*)
-  .jvmSettings(/* Add JVM-specific settings here */)
-  .jsSettings(/* Add JS-specific settings here */)
-
-lazy val dancherJVM = dancher.jvm
-lazy val dancherJS = dancher.js

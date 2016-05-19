@@ -8,8 +8,8 @@ object App extends JSApp {
   @JSExport
   override def main(): Unit = {
     println("Started")
-    val root: Widget = MessageBox("It",  "works!")
-    new Renderer().render(root)
+    val root = Label("It works!")
+    new DomActionRunner().run(root.create)
   }
 
 }
