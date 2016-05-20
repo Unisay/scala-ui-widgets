@@ -4,7 +4,7 @@ import org.scalajs.dom.document._
 import org.scalajs.dom.raw._
 
 import scala.language.{higherKinds, implicitConversions}
-import scalaz.{Free, _}
+import scalaz.{Free, _}, Id.Id
 
 package object dancher {
 
@@ -33,11 +33,11 @@ package object dancher {
     def log(message: String): DomAction[String] = Free.liftF(Log(message, message))
     def getElementById(id: String): DomAction[Element] = Free.liftF(GetElementById(id, identity))
     def createElement(tagName: String): DomAction[Element] = Free.liftF(CreateElement(tagName, identity))
-    def appendChild(parent: Element, child: Element): DomAction[Unit] = Free.liftF(AppendChild(parent, child, ()))
+    def appendChild(parent: Element, child: Element): DomAction[Element] = Free.liftF(AppendChild(parent, child, child))
   }
 
   sealed trait Widget {
-    def create: DomAction[_]
+    def create: DomAction[Element]
   }
 
   case class Label(text: String) extends Widget {
@@ -49,13 +49,19 @@ package object dancher {
       _ ← log("Creating DIV")
       child ← createElement("div")
       _ ← log("Appending DIV to parent")
-      result ← appendChild(parent, child)
+      element ← appendChild(parent, child)
       _ ← log("Label created")
-    } yield result
+    } yield element
   }
 
   class DomActionRunner {
-    def run[A](domAction: DomAction[A]): A = ???
+    private val exe: DomAction ~> Id = new (DomAction ~> Id) {
+      def apply[A](fa: DomAction[A]): Id[A] = fa match {
+        case // TODO
+      }
+    }
+
+    def run[A](domAction: DomAction[A]): A = domAction.runM(exe.apply[DomAction[A]])
   }
 
 }
