@@ -1,49 +1,62 @@
 package com.github.unisay
 
-import org.scalajs.dom.raw._
+import com.github.unisay.dancher.Action._
 
 import scala.language.{higherKinds, implicitConversions}
-import scalaz.{Free, Node ⇒ _, _}, Id.Id
+import scalaz.{Free, Node ⇒ _}
 
 package object dancher {
 
-  sealed trait Action[A]
-  case class Log[A](text: String, a: A) extends Action[A]
-  case class GetElementById[A](id: String, f: Element ⇒ A) extends Action[A]
-  case class CreateElement[A](tagName: String, f: Element ⇒ A) extends Action[A]
-  case class CreateTextNode[A](text: String, f: Text ⇒ A) extends Action[A]
-  case class AppendChild[A](parent: Node, child: Node, a: A) extends Action[A]
-
-  implicit val ActionFunctor: Functor[Action] = new Functor[Action] {
-    override def map[A, B](action: Action[A])(f: A ⇒ B): Action[B] = action match {
-      case Log(text, next) ⇒
-        Log(text, f(next))
-      case GetElementById(id, g) ⇒
-        GetElementById(id, g andThen f)
-      case CreateElement(tagName, g) ⇒
-        CreateElement(tagName, g andThen f)
-      case CreateTextNode(text, g) ⇒
-        CreateTextNode(text, g andThen f)
-      case AppendChild(parent, child, next) ⇒
-        AppendChild(parent, child, f(next))
-    }
+  trait DomNode {
+    def appendChild(child: DomNode) = AppendChild(this, child, ())
   }
 
-  type FAction[A] = Free[Action, A]
+  trait DomMouseEvent
+  type MouseEventHandler = DomMouseEvent ⇒ Unit
 
-  trait Actions {
-    implicit def actionToFree[A](action: Action[A]): Free[Action, A] = Free.liftF(action)
+  trait DomElement extends DomNode {
+    def setAttribute(name: String, value: String): ActionF[DomElement] = SetAttribute(this, name, value, this)
+    def setClass(cssClass: String): ActionF[DomElement] = setAttribute("class", cssClass)
+    def onClick[A](handler: MouseEventHandler): ActionF[Unit] = SetOnClick(this, handler, ())
+  }
 
+  trait DomNodeList
+
+  sealed trait Action[Next]
+
+  type ActionF[A] = Free[Action, A]
+
+  object Action {
+    implicit def actionToFree[A](action: Action[A]): ActionF[A] = Free.liftF(action)
+
+    case class Log[N](text: String, next: N) extends Action[N]
     def log(message: String) = Log(message, message)
-    def getElementById(id: String) = GetElementById(id, identity)
-    def createElement(tagName: String) = CreateElement(tagName, identity)
-    def createTextNode(text: String) = CreateTextNode(text, identity)
-    def appendChild(parent: Node, child: Node) = AppendChild(parent, child, child)
+
+    case class GetDocumentBody[N](elementToNext: DomElement ⇒ N) extends Action[N]
+    def getDocumentBody: ActionF[DomElement] = GetDocumentBody(identity)
+
+    case class GetElementById[N](id: String, elementToNext: DomElement ⇒ N) extends Action[N]
+    def getElementById(id: String): ActionF[DomElement] = GetElementById(id, identity)
+
+    case class GetElementsByName[N](Name: String, nodeListToNext: DomNodeList ⇒ N) extends Action[N]
+    def getElementsByName(Name: String): ActionF[DomNodeList] = GetElementsByName(Name, identity)
+
+    case class GetElementsByTagName[N](tagName: String, nodeListToNext: DomNodeList ⇒ N) extends Action[N]
+    def getElementsByTagName(tagName: String): ActionF[DomNodeList] = GetElementsByTagName(tagName, identity)
+
+    case class GetElementsByClassName[N](className: String, nodeListToNext: DomNodeList ⇒ N) extends Action[N]
+    def getElementsByClassName(className: String): ActionF[DomNodeList] = GetElementsByClassName(className, identity)
+
+    case class CreateElement[N](tagName: String, elementToNext: DomElement ⇒ N) extends Action[N]
+    def createElement(tagName: String): ActionF[DomElement] = CreateElement(tagName, identity)
+
+    case class CreateTextNode[N](text: String, nodeToNext: DomNode ⇒ N) extends Action[N]
+    def createTextNode(text: String): ActionF[DomNode] = CreateTextNode(text, identity)
+
+    case class SetAttribute[N](element: DomElement, name: String, value: String, next: N) extends Action[N]
+    case class AppendChild[N](parent: DomNode, child: DomNode, next: N) extends Action[N]
+
+    case class SetOnClick[N](element: DomElement, handler: MouseEventHandler, next: N) extends Action[N]
   }
 
-  object Actions extends Actions
-
-  trait Widget extends Actions {
-    def create: FAction[Element]
-  }
 }
