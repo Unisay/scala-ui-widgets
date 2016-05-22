@@ -1,0 +1,8 @@
+div.d-vertical-layout {
+    border: 1px dotted orange;
+    display: block;
+}
+
+div.d-horizontal-layout {
+    border: 1px dotted blue;
+}

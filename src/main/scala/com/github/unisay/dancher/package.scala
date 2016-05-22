@@ -8,7 +8,7 @@ import scalaz.{Free, Node ⇒ _}
 package object dancher {
 
   trait DomNode {
-    def appendChild(child: DomNode) = AppendChild(this, child, ())
+    def appendChild(child: DomNode): ActionF[DomNode] = AppendChild(this, child, this)
   }
 
   trait DomMouseEvent
@@ -17,7 +17,7 @@ package object dancher {
   trait DomElement extends DomNode {
     def setAttribute(name: String, value: String): ActionF[DomElement] = SetAttribute(this, name, value, this)
     def setClass(cssClass: String): ActionF[DomElement] = setAttribute("class", cssClass)
-    def onClick[A](handler: MouseEventHandler): ActionF[Unit] = SetOnClick(this, handler, ())
+    def onClick[A](handler: MouseEventHandler): ActionF[DomElement] = SetOnClick(this, handler, this)
   }
 
   trait DomNodeList
