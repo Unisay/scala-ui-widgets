@@ -12,7 +12,7 @@ package object dancher {
   }
 
   trait DomMouseEvent
-  type MouseEventHandler = DomMouseEvent ⇒ Unit
+  type MouseEventHandler = DomMouseEvent ⇒ ActionF[_]
 
   trait DomElement extends DomNode {
     def setAttribute(name: String, value: String): ActionF[DomElement] = SetAttribute(this, name, value, this)

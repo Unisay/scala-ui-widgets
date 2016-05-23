@@ -9,18 +9,21 @@ object App extends JSApp {
   @JSExport
   override def main(): Unit = {
 
-    val widget = VerticalLayout (
-      Paragraph("It works!"), Button("test"),
+    def updateHorizontalLayout(model: Widget): ActionF[DomElement] = ???
+
+    lazy val model: Widget = VerticalLayout (
+      Button("Add Label", Some(_ ⇒ updateHorizontalLayout(model))),
       HorizontalLayout (
-        Button("Press me please!", Some(_ ⇒ println("Button 1 clicked!"))),
-        Button("Press me too!", Some(_ ⇒ println("Button 2 clicked!")))
+        Label("Horizontally"),
+        Label("Placed"),
+        Label("Labels")
       )
     )
 
     new ActionRunner().run {
       for {
         body ← getDocumentBody
-        layout ← widget.create
+        layout ← model.create
         _ ← body appendChild layout
       } yield ()
     }

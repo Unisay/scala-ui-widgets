@@ -13,9 +13,19 @@ trait Widget {
 case class Paragraph(text: String) extends Widget {
   def create = for {
     paragraph ← createElement("p")
+    _ ← paragraph setClass "d-paragraph"
     text ← createTextNode(text)
     _ ← paragraph appendChild text
   } yield paragraph
+}
+
+case class Label(text: String) extends Widget {
+  def create = for {
+    span ← createElement("span")
+    _ ← span setClass "d-label"
+    text ← createTextNode(text)
+    _ ← span appendChild text
+  } yield span
 }
 
 case class Button(label: String, clickHandler: Option[MouseEventHandler] = None) extends Widget {
