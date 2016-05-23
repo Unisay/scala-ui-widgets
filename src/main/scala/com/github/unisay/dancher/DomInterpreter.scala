@@ -11,9 +11,11 @@ import scala.language.implicitConversions
 
 class DomInterpreter extends ActionInterpreter {
 
-  def interpret[A](actionF: ActionF[A]): A = actionF.foldMap(domInterpreter)
+  def interpret[A](actionF: ActionF[A]): A = actionF.foldMap(domTransformation)
 
-  private val domInterpreter: Action ~> Id = new (Action ~> Id) {
+  val eventStream: Stream[Reaction] = ???
+
+  private val domTransformation: Action ~> Id = new (Action ~> Id) {
 
     case class RawNode(node: raw.Node) extends DomNode
     case class RawElement(element: raw.Element) extends DomElement
@@ -64,7 +66,10 @@ class DomInterpreter extends ActionInterpreter {
         next
 
       case SetOnClick(RawElement(element), handler, next) ⇒
-        element.addEventListener("click", (mouseEvent: raw.MouseEvent) ⇒ handler(RawMouseEvent(mouseEvent)))
+        element.addEventListener("click", (mouseEvent: raw.MouseEvent) ⇒ {
+            handler(RawMouseEvent(mouseEvent))
+          }
+        )
         next
 
       case it @ AppendChild(_, _, _) ⇒ shouldNotMatch(it)
@@ -72,7 +77,9 @@ class DomInterpreter extends ActionInterpreter {
       case it @ SetOnClick(_, _, _) ⇒ shouldNotMatch(it)
     }
 
-    def shouldNotMatch(it: Any) =
-      sys.error(s"$it should have been matched by the preceding case statements")
   }
+
+  def shouldNotMatch(it: Any) =
+    sys.error(s"$it should have been matched by the preceding case statements")
+
 }

@@ -12,26 +12,24 @@ package object dancher {
   }
 
   trait DomMouseEvent
-  type MouseEventHandler = DomMouseEvent ⇒ ActionF[_]
+  type MouseEventHandler[R <: Reaction] = DomMouseEvent ⇒ R
 
   trait DomElement extends DomNode {
     def setAttribute(name: String, value: String): ActionF[DomElement] = SetAttribute(this, name, value, this)
     def setClass(cssClass: String): ActionF[DomElement] = setAttribute("class", cssClass)
-    def onClick[A](handler: MouseEventHandler): ActionF[DomElement] = SetOnClick(this, handler, this)
+    def onClick[A, R <: Reaction](handler: MouseEventHandler[R]): ActionF[DomElement] = SetOnClick(this, handler, this)
   }
 
   trait DomNodeList
 
   sealed trait Action[Next]
+  trait Reaction
 
   type ActionF[A] = Free[Action, A]
 
-  implicit class ActionFOps[E](action: ActionF[E]) {
-    def interpret(implicit interpreter: ActionInterpreter): E = interpreter.interpret(action)
-  }
-
   trait ActionInterpreter {
     def interpret[A](actionF: ActionF[A]): A
+    def eventStream: Stream[Reaction]
   }
 
   object Action {
@@ -64,7 +62,7 @@ package object dancher {
     case class SetAttribute[N](element: DomElement, name: String, value: String, next: N) extends Action[N]
     case class AppendChild[N](parent: DomNode, child: DomNode, next: N) extends Action[N]
 
-    case class SetOnClick[N](element: DomElement, handler: MouseEventHandler, next: N) extends Action[N]
+    case class SetOnClick[N, R <: Reaction](element: DomElement, handler: MouseEventHandler[R], next: N) extends Action[N]
   }
 
 }

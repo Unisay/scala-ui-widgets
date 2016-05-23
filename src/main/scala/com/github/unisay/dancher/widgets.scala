@@ -28,7 +28,7 @@ case class Label(text: String) extends Widget {
   } yield span
 }
 
-case class Button(label: String, clickHandler: Option[MouseEventHandler] = None) extends Widget {
+case class Button[R <: Reaction](label: String, clickHandler: Option[MouseEventHandler[R]] = None) extends Widget {
   def create = for {
     button ← createElement("button")
     _ ← button setClass "d-button"
@@ -58,8 +58,10 @@ abstract class Layout(widgets: Widget*) extends Widget {
 
 case class VerticalLayout(widgets: Widget*) extends Layout(widgets: _*) {
   override def create = super.create.flatMap(_.setClass("d-vertical-layout"))
+  def addWidget(widget: Widget): VerticalLayout = VerticalLayout(widgets :+ widget:_ *)
 }
 
 case class HorizontalLayout(widgets: Widget*) extends Layout(widgets: _*) {
   override def create = super.create.flatMap(_.setClass("d-horizontal-layout"))
+  def addWidget(widget: Widget): HorizontalLayout = HorizontalLayout(widgets :+ widget:_ *)
 }
