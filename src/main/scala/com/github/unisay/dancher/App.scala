@@ -6,11 +6,7 @@ import Action._
 
 object App extends JSApp {
 
-  implicit val actionRunner = new ActionRunner()
-
-  implicit class ActionFOps[E](action: ActionF[E]) {
-    def runAction(implicit runner: ActionRunner): E = runner.run(action)
-  }
+  implicit val interpreter: ActionInterpreter = new DomInterpreter
 
   def updateHorizontalLayout(model: Widget): ActionF[DomElement] = ???
 
@@ -30,7 +26,7 @@ object App extends JSApp {
       layout ← model.create
       _ ← body appendChild layout
     } yield ()
-    init.runAction
+    init.interpret
   }
 
 }

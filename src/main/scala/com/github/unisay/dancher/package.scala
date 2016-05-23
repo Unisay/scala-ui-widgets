@@ -26,6 +26,14 @@ package object dancher {
 
   type ActionF[A] = Free[Action, A]
 
+  implicit class ActionFOps[E](action: ActionF[E]) {
+    def interpret(implicit interpreter: ActionInterpreter): E = interpreter.interpret(action)
+  }
+
+  trait ActionInterpreter {
+    def interpret[A](actionF: ActionF[A]): A
+  }
+
   object Action {
     implicit def actionToFree[A](action: Action[A]): ActionF[A] = Free.liftF(action)
 

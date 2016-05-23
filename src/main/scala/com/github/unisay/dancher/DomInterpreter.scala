@@ -9,9 +9,10 @@ import Action._
 
 import scala.language.implicitConversions
 
-class ActionRunner {
+class DomInterpreter extends ActionInterpreter {
 
-  def run[A](domAction: ActionF[A]): A = domAction.foldMap(domInterpreter)
+  def interpret[A](actionF: ActionF[A]): A = actionF.foldMap(domInterpreter)
+
   private val domInterpreter: Action ~> Id = new (Action ~> Id) {
 
     case class RawNode(node: raw.Node) extends DomNode
@@ -74,5 +75,4 @@ class ActionRunner {
     def shouldNotMatch(it: Any) =
       sys.error(s"$it should have been matched by the preceding case statements")
   }
-
 }
