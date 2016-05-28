@@ -10,9 +10,11 @@ case class Runtime(comparator: ModelComparator, initialModel: Model)(handler: Do
     _ ← body appendChild layout
   } yield ()
 
-  new ModelInterpreter().interpret[DomainEvent](initialModel, initAction) { (event, model) ⇒
-    val updatedModel = handler.applyOrElse((event, model), (_: (DomainEvent, Model)) ⇒ model)
-    (updatedModel, comparator.diff(model, updatedModel))
+  def run(): Unit = {
+    new ModelInterpreter().interpret[DomainEvent](initialModel, initAction) { (event, model) ⇒
+      val updatedModel = handler.applyOrElse((event, model), (_: (DomainEvent, Model)) ⇒ model)
+      (updatedModel, comparator.diff(model, updatedModel).map(_ ⇒ ()))
+    }
   }
 
 }

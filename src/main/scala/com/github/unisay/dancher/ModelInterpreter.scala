@@ -7,8 +7,6 @@ import org.scalajs.dom.console
 import org.scalajs.dom.raw
 import DomAction._
 
-import scala.language.implicitConversions
-
 class ModelInterpreter {
 
   def interpret[E](model: Model, action: DomActionF[Unit])(update: (E, Model) ⇒ (Model, DomActionF[Unit])): Unit =
@@ -21,12 +19,18 @@ class ModelInterpreter {
 
       def apply[B](action: DomAction[B]): Id[B] = action match {
 
-        case Log(text, next) ⇒
+        case NoAction ⇒
+          ()
+
+        case Log(text) ⇒
           console.info(text)
-          next
+          ()
 
         case GetDocumentBody(elementToNext) ⇒
           elementToNext(RawElement(document.body))
+
+        case GetParent(RawNode(node), nodeToNext) ⇒
+          nodeToNext(RawNode(node.parentNode))
 
         case GetElementById(elementId, elementToNext) ⇒
           elementToNext(RawElement(document.getElementById(elementId)))
@@ -50,6 +54,10 @@ class ModelInterpreter {
           parent.appendChild(child)
           next
 
+        case RemoveChild(parent, child, next) ⇒
+          parent.removeChild(child)
+          next
+
         // Has to provide separate case for RawElement child,
         // because if RawElement is made a subclass of RawNode
         // then custom unapply breaks the exhaustiveness checker
@@ -71,6 +79,7 @@ class ModelInterpreter {
           })
           next
 
+        case it@GetParent(_, _) ⇒ shouldNotMatch(it)
         case it@AppendChild(_, _, _) ⇒ shouldNotMatch(it)
         case it@SetAttribute(_, _, _, _) ⇒ shouldNotMatch(it)
         case it@SetOnClick(_, _, _) ⇒ shouldNotMatch(it)
