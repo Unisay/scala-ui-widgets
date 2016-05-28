@@ -1,8 +1,11 @@
 div.d-vertical-layout {
-    border: 1px dotted orange;
+    /* border: 1px dotted orange; */
+}
+
+div.d-vertical-layout > * {
     display: block;
 }
 
 div.d-horizontal-layout {
-    border: 1px dotted blue;
+    /* border: 1px dotted blue; */
 }

@@ -1,17 +1,18 @@
 package com.github.unisay.dancher
 
-import Action._
+import DomAction._
 
-class Runtime {
+case class Runtime(comparator: ModelComparator, initialModel: Model)(handler: DomainEventHandler) {
 
-  val interpreter: ActionInterpreter = new DomInterpreter
+  val initAction = for {
+    body ← getDocumentBody
+    layout ← initialModel.create
+    _ ← body appendChild layout
+  } yield ()
 
-  def init(widget: Widget): Unit = interpreter.interpret {
-    for {
-      body ← getDocumentBody
-      layout ← widget.create
-      _ ← body appendChild layout
-    } yield ()
+  new ModelInterpreter().interpret[DomainEvent](initialModel, initAction) { (event, model) ⇒
+    val updatedModel = handler.applyOrElse((event, model), (_: (DomainEvent, Model)) ⇒ model)
+    (updatedModel, comparator.diff(model, updatedModel))
   }
 
 }
