@@ -1,5 +1,6 @@
 package com.github.unisay.dancher
 
+import dom._
 import monocle.macros.{GenLens, GenPrism}
 
 import scala.scalajs.js.JSApp
@@ -21,22 +22,19 @@ object App extends JSApp {
       Label("2") ::
       Label("3") ::
       Nil
-    ) :: Nil
-  )
-
-  val defaultComparator = new DefaultModelComparator
+    ) :: Nil)
 
   @JSExport
   override def main(): Unit = {
-    Runtime(defaultComparator, layout) {
+    Runtime(layout) {
       case (_: AddItem, model) ⇒
         // AddChild(Label("4"))
-        GenPrism[Model, VerticalLayout].composeLens(GenLens[VerticalLayout](_.models))
+        GenPrism[Model, VerticalLayout].composeLens(GenLens[VerticalLayout](_.children))
           .modify(_ :+ Label("4"))(model)
 
       case (_: RemoveItem, model) ⇒
         // RemoveLastChild()
-        GenPrism[Model, VerticalLayout].composeLens(GenLens[VerticalLayout](_.models))
+        GenPrism[Model, VerticalLayout].composeLens(GenLens[VerticalLayout](_.children))
           .modify(_.dropRight(1))(model)
     }.run()
   }

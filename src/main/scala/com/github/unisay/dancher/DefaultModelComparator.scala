@@ -1,10 +1,10 @@
 package com.github.unisay.dancher
 
-import DomAction._
+import dom._
 
 class DefaultModelComparator extends ModelComparator {
 
-  override def diff(old: Model, updated: Model): DomActionF[_] = {
+  override def diff(old: Model, updated: Model): ActionF[_] = {
     if (old == updated) {
       noAction
     } else {

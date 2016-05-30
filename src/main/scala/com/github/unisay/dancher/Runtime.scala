@@ -1,8 +1,9 @@
 package com.github.unisay.dancher
 
-import DomAction._
+import dom._
 
-case class Runtime(comparator: ModelComparator, initialModel: Model)(handler: DomainEventHandler) {
+case class Runtime(initialModel: Model, comparator: ModelComparator = new DefaultModelComparator)
+                  (handler: DomainEventHandler) {
 
   val initAction = for {
     body ← getDocumentBody

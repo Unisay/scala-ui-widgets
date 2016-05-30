@@ -5,19 +5,19 @@ import scalaz.~>
 import org.scalajs.dom.document
 import org.scalajs.dom.console
 import org.scalajs.dom.raw
-import DomAction._
+import dom._
 
 class ModelInterpreter {
 
-  def interpret[E](model: Model, action: DomActionF[Unit])(update: (E, Model) ⇒ (Model, DomActionF[Unit])): Unit =
-    action.foldMap(new (DomAction ~> Id) {
+  def interpret[E](model: Model, action: ActionF[Unit])(update: (E, Model) ⇒ (Model, ActionF[Unit])): Unit =
+    action.foldMap(new (Action ~> Id) {
 
       case class RawNode(node: raw.Node) extends DomNode
       case class RawElement(element: raw.Element) extends DomElement
       case class RawNodeList(nodeList: raw.NodeList) extends DomNodeList
       case class RawMouseEvent(event: raw.MouseEvent) extends DomMouseEvent
 
-      def apply[B](action: DomAction[B]): Id[B] = action match {
+      def apply[B](action: Action[B]): Id[B] = action match {
 
         case NoAction ⇒
           ()
@@ -56,6 +56,10 @@ class ModelInterpreter {
 
         case RemoveChild(parent, child, next) ⇒
           parent.removeChild(child)
+          next
+
+        case ReplaceChild(parent, oldChild, newChild, next) ⇒
+          parent.replaceChild(oldChild, newChild)
           next
 
         // Has to provide separate case for RawElement child,
