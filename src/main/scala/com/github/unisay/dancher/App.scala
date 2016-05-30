@@ -30,13 +30,13 @@ object App extends JSApp {
   override def main(): Unit = {
     Runtime(defaultComparator, layout) {
       case (_: AddItem, model) ⇒
-        GenPrism[Model, VerticalLayout]
-          .composeLens(GenLens[VerticalLayout](_.models))
+        // AddChild(Label("4"))
+        GenPrism[Model, VerticalLayout].composeLens(GenLens[VerticalLayout](_.models))
           .modify(_ :+ Label("4"))(model)
 
       case (_: RemoveItem, model) ⇒
-        GenPrism[Model, VerticalLayout]
-          .composeLens(GenLens[VerticalLayout](_.models))
+        // RemoveLastChild()
+        GenPrism[Model, VerticalLayout].composeLens(GenLens[VerticalLayout](_.models))
           .modify(_.dropRight(1))(model)
     }.run()
   }
