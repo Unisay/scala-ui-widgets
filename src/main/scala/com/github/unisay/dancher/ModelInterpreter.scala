@@ -9,7 +9,7 @@ import dom._
 
 class ModelInterpreter {
 
-  def interpret[E](model: Model, action: ActionF[Unit])(update: (E, Model) ⇒ (Model, ActionF[Unit])): Unit =
+  def interpret(model: Model, action: ActionF[_])(update: (DomainEvent, Model) ⇒ (Model, ActionF[_])): Unit = {
     action.foldMap(new (Action ~> Id) {
 
       case class RawNode(node: raw.Node) extends DomNode
@@ -77,7 +77,7 @@ class ModelInterpreter {
         case SetOnClick(RawElement(element), handler, next) ⇒
           element.addEventListener("click", (mouseEvent: raw.MouseEvent) ⇒ {
             val event: DomMouseEvent = RawMouseEvent(mouseEvent)
-            val context: E = handler.asInstanceOf[DomMouseEventHandler[E]](event)
+            val context: DomainEvent = handler.asInstanceOf[DomEventHandler](event)
             val (updatedModel, updateAction) = update(context, model)
             interpret(updatedModel, updateAction)(update)
           })
@@ -92,4 +92,6 @@ class ModelInterpreter {
       def shouldNotMatch(it: Any) =
         sys.error(s"$it should have been matched by the preceding case statements")
     })
+    ()
+  }
 }

@@ -38,12 +38,11 @@ object dom extends gen {
     def setClass(cssClass: String): ActionF[DomElement] =
       setAttribute("class", cssClass)
 
-    def onClick[A, E](handler: DomMouseEventHandler[E]): ActionF[DomElement] =
+    def onClick(handler: DomEventHandler): ActionF[DomElement] =
       SetOnClick(this, handler, this)
   }
 
-  type DomEventHandler[E <: DomEvent, C] = E ⇒ C
-  type DomMouseEventHandler[C] = DomEventHandler[DomMouseEvent, C]
+
   type ActionF[A] = Free[Action, A]
 
   object NoAction extends Action[Unit]
@@ -78,5 +77,5 @@ object dom extends gen {
   case class RemoveChild[N](parent: DomNode, child: DomNode, next: N) extends Action[N]
   case class ReplaceChild[N](parent: DomNode, oldChild: DomNode, newChild: DomNode, next: N) extends Action[N]
   case class GetParent[N](node: DomNode, nodeToNext: DomNode ⇒ N) extends Action[N]
-  case class SetOnClick[N, E](element: DomElement, handler: DomMouseEventHandler[E], next: N) extends Action[N]
+  case class SetOnClick[N, E](element: DomElement, event: DomEventHandler, next: N) extends Action[N]
 }
