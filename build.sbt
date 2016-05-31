@@ -40,6 +40,8 @@ lazy val dancher = project.in(file("."))
       "com.github.julien-truffaut" %%% "monocle-core"  % "1.2.1",
       "com.github.julien-truffaut" %%% "monocle-macro" % "1.2.1",
       "org.scala-js" %%% "scalajs-dom" % "0.9.0",
+
+      "org.specs2"   %% "specs2-core"  % "3.8.2"  % "test",
       "com.lihaoyi"  %%% "utest"       % "0.4.3"  % "test"
     )
   )

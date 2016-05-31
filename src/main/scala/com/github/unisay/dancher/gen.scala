@@ -11,6 +11,8 @@ trait gen {
   }
 
   object Gen {
+    @inline def apply[F](implicit F: Gen[F]): Gen[F] = F
+
     implicit val DomIdGen: Gen[DomId] = new Gen[DomId] {
       def generate: DomId = DomId(UUID.randomUUID.toString)
     }

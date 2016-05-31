@@ -19,9 +19,9 @@ object App extends JSApp {
   }
   .horizontal { _
     .label("Foo")
-    .vertical('labels) { _
+    .vertical(DomId("a")) { _
       .label("Bar")
-      .label('baz, "Baz")
+      .label(id = 'baz, text = "Baz")
     }
   }
 
@@ -30,13 +30,13 @@ object App extends JSApp {
     Runtime(builder) {
 
       case (_: AddItem, model) ⇒
-        model.at('labels) { _.label("4") }
+        model.at("labels") { _.label("4") }
 
       case (_: RemoveItem, model) ⇒
-        model.remove('baz)
+        model.remove("baz")
 
       case (_: UpdateFoo, model) ⇒
-        model.modify[Label]('foo) { _.setLabel("Yahoo!") }
+        model.modify[Label]("foo") { _.setLabel("Yahoo!") }
 
     }.run()
   }

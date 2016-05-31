@@ -5,6 +5,11 @@ import com.github.unisay.dancher.dom._
 import scalaz.std.list._
 import scalaz.syntax.traverse._
 
+case class Body(override val domId: DomId) extends NodeWidget(domId) {
+  def children: Traversable[Widget] = Seq.empty
+  def create: ActionF[DomElement] = getDocumentBody
+}
+
 case class Paragraph(text: String, id: Option[DomId] = None)
                     (implicit idGen: Gen[DomId])
   extends LeafWidget(id.getOrElse(idGen.generate)) {
@@ -16,8 +21,7 @@ case class Paragraph(text: String, id: Option[DomId] = None)
   } yield paragraph
 }
 
-case class Label(text: String, id: Option[DomId] = None)(implicit idGen: Gen[DomId])
-  extends LeafWidget(id.getOrElse(idGen.generate)) {
+case class Label(override val domId: DomId, text: String) extends LeafWidget(domId) {
   def create = for {
     span ← createElement("span")
     _ ← span setClass "d-label"
