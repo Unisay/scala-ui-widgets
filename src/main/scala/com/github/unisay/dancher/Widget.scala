@@ -5,14 +5,13 @@ import dom._
 sealed abstract class Widget(val domId: DomId) {
 
   /** Returns current DOM element */
-  def element: ActionF[DomElement] = getElementById(domId.value)
+  def element: ActionF[DomElement] = getElementById(domId)
 
-  /** Returns parent node */
-  def parent: ActionF[DomNode] =
-    for {
-      child ← element
-      parent ← child.getParent
-    } yield parent
+  /** @return parent node */
+  def parent: ActionF[DomNode] = element >>= getParentNode
+
+  /** @return first child node */
+  def firstChild: ActionF[DomNode] = element >>= getFirstChild
 
   /** Creates model and returns its topmost DOM element (root) */
   def create: ActionF[DomElement]

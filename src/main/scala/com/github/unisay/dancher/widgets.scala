@@ -24,12 +24,22 @@ case class Paragraph(text: String, id: Option[DomId] = None)
 case class Label(override val domId: DomId, text: String) extends LeafWidget(domId) {
   def create = for {
     span ← createElement("span")
+    _ ← span setId domId
     _ ← span setClass "d-label"
     text ← createTextNode(text)
     _ ← span appendChild text
   } yield span
 
-  def setLabel(text: String): (Label, ActionF[_]) = ???
+  def setText(text: String): (Label, ActionF[_]) = {
+    val updatedLabel = copy(text = this.text)
+    val action = for {
+      span ← element
+      oldChild ← span.getFirstChild
+      newChild ← createTextNode(text)
+      _ ← span.replaceChild(oldChild, newChild)
+    } yield span
+    (updatedLabel, action)
+  }
 }
 
 case class Button[E](label: String, id: Option[DomId] = None, clickHandler: DomEventHandler = NoEventHandler)

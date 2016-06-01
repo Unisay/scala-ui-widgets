@@ -12,14 +12,14 @@ object App extends JSApp {
   case class UpdateFoo(event: DomEvent) extends DomainEvent
 
   val builder = ModelBuilder()
-  .vertical { _
+  .vertical('labels) { _
     .button(label = "Add Item", onClick = AddItem)
     .button(label = "Remove Item", onClick = RemoveItem)
     .button(label = "Update Foo", onClick = UpdateFoo)
   }
   .horizontal { _
-    .label("Foo")
-    .vertical(DomId("a")) { _
+    .label('foo, "Foo")
+    .vertical('vertical) { _
       .label("Bar")
       .label(id = 'baz, text = "Baz")
     }
@@ -30,13 +30,13 @@ object App extends JSApp {
     Runtime(builder) {
 
       case (_: AddItem, model) ⇒
-        model.at("labels") { _.label("4") }
+        model.at('labels) { _.label("4") }
 
       case (_: RemoveItem, model) ⇒
-        model.remove("baz")
+        model.remove('baz)
 
       case (_: UpdateFoo, model) ⇒
-        model.modify[Label]("foo") { _.setLabel("Yahoo!") }
+        model.modify[Label]('foo) { _.setText("Yahoo!") }
 
     }.run()
   }

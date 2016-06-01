@@ -33,7 +33,7 @@ class ModelInterpreter {
           nodeToNext(RawNode(node.parentNode))
 
         case GetElementById(elementId, elementToNext) ⇒
-          elementToNext(RawElement(document.getElementById(elementId)))
+          elementToNext(RawElement(document.getElementById(elementId.value)))
 
         case GetElementsByName(name, nodeListToNext) ⇒
           nodeListToNext(RawNodeList(document.getElementsByName(name)))
@@ -54,9 +54,12 @@ class ModelInterpreter {
           parent.appendChild(child)
           next
 
-        case RemoveChild(parent, child, next) ⇒
+        case RemoveChild(RawElement(parent), RawNode(child), next) ⇒
           parent.removeChild(child)
           next
+
+        case GetFirstChild(RawNode(node), nodeToNext) ⇒
+          nodeToNext(RawNode(node.firstChild))
 
         case ReplaceChild(parent, oldChild, newChild, next) ⇒
           parent.replaceChild(oldChild, newChild)
@@ -84,7 +87,9 @@ class ModelInterpreter {
           next
 
         case it@GetParent(_, _) ⇒ shouldNotMatch(it)
+        case it@GetFirstChild(_, _) ⇒ shouldNotMatch(it)
         case it@AppendChild(_, _, _) ⇒ shouldNotMatch(it)
+        case it@RemoveChild(_, _, _) ⇒ shouldNotMatch(it)
         case it@SetAttribute(_, _, _, _) ⇒ shouldNotMatch(it)
         case it@SetOnClick(_, _, _) ⇒ shouldNotMatch(it)
       }
