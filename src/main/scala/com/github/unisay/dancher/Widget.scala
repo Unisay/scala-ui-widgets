@@ -8,10 +8,10 @@ sealed abstract class Widget(val domId: DomId) {
   def element: ActionF[DomElement] = getElementById(domId)
 
   /** @return parent node */
-  def parent: ActionF[DomNode] = element >>= getParentNode
+  def parent: ActionF[DomNode] = element.flatMap(getParentNode)
 
   /** @return first child node */
-  def firstChild: ActionF[DomNode] = element >>= getFirstChild
+  def firstChild: ActionF[DomNode] = element.flatMap(getFirstChild)
 
   /** Creates model and returns its topmost DOM element (root) */
   def create: ActionF[DomElement]

@@ -4,16 +4,18 @@ import dom._
 
 case class Runtime(initialModel: Model)(handler: DomainEventHandler) {
 
-  val initAction = for {
-    body ← getDocumentBody
-    element ← initialModel.action
-    _ ← body appendChild element
-  } yield ()
+  val initActions = initialModel.actions.map { action ⇒
+    for {
+      body ← getDocumentBody
+      element ← action
+      _ ← body appendChild element
+    } yield ()
+  }
 
   def run(): Unit = {
-    new ModelInterpreter().interpret(initialModel, initAction) { (event, model) ⇒
+    new DomCompiler().compile(initialModel, initActions) { (event, model) ⇒
       val updatedModel = handler.applyOrElse((event, model), (_: (DomainEvent, Model)) ⇒ model)
-      (updatedModel, updatedModel.action)
+      (updatedModel, updatedModel.actions)
     }
   }
 

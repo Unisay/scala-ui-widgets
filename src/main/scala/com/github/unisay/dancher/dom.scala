@@ -1,7 +1,8 @@
 package com.github.unisay.dancher
 
+import cats.free.Free
+
 import scala.language.implicitConversions
-import scalaz.Free
 
 object dom extends gen {
 
@@ -44,62 +45,49 @@ object dom extends gen {
   def log(message: String): ActionF[Unit] =
     Log(message)
 
-  case class GetDocumentBody[N](elementToNext: DomElement ⇒ N) extends Action[N]
-  def getDocumentBody: ActionF[DomElement] =
-    GetDocumentBody(identity)
+  object GetDocumentBody extends Action[DomElement]
+  def getDocumentBody: ActionF[DomElement] = GetDocumentBody
 
-  case class GetElementById[N](id: DomId, elementToNext: DomElement ⇒ N) extends Action[N]
-  def getElementById(id: DomId): ActionF[DomElement] =
-    GetElementById(id, identity)
+  case class GetElementById(id: DomId) extends Action[DomElement]
+  def getElementById(id: DomId): ActionF[DomElement] = GetElementById(id)
 
-  case class GetElementsByName[N](Name: String, nodeListToNext: DomNodeList ⇒ N) extends Action[N]
-  def getElementsByName(Name: String): ActionF[DomNodeList] =
-    GetElementsByName(Name, identity)
+  case class GetElementsByName(Name: String) extends Action[DomNodeList]
+  def getElementsByName(Name: String): ActionF[DomNodeList] = GetElementsByName(Name)
 
-  case class GetElementsByTagName[N](tagName: String, nodeListToNext: DomNodeList ⇒ N) extends Action[N]
-  def getElementsByTagName(tagName: String): ActionF[DomNodeList] =
-    GetElementsByTagName(tagName, identity)
+  case class GetElementsByTagName(tagName: String) extends Action[DomNodeList]
+  def getElementsByTagName(tagName: String): ActionF[DomNodeList] = GetElementsByTagName(tagName)
 
-  case class GetElementsByClassName[N](className: String, nodeListToNext: DomNodeList ⇒ N) extends Action[N]
-  def getElementsByClassName(className: String): ActionF[DomNodeList] =
-    GetElementsByClassName(className, identity)
+  case class GetElementsByClassName(className: String) extends Action[DomNodeList]
+  def getElementsByClassName(className: String): ActionF[DomNodeList] = GetElementsByClassName(className)
 
-  case class CreateElement[N](tagName: String, elementToNext: DomElement ⇒ N) extends Action[N]
-  def createElement(tagName: String): ActionF[DomElement] =
-    CreateElement(tagName, identity)
+  case class CreateElement(tagName: String) extends Action[DomElement]
+  def createElement(tagName: String): ActionF[DomElement] = CreateElement(tagName)
 
-  case class CreateTextNode[N](text: String, nodeToNext: DomNode ⇒ N) extends Action[N]
-  def createTextNode(text: String): ActionF[DomNode] =
-    CreateTextNode(text, identity)
+  case class CreateTextNode(text: String) extends Action[DomNode]
+  def createTextNode(text: String): ActionF[DomNode] = CreateTextNode(text)
 
-  case class GetParent[N](node: DomNode, nodeToNext: DomNode ⇒ N) extends Action[N]
-  def getParentNode(node: DomNode): ActionF[DomNode] =
-    GetParent(node, identity)
+  case class GetParent(node: DomNode) extends Action[DomNode]
+  def getParentNode(node: DomNode): ActionF[DomNode] = GetParent(node)
 
-  case class GetFirstChild[N](node: DomNode, nodeToNext: DomNode ⇒ N) extends Action[N]
-  def getFirstChild(node: DomNode): ActionF[DomNode] =
-    GetFirstChild(node, identity)
+  case class GetFirstChild(node: DomNode) extends Action[DomNode]
+  def getFirstChild(node: DomNode): ActionF[DomNode] = GetFirstChild(node)
 
-  case class AppendChild[N](parent: DomNode, child: DomNode, next: N) extends Action[N]
-  def appendChild(parent: DomNode, child: DomNode): ActionF[DomNode] =
-    AppendChild(parent, child, parent)
+  case class AppendChild(parent: DomNode, child: DomNode) extends Action[DomNode]
+  def appendChild(parent: DomNode, child: DomNode): ActionF[DomNode] = AppendChild(parent, child)
 
-  case class RemoveChild[N](parent: DomNode, child: DomNode, next: N) extends Action[N]
-  def removeChild(parent: DomNode, child: DomNode): ActionF[DomNode] =
-    RemoveChild(parent, child, parent)
+  case class RemoveChild(parent: DomNode, child: DomNode) extends Action[DomNode]
+  def removeChild(parent: DomNode, child: DomNode): ActionF[DomNode] = RemoveChild(parent, child)
 
-  case class ReplaceChild[N](parent: DomNode, oldChild: DomNode, newChild: DomNode, next: N) extends Action[N]
+  case class ReplaceChild(parent: DomNode, oldChild: DomNode, newChild: DomNode) extends Action[DomNode]
   def replaceChild(parent: DomNode, oldChild: DomNode, newChild: DomNode): ActionF[DomNode] =
-    ReplaceChild(parent, oldChild, newChild, oldChild)
+    ReplaceChild(parent, oldChild, newChild)
 
-  case class SetAttribute[N](element: DomElement, name: String, value: String, next: N) extends Action[N]
-  def setAttribute(name: String, value: String)(element: DomElement): ActionF[DomElement] =
-    SetAttribute(element, name, value, element)
+  case class SetAttribute(element: DomElement, name: String, value: String) extends Action[DomElement]
+  def setAttribute(name: String, value: String)(elem: DomElement): ActionF[DomElement] = SetAttribute(elem, name, value)
   def setId(id: DomId)(element: DomElement) = setAttribute("id", id.value)(element)
   def setClass(cssClass: String)(element: DomElement) = setAttribute("class", cssClass)(element)
 
-  case class SetOnClick[N, E](element: DomElement, event: DomEventHandler, next: N) extends Action[N]
-  def setOnClick(element: DomElement, handler: DomEventHandler): ActionF[DomElement] =
-    SetOnClick(element, handler, element)
+  case class SetOnClick[N, E](element: DomElement, event: DomEventHandler) extends Action[DomElement]
+  def setOnClick(element: DomElement, handler: DomEventHandler): ActionF[DomElement] = SetOnClick(element, handler)
 
 }

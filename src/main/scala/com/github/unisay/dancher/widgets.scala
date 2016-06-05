@@ -2,8 +2,8 @@ package com.github.unisay.dancher
 
 import com.github.unisay.dancher.dom._
 
-import scalaz.std.list._
-import scalaz.syntax.traverse._
+import cats.std.list._
+import cats.syntax.traverse._
 
 case class Body(override val domId: DomId) extends NodeWidget(domId) {
   def children: Traversable[Widget] = Seq.empty
@@ -11,7 +11,7 @@ case class Body(override val domId: DomId) extends NodeWidget(domId) {
 }
 
 case class Paragraph(text: String, id: Option[DomId] = None)
-                    (implicit idGen: Gen[DomId])
+                    (implicit idGen: Generator[DomId])
   extends LeafWidget(id.getOrElse(idGen.generate)) {
   def create = for {
     paragraph ← createElement("p")
@@ -42,9 +42,8 @@ case class Label(override val domId: DomId, text: String) extends LeafWidget(dom
   }
 }
 
-case class Button[E](label: String, id: Option[DomId] = None, clickHandler: DomEventHandler = NoEventHandler)
-                    (implicit idGen: Gen[DomId])
-  extends LeafWidget(id.getOrElse(idGen.generate)) {
+case class Button(override val domId: DomId, label: String, clickHandler: DomEventHandler = NoEventHandler)
+  extends LeafWidget(domId) {
   def create = for {
     button ← createElement("button")
     _ ← button setClass "d-button"
@@ -54,7 +53,7 @@ case class Button[E](label: String, id: Option[DomId] = None, clickHandler: DomE
   } yield button
 }
 
-abstract class Layout(override val children: Traversable[Widget], id: DomId) extends NodeWidget(id) {
+abstract class Layout(override val domId: DomId, override val children: Traversable[Widget]) extends NodeWidget(domId) {
   def create = for {
     div ← createElement("div")
     elements ← children.toList.map(_.create).sequence
@@ -62,14 +61,12 @@ abstract class Layout(override val children: Traversable[Widget], id: DomId) ext
   } yield div
 }
 
-case class VerticalLayout(override val children: Seq[Widget], id: Option[DomId] = None)
-                         (implicit idGen: Gen[DomId])
-  extends Layout(children, id.getOrElse(idGen.generate)) {
+case class VerticalLayout(override val domId: DomId, override val children: Seq[Widget])
+  extends Layout(domId, children) {
   override def create = super.create.flatMap(_.setClass("d-vertical-layout"))
 }
 
-case class HorizontalLayout(override val children: Seq[Widget], id: Option[DomId] = None)
-                           (implicit idGen: Gen[DomId])
-  extends Layout(children, id.getOrElse(idGen.generate)) {
+case class HorizontalLayout(override val domId: DomId, override val children: Seq[Widget])
+  extends Layout(domId, children) {
   override def create = super.create.flatMap(_.setClass("d-horizontal-layout"))
 }

@@ -27,21 +27,22 @@ lazy val dancher = project.in(file("."))
     version := "0.1-SNAPSHOT",
     publish := {},
     publishLocal := {},
-    version      := "0.1-SNAPSHOT",
+    version := "0.1-SNAPSHOT",
     organization := "com.github.unisay",
     scalacOptions in Test ++= Seq("-Yrangepos"),
     maxErrors := 5,
     logLevel := Level.Warn,
     testFrameworks += TestFramework("utest.runner.Framework"),
-    requiresDOM     := true,
+    requiresDOM := true,
     scalaJSUseRhino := false,
     libraryDependencies ++= Seq(
-      "org.scalaz"   %%% "scalaz-core" % "7.2.2",
-      "com.github.julien-truffaut" %%% "monocle-core"  % "1.2.1",
-      "com.github.julien-truffaut" %%% "monocle-macro" % "1.2.1",
-      "org.scala-js" %%% "scalajs-dom" % "0.9.0",
+      "org.typelevel" %%% "cats-kernel" % "0.6.0",
+      "org.typelevel" %%% "cats-macros" % "0.6.0",
+      "org.typelevel" %%% "cats-core"   % "0.6.0",
+      "org.typelevel" %%% "cats-free"   % "0.6.0",
+      "org.scala-js"  %%% "scalajs-dom" % "0.9.0",
 
-      "org.specs2"   %% "specs2-core"  % "3.8.2"  % "test",
-      "com.lihaoyi"  %%% "utest"       % "0.4.3"  % "test"
+      "org.specs2" %% "specs2-core" % "3.8.2" % "test",
+      "org.specs2" %% "specs2-scalacheck" % "3.8.2" % "test"
     )
   )

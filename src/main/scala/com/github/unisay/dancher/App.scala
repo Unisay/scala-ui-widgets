@@ -8,14 +8,14 @@ import scala.scalajs.js.annotation.JSExport
 object App extends JSApp {
 
   case class AddItem(event: DomEvent) extends DomainEvent
-  case class RemoveItem(event: DomEvent) extends DomainEvent
-  case class UpdateFoo(event: DomEvent) extends DomainEvent
+  case class RemItem(event: DomEvent) extends DomainEvent
+  case class UpdateLabel(event: DomEvent) extends DomainEvent
 
-  val builder = ModelBuilder()
+  val bodyModel = BodyModel()
   .vertical('labels) { _
-    .button(label = "Add Item", onClick = AddItem)
-    .button(label = "Remove Item", onClick = RemoveItem)
-    .button(label = "Update Foo", onClick = UpdateFoo)
+    .button(label = "Add Item",    onClick = AddItem)
+    .button(label = "Remove Item", onClick = RemItem)
+    .button(label = "Update Foo",  onClick = UpdateLabel)
   }
   .horizontal { _
     .label('foo, "Foo")
@@ -27,15 +27,15 @@ object App extends JSApp {
 
   @JSExport
   override def main(): Unit = {
-    Runtime(builder) {
+    Runtime(bodyModel) {
 
       case (_: AddItem, model) ⇒
         model.at('labels) { _.label("4") }
 
-      case (_: RemoveItem, model) ⇒
+      case (_: RemItem, model) ⇒
         model.remove('baz)
 
-      case (_: UpdateFoo, model) ⇒
+      case (_: UpdateLabel, model) ⇒
         model.modify[Label]('foo) { _.setText("Yahoo!") }
 
     }.run()
