@@ -34,10 +34,8 @@ class ModelSpec extends Specification with ScalaCheck {
 
     "create label action" in prop { (model: Model, label: Label) ⇒
       val action: ActionF[DomElement] = model.label(label.domId, label.text).actions.head
-      val commands: TestCompiler#ActionState[DomElement] = new TestCompiler().compile(action)
-      val value1: (List[String], DomElement) = commands.run(List()).value
-      value1._1 must_=== List()
-//      must contain(label.create)
+      val written: String = new JsCompiler().compile(action).written
+      written must_=== "CreateElement(tagName)document.createElement(span).setAttribute(id, )document.createElement(span).setAttribute(class, d-label)CreateTextNode(text)document.createElement(span).appendChild(document.createTextNode())"
     }
 
     "create button widget" in prop { (model: Model, button: Button) ⇒
