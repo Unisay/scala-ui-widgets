@@ -1,5 +1,6 @@
 package com.github.unisay.dancher
 
+import com.github.unisay.dancher.compiler.JsCompiler
 import com.github.unisay.dancher.dom._
 import org.scalacheck.{Arbitrary, Gen}
 import org.specs2.ScalaCheck
@@ -8,7 +9,7 @@ import org.specs2.mutable.Specification
 class ModelSpec extends Specification with ScalaCheck {
 
   val genDomId: Gen[DomId] =
-    Gen.alphaStr.map(DomId.apply)
+    Gen.alphaStr.map(s ⇒ DomId(s"id$s"))
   val genButton: Gen[Button] =
     for {domId ← genDomId; label ← Gen.alphaStr} yield Button(domId, label)
   val genLabel: Gen[Label] =
@@ -34,8 +35,13 @@ class ModelSpec extends Specification with ScalaCheck {
 
     "create label action" in prop { (model: Model, label: Label) ⇒
       val action: ActionF[DomElement] = model.label(label.domId, label.text).actions.head
-      val written: String = new JsCompiler().compile(action).written
-      written must_=== "CreateElement(tagName)document.createElement(span).setAttribute(id, )document.createElement(span).setAttribute(class, d-label)CreateTextNode(text)document.createElement(span).appendChild(document.createTextNode())"
+      val written = new JsCompiler().compile(action).written
+      written must_===
+        "var span1 = document.createElement('span')" ::
+        s"span1.setAttribute('id', '${label.domId.value}')" ::
+        "span1.setAttribute('class', 'd-label')" ::
+        s"var text2 = document.createTextNode('${label.text}')" ::
+        "span1.appendChild(text2)" :: Nil
     }
 
     "create button widget" in prop { (model: Model, button: Button) ⇒
@@ -47,13 +53,17 @@ class ModelSpec extends Specification with ScalaCheck {
     }
 
     "vertical layout" in prop { (model: Model) ⇒
-      model.vertical('id) { _.label('id2, "label") }.widgets must contain(
+      model.vertical('id) {
+        _.label('id2, "label")
+      }.widgets must contain(
         VerticalLayout('id, Seq(Label('id2, "label")))
       )
     }
 
     "horizontal layout" in prop { (model: Model) ⇒
-      model.horizontal('id) { _.label('id2, "label") }.widgets must contain(
+      model.horizontal('id) {
+        _.label('id2, "label")
+      }.widgets must contain(
         HorizontalLayout('id, Seq(Label('id2, "label")))
       )
     }

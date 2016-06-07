@@ -1,10 +1,9 @@
-package com.github.unisay.dancher
+package com.github.unisay.dancher.compiler
 
 import cats.{Id, ~>}
-import org.scalajs.dom.document
-import org.scalajs.dom.console
-import org.scalajs.dom.raw
-import dom._
+import com.github.unisay.dancher._
+import com.github.unisay.dancher.dom._
+import org.scalajs.dom.{console, document, raw}
 
 import scala.language.implicitConversions
 
