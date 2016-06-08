@@ -46,9 +46,10 @@ case class Button(override val domId: DomId, label: String, clickHandler: DomEve
   extends LeafWidget(domId) {
   def create = for {
     button ← createElement("button")
+    _ ← button setId domId
     _ ← button setClass "d-button"
-    label ← createTextNode(label)
-    _ ← button appendChild label
+    text ← createTextNode(label)
+    _ ← button appendChild text
     _ ← button.onClick(clickHandler)
   } yield button
 }

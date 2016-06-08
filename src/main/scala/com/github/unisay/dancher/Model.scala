@@ -2,7 +2,7 @@ package com.github.unisay.dancher
 
 import dom._
 
-case class Model(widgets: Seq[Widget]) {
+case class Model(widgets: Seq[Widget] = Seq.empty, actions: Seq[WidgetAction] = Seq.empty) {
 
   def get(id: DomId): Model = ???
   def at(id: DomId)(f: (Model) ⇒ Model): Model = ???
@@ -33,9 +33,10 @@ case class Model(widgets: Seq[Widget]) {
   def label(id: DomId, text: String): Model =
     appendWidget(Label(id, text))
 
-  def actions: Seq[ActionF[DomElement]] = widgets.map(_.create)
-
-  private def appendWidget(widget: Widget): Model = this.copy(widgets = this.widgets :+ widget)
+  private def appendWidget(widget: Widget): Model = this.copy(
+    widgets = this.widgets :+ widget,
+    actions = List(widget.create)
+  )
 }
 
 object BodyModel {

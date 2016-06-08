@@ -37,6 +37,7 @@ object dom extends gen {
 
 
   type ActionF[A] = Free[Action, A]
+  type WidgetAction = ActionF[DomElement]
 
   object NoAction extends Action[Unit]
   val noAction: ActionF[Unit] = NoAction

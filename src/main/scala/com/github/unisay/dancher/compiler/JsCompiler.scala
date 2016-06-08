@@ -16,11 +16,9 @@ class JsCompiler {
 
   type ActionWriter[A] = Writer[List[String], A]
 
+  var counter = 0 // Mutable state ?
 
   val compiler: Action ~> ActionWriter = new (Action ~> ActionWriter) {
-
-    var counter = 0 // Mutable state ?
-
     def comment(comment: String): List[String] = List(s"/* $comment */")
     def variable(expression: String, prefix: String = "id"): (String, List[String]) = {
       val v = id(prefix)
@@ -98,5 +96,5 @@ class JsCompiler {
     }
   }
 
-  def compile[A](action: ActionF[A]): ActionWriter[A] = action.foldMap(compiler)
+  def compile[A](action: ActionF[A]): List[String] = action.foldMap(compiler).written
 }
