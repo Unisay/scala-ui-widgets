@@ -1,100 +1,112 @@
 package com.github.unisay.dancher.compiler
 
-import cats.data.Writer
-import cats.std.list._
-import cats.syntax.writer._
+import cats.data.State
 import cats.~>
 import com.github.unisay.dancher.dom._
 
 import scala.language.implicitConversions
 
-class JsCompiler {
+object JsCompiler {
+
   case class RawElement(element: String) extends DomElement
   case class RawNodeList(nodeList: String) extends DomNodeList
   case class RawMouseEvent(event: String) extends DomMouseEvent
   case class RawNode(node: String) extends DomNode
 
-  type ActionWriter[A] = Writer[List[String], A]
+  type Script = List[String]
+  type CounterWithScript = (Int, Script)
+  type CompilerState[A] = State[CounterWithScript, A]
 
-  var counter = 0 // Mutable state ?
+  val compiler: Action ~> CompilerState = new (Action ~> CompilerState) {
 
-  val compiler: Action ~> ActionWriter = new (Action ~> ActionWriter) {
-    def comment(comment: String): List[String] = List(s"/* $comment */")
-    def variable(expression: String, prefix: String = "id"): (String, List[String]) = {
-      val v = id(prefix)
-      (v, s"var $v = $expression" :: Nil)
+    def result[A](a: A): CompilerState[A] = State.pure(a)
+
+    def commentWithReturn[A](comment: String, a: A): CompilerState[A] =
+      scriptWithReturn(s"/* $comment */", a)
+
+    def comment(c: String): CompilerState[Unit] =
+      State.modify { case (counter, script) ⇒
+        (counter, s"/* $c */" :: script)
     }
-    def id(prefix: String): String = {
-      counter = counter + 1
-      prefix + counter
-    }
 
-    override def apply[A](fa: Action[A]): ActionWriter[A] = {
-      implicit def writerToA(aw: ActionWriter[_]): ActionWriter[A] =
-        aw.asInstanceOf[ActionWriter[A]]
+    def scriptWithReturn[A](line: String, a: A): CompilerState[A] =
+      State.modify[CounterWithScript]{ case (counter, script) ⇒ (counter, line :: script) }.map(_ ⇒ a)
 
-      fa match {
+    def scriptWithCounterAndReturn[A](f: Int ⇒ (String, A)): CompilerState[A] =
+      State { case (counter, script) ⇒
+        val (line, a) = f(counter)
+        ((counter + 1, line :: script), a)
+      }
+
+    override def apply[A](action: Action[A]): CompilerState[A] = {
+      implicit def toA(aw: CompilerState[_]): CompilerState[A] = aw.asInstanceOf[CompilerState[A]]
+
+      action match {
 
         case NoAction ⇒
-          comment("No Action").tell
+          comment("No Action")
 
         case GetDocumentBody ⇒
-          RawElement("b").writer("var b = document.body" :: Nil)
+          scriptWithReturn("var b = document.body", RawElement("b"))
 
         case GetParent(RawNode(node)) ⇒
-          RawNode(s"$node.parentNode").writer(comment(s"GetParent($node)"))
+          result(RawNode(s"$node.parentNode"))
 
         case GetElementById(elementId) ⇒
-          RawElement(s"document.getElementById('${elementId.value}')")
-            .writer(comment(s"GetElementById(${elementId.value})"))
+          result(RawElement(s"document.getElementById('${elementId.value}')"))
 
         case GetElementsByName(name) ⇒
-          RawNodeList(s"document.getElementsByName('$name')")
-            .writer(comment(s"GetElementsByName($name)"))
+          result(RawNodeList(s"document.getElementsByName('$name')"))
 
         case GetElementsByTagName(name) ⇒
-          RawNodeList(s"document.getElementsByName('$name')")
-            .writer(comment(s"GetElementsByTagName($name)"))
+          result(RawNodeList(s"document.getElementsByName('$name')"))
 
         case GetElementsByClassName(name) ⇒
-          RawNodeList(s"document.getElementsByName('$name')")
-            .writer(comment(s"GetElementsByClassName($name)"))
+          result(RawNodeList(s"document.getElementsByName('$name')"))
 
         case CreateElement(tagName) ⇒
-          val (name, record) = variable(s"document.createElement('$tagName')", tagName)
-          RawElement(name).writer(record)
+          scriptWithCounterAndReturn[RawElement] { counter ⇒
+            val variableName = tagName + counter
+            (s"var $variableName = document.createElement('$tagName')", RawElement(variableName))
+          }
 
         case CreateTextNode(text) ⇒
-          val (name, record) = variable(s"document.createTextNode('$text')", "text")
-          RawNode(name).writer(record)
+          scriptWithCounterAndReturn[RawElement] { counter ⇒
+            val variableName = s"text$counter"
+            (s"var $variableName = document.createTextNode('$text')", RawElement(variableName))
+          }
 
         case AppendChild(rawParent@RawElement(parent), RawNode(child)) ⇒
-          rawParent.writer(s"$parent.appendChild($child)" :: Nil)
+          scriptWithReturn(s"$parent.appendChild($child)", rawParent)
 
         case AppendChild(rawParent@RawElement(parent), RawElement(child)) ⇒
-          rawParent.writer(s"$parent.appendChild($child)" :: Nil)
+          scriptWithReturn(s"$parent.appendChild($child)", rawParent)
 
         case RemoveChild(rawParent@RawElement(parent), RawNode(child)) ⇒
-          rawParent.writer(s"$parent.removeChild($child)" :: Nil)
+          scriptWithReturn(s"$parent.removeChild($child)", rawParent)
 
         case GetFirstChild(RawNode(node)) ⇒
-          RawNode(s"$node.firstChild").writer(comment(s"GetFirstChild($node)"))
+          result(RawNode(s"$node.firstChild"))
 
         case ReplaceChild(rawParent@RawElement(parent), RawNode(oldChild), RawNode(newChild)) ⇒
-          rawParent.writer(s"$parent.replaceChild($oldChild, $newChild)" :: Nil)
+          scriptWithReturn(s"$parent.replaceChild($oldChild, $newChild)", rawParent)
 
         case SetAttribute(rawElement@RawElement(element), name, value) ⇒
-          rawElement.writer(s"$element.setAttribute('$name', '$value')" :: Nil)
+          scriptWithReturn(s"$element.setAttribute('$name', '$value')", rawElement)
 
         case SetOnClick(rawElement@RawElement(element), handler) ⇒
-          rawElement.writer(comment(s"SetOnClick($element)"))
+          commentWithReturn(s"SetOnClick($element)", rawElement)
 
         case it ⇒
-          comment(s"ERROR: $it").tell
+          comment(s"ERROR: $it")
 
       }
     }
   }
 
-  def compile[A](action: ActionF[A]): List[String] = action.foldMap(compiler).written
+  def compile[A](action: ActionF[A]): Script = {
+    val (_, reverseScript) = action.foldMap(compiler).runS((1, Nil)).value
+    reverseScript.reverse
+  }
+
 }
