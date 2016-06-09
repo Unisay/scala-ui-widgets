@@ -42,6 +42,12 @@ class ModelSpec extends Specification with ScalaCheck {
       )
     }
 
+    "vertical, horizontal" in prop { (model: Model) ⇒
+      model.vertical('v)(identity).horizontal('h)(identity).widgets must contain(
+        VerticalLayout('v, Nil),
+        HorizontalLayout('h, Nil)
+      )
+    }
   }
 
 }

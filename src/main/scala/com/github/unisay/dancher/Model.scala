@@ -35,7 +35,7 @@ case class Model(widgets: Seq[Widget] = Seq.empty, actions: Seq[WidgetAction] = 
 
   private def appendWidget(widget: Widget): Model = this.copy(
     widgets = this.widgets :+ widget,
-    actions = List(widget.create)
+    actions = this.actions :+ widget.create
   )
 }
 
