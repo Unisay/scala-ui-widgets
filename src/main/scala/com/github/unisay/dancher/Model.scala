@@ -2,10 +2,11 @@ package com.github.unisay.dancher
 
 import dom._
 
-case class Model(widgets: Seq[Widget] = Seq.empty, actions: Seq[WidgetAction] = Seq.empty) {
+case class Model(widgets: Seq[Widget] = Seq.empty,
+                 actions: Seq[WidgetAction] = Seq.empty) {
 
-  def get(id: DomId): Model = ???
-  def at(id: DomId)(f: (Model) ⇒ Model): Model = ???
+  def get(id: DomId): Widget = ???
+  def at(id: DomId)(f: Model ⇒ Model): Model = ???
   def remove(id: DomId): Model = ???
   def modify[W](id: DomId)(f: W ⇒ (W, ActionF[_])): Model = ???
 

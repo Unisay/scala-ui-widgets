@@ -29,7 +29,7 @@ class SomeSpec extends Specification {
         }
 
       bodyModel.actions.head must beActionAsScript(
-        s"""
+        """
         |var div1 = document.createElement('div')
         |var span2 = document.createElement('span')
         |span2.setAttribute('id', 'foo')

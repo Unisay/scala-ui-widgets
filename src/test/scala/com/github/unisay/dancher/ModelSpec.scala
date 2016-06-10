@@ -14,7 +14,7 @@ class ModelSpec extends Specification with ScalaCheck {
     }
 
     "create label action" in prop { (model: Model, label: Label) ⇒
-      model.label(label.domId, label.text).actions must contain(exactly(expectedAction(label.create)))
+      model.label(label.domId, label.text).actions must contain(expectedAction(label.create))
     }
 
     "create button widget" in prop { (model: Model, button: Button) ⇒
@@ -23,7 +23,7 @@ class ModelSpec extends Specification with ScalaCheck {
 
     "create button action" in prop { (model: Model, button: Button) ⇒
       val actions = model.button(button.domId, button.label, button.clickHandler).actions
-      actions must contain(exactly(expectedAction(button.create)))
+      actions must contain(expectedAction(button.create))
     }
 
     "vertical layout" in prop { (model: Model) ⇒
@@ -47,6 +47,10 @@ class ModelSpec extends Specification with ScalaCheck {
         VerticalLayout('v, Nil),
         HorizontalLayout('h, Nil)
       )
+    }
+
+    "get" in prop { (model: Model, label: Label) ⇒
+      label must_== model.label(label.domId, label.text).get(label.domId)
     }
   }
 
