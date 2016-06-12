@@ -17,12 +17,23 @@ object Arbitraries {
     for {domId ← genDomId; widgets ← genWidgets(n / 2)} yield HorizontalLayout(domId, widgets)
   def genWidget(n: Int): Gen[Widget] =
     Gen.oneOf(genVerticalLayout(n), genHorizontalLayout(n), genLabel, genButton)
-  def genWidgets(n: Int): Gen[Seq[Widget]] =
-    Gen.listOfN(n, genWidget(n / 2))
+  def genWidgets(n: Int): Gen[Vector[Widget]] =
+    Gen.listOfN(n, genWidget(n / 2)).map(_.toVector)
 
+  implicit val ArbitraryDomId: Arbitrary[DomId] = Arbitrary(genDomId)
   implicit val ArbitraryLabel: Arbitrary[Label] = Arbitrary(genLabel)
   implicit val ArbitraryButton: Arbitrary[Button] = Arbitrary(genButton)
-  implicit val ArbitraryModel: Arbitrary[Model] = Arbitrary(Gen.sized(n ⇒ genWidgets(n))
-    .map(w ⇒ Model(w, w.map(_.create))))
+  implicit val ArbitraryModel: Arbitrary[Model] = Arbitrary {
+    for {
+      domId ← genDomId
+      label ← Gen.alphaStr
+      gm ← Gen.oneOf(Gen.const(Model()), Arbitrary.arbitrary[Model])
+      model ← Gen.oneOf(
+        Model(),
+        Model().label(domId, label),
+        Model().horizontal(_ ⇒ gm),
+        Model().vertical(_ ⇒ gm))
+    } yield model
+  }
 
 }

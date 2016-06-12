@@ -1,9 +1,9 @@
 package com.github.unisay.dancher
 
 import com.github.unisay.dancher.dom._
-
 import cats.std.list._
 import cats.syntax.traverse._
+import monocle.macros.{GenLens, GenPrism}
 
 case class Body(override val domId: DomId) extends NodeWidget(domId) {
   def children: Traversable[Widget] = Seq.empty
@@ -30,12 +30,12 @@ case class Label(override val domId: DomId, text: String) extends LeafWidget(dom
     _ ← span appendChild text
   } yield span
 
-  def setText(text: String): (Label, ActionF[_]) = {
-    val updatedLabel = copy(text = this.text)
+  def setText(textToSet: String): (Label, WidgetAction) = {
+    val updatedLabel = copy(text = textToSet)
     val action = for {
       span ← element
       oldChild ← span.getFirstChild
-      newChild ← createTextNode(text)
+      newChild ← createTextNode(textToSet)
       _ ← span.replaceChild(oldChild, newChild)
     } yield span
     (updatedLabel, action)
@@ -62,12 +62,20 @@ abstract class Layout(override val domId: DomId, override val children: Traversa
   } yield div
 }
 
-case class VerticalLayout(override val domId: DomId, override val children: Seq[Widget])
+object VerticalLayout {
+  val _children = GenPrism[Widget, VerticalLayout] composeLens GenLens[VerticalLayout](_.children)
+}
+
+case class VerticalLayout(override val domId: DomId, override val children: Vector[Widget])
   extends Layout(domId, children) {
   override def create = super.create.flatMap(_.setClass("d-vertical-layout"))
 }
 
-case class HorizontalLayout(override val domId: DomId, override val children: Seq[Widget])
+object HorizontalLayout {
+  val _children = GenPrism[Widget, HorizontalLayout] composeLens GenLens[HorizontalLayout](_.children)
+}
+
+case class HorizontalLayout(override val domId: DomId, override val children: Vector[Widget])
   extends Layout(domId, children) {
   override def create = super.create.flatMap(_.setClass("d-horizontal-layout"))
 }

@@ -14,7 +14,7 @@ class SomeSpec extends Specification {
 
     "create" in {
 
-      val bodyModel = BodyModel()
+      val bodyModel = Model.body
         .vertical('labels) { _
           .button(label = "Add Item",    onClick = AddItem)
           .button(label = "Remove Item", onClick = RemItem)

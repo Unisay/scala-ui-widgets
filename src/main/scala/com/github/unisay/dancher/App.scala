@@ -11,7 +11,7 @@ object App extends JSApp {
   case class RemItem(event: DomEvent) extends DomainEvent
   case class UpdateLabel(event: DomEvent) extends DomainEvent
 
-  val bodyModel = BodyModel()
+  val bodyModel = Model.body
   .vertical('labels) { _
     .button(label = "Add Item",    onClick = AddItem)
     .button(label = "Remove Item", onClick = RemItem)
@@ -30,7 +30,7 @@ object App extends JSApp {
     Runtime(bodyModel) {
 
       case (_: AddItem, model) ⇒
-        model.at('labels) { _.label("4") }
+        model.within('labels) { _.label("4") }
 
       case (_: RemItem, model) ⇒
         model.remove('baz)

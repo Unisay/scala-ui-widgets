@@ -2,6 +2,7 @@ package com.github.unisay.dancher
 
 import com.github.unisay.dancher.Arbitraries._
 import com.github.unisay.dancher.Matchers._
+import com.github.unisay.dancher.dom._
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
@@ -26,32 +27,55 @@ class ModelSpec extends Specification with ScalaCheck {
       actions must contain(expectedAction(button.create))
     }
 
-    "vertical layout" in prop { (model: Model) ⇒
-      model.vertical('id) {
-        _.label('id2, "label")
-      }.widgets must contain(
-        VerticalLayout('id, Seq(Label('id2, "label")))
-      )
+    "vertical layout" in prop { (model: Model, label: Label, id: DomId) ⇒
+      model.vertical(id)(_.label(label.domId, label.text)).widgets must contain(VerticalLayout(id, Vector(label)))
     }
 
-    "horizontal layout" in prop { (model: Model) ⇒
-      model.horizontal('id) {
-        _.label('id2, "label")
-      }.widgets must contain(
-        HorizontalLayout('id, Seq(Label('id2, "label")))
-      )
+    "horizontal layout" in prop { (model: Model, label: Label, id: DomId) ⇒
+      model.horizontal(id)(_.label(label.domId, label.text)).widgets must contain(HorizontalLayout(id, Vector(label)))
     }
 
-    "vertical, horizontal" in prop { (model: Model) ⇒
-      model.vertical('v)(identity).horizontal('h)(identity).widgets must contain(
-        VerticalLayout('v, Nil),
-        HorizontalLayout('h, Nil)
-      )
+    "vertical, horizontal" in prop { (model: Model, v: DomId, h: DomId) ⇒
+      (v != h) ==> {
+        model.vertical(v)(identity).horizontal(h)(identity).widgets must
+          contain(VerticalLayout(v, Vector.empty), HorizontalLayout(h, Vector.empty))
+      }
     }
 
-    "get" in prop { (model: Model, label: Label) ⇒
-      label must_== model.label(label.domId, label.text).get(label.domId)
+    "get nested label" in prop { (model: Model, label: Label) ⇒
+      model
+        .horizontal {
+          _.vertical {
+            _.horizontal {
+              _.vertical {
+                _.label(label.domId, label.text)
+              }
+            }
+          }
+        }.get(label.domId) must beSome(label)
     }
+
+    "modify nested label" in prop { (model: Model, label: Label, button: Button) ⇒
+      (button.domId != label.domId) ==> {
+        val nestedModel = model
+          .horizontal {
+            _.vertical {
+              _.horizontal {
+                _.vertical {
+                  _.label(label.domId, label.text)
+                }
+              }
+            }
+          }
+          .button(button.domId, button.label, button.clickHandler)
+
+        val modifiedModel = nestedModel.modify[Label](label.domId)(_.setText(label.text + "!"))
+        val modifiedLabel = label.copy(text = label.text + "!")
+        modifiedModel.get(label.domId) must beSome(modifiedLabel)
+        modifiedModel.get(button.domId) must beSome(button)
+      }
+    }
+
   }
 
 }

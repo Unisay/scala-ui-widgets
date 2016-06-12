@@ -20,6 +20,29 @@ scalacOptions ++= Seq(
   "-encoding", "UTF-8"
 )
 
+val catsVer = "0.6.0"
+val scalajsVer = "0.9.0"
+val specs2Ver = "3.8.2"
+val monocleVer = "1.2.2"
+
+libraryDependencies ++= Seq(
+  "org.scala-js"  %%% "scalajs-dom" % scalajsVer,
+
+  "org.typelevel" %%% "cats-kernel" % catsVer,
+  "org.typelevel" %%% "cats-macros" % catsVer,
+  "org.typelevel" %%% "cats-core"   % catsVer,
+  "org.typelevel" %%% "cats-free"   % catsVer,
+
+  "com.github.julien-truffaut" %%% "monocle-core"    % monocleVer,
+  "com.github.julien-truffaut" %%% "monocle-generic" % monocleVer,
+  "com.github.julien-truffaut" %%% "monocle-macro"   % monocleVer,
+  "com.github.julien-truffaut" %%% "monocle-state"   % monocleVer,
+  "com.github.julien-truffaut" %%% "monocle-refined" % monocleVer,
+
+  "org.specs2" %% "specs2-core"       % specs2Ver % "test",
+  "org.specs2" %% "specs2-scalacheck" % specs2Ver % "test"
+)
+
 lazy val dancher = project.in(file("."))
   .enablePlugins(ScalaJSPlugin)
   .settings(
@@ -32,17 +55,6 @@ lazy val dancher = project.in(file("."))
     scalacOptions in Test ++= Seq("-Yrangepos"),
     maxErrors := 5,
     logLevel := Level.Warn,
-    testFrameworks += TestFramework("utest.runner.Framework"),
     requiresDOM := true,
-    scalaJSUseRhino := false,
-    libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-kernel" % "0.6.0",
-      "org.typelevel" %%% "cats-macros" % "0.6.0",
-      "org.typelevel" %%% "cats-core"   % "0.6.0",
-      "org.typelevel" %%% "cats-free"   % "0.6.0",
-      "org.scala-js"  %%% "scalajs-dom" % "0.9.0",
-
-      "org.specs2" %% "specs2-core" % "3.8.2" % "test",
-      "org.specs2" %% "specs2-scalacheck" % "3.8.2" % "test"
-    )
+    scalaJSUseRhino := false
   )

@@ -71,9 +71,9 @@ object JsCompiler {
           }
 
         case CreateTextNode(text) ⇒
-          scriptWithCounterAndReturn[RawElement] { counter ⇒
+          scriptWithCounterAndReturn[RawNode] { counter ⇒
             val variableName = s"text$counter"
-            (s"var $variableName = document.createTextNode('$text')", RawElement(variableName))
+            (s"var $variableName = document.createTextNode('$text')", RawNode(variableName))
           }
 
         case AppendChild(rawParent@RawElement(parent), RawNode(child)) ⇒
@@ -86,6 +86,9 @@ object JsCompiler {
           scriptWithReturn(s"$parent.removeChild($child)", rawParent)
 
         case GetFirstChild(RawNode(node)) ⇒
+          result(RawNode(s"$node.firstChild"))
+
+        case GetFirstChild(RawElement(node)) ⇒
           result(RawNode(s"$node.firstChild"))
 
         case ReplaceChild(rawParent@RawElement(parent), RawNode(oldChild), RawNode(newChild)) ⇒
