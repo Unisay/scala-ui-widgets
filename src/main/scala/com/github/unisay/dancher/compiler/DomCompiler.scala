@@ -68,8 +68,8 @@ class DomCompiler {
         case GetFirstChild(RawElement(node)) ⇒
           RawNode(node.firstChild)
 
-        case ReplaceChild(rawParent @ RawElement(parent), RawNode(oldChild), RawNode(newChild)) ⇒
-          parent.replaceChild(oldChild, newChild)
+        case ReplaceChild(rawParent @ RawElement(parent), RawNode(newChild), RawNode(oldChild)) ⇒
+          parent.replaceChild(newChild, oldChild)
           rawParent
 
         // Has to provide separate case for RawElement child,

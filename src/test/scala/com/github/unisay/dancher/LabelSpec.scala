@@ -24,8 +24,9 @@ class LabelSpec extends Specification with ScalaCheck {
         val (modifiedLabel, action) = label.setText(text)
         modifiedLabel.text mustEqual text
         action must beActionAsScript(s"""
-          |var text1 = document.createTextNode('$text')
-          |document.getElementById('${label.domId.value}').replaceChild(document.getElementById('${label.domId.value}').firstChild, text1)
+          |var element1 = document.getElementById('${label.domId.value}')
+          |var text2 = document.createTextNode('$text')
+          |element1.replaceChild(text2, element1.firstChild)
         """)
       }
     }

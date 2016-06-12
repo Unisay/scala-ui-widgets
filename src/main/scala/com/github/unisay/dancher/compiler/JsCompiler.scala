@@ -53,7 +53,10 @@ object JsCompiler {
           result(RawNode(s"$node.parentNode"))
 
         case GetElementById(elementId) ⇒
-          result(RawElement(s"document.getElementById('${elementId.value}')"))
+          scriptWithCounterAndReturn[RawElement] { counter ⇒
+            val variableName = "element" + counter
+            (s"var $variableName = document.getElementById('${elementId.value}')", RawElement(variableName))
+          }
 
         case GetElementsByName(name) ⇒
           result(RawNodeList(s"document.getElementsByName('$name')"))
@@ -91,8 +94,8 @@ object JsCompiler {
         case GetFirstChild(RawElement(node)) ⇒
           result(RawNode(s"$node.firstChild"))
 
-        case ReplaceChild(rawParent@RawElement(parent), RawNode(oldChild), RawNode(newChild)) ⇒
-          scriptWithReturn(s"$parent.replaceChild($oldChild, $newChild)", rawParent)
+        case ReplaceChild(rawParent@RawElement(parent), RawNode(newChild), RawNode(oldChild)) ⇒
+          scriptWithReturn(s"$parent.replaceChild($newChild, $oldChild)", rawParent)
 
         case SetAttribute(rawElement@RawElement(element), name, value) ⇒
           scriptWithReturn(s"$element.setAttribute('$name', '$value')", rawElement)

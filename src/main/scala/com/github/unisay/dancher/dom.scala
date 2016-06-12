@@ -25,7 +25,7 @@ object dom extends gen {
     def getFirstChild = dom.getFirstChild(this)
     def appendChild(child: DomNode) = dom.appendChild(this, child)
     def removeChild(child: DomNode) = dom.removeChild(this, child)
-    def replaceChild(oldChild: DomNode, newChild: DomNode) = dom.replaceChild(this, oldChild, newChild)
+    def replaceChild(newChild: DomNode, oldChild: DomNode) = dom.replaceChild(this, newChild, oldChild)
   }
 
   trait DomElement extends DomNode {
@@ -79,9 +79,9 @@ object dom extends gen {
   case class RemoveChild(parent: DomNode, child: DomNode) extends Action[DomNode]
   def removeChild(parent: DomNode, child: DomNode): ActionF[DomNode] = RemoveChild(parent, child)
 
-  case class ReplaceChild(parent: DomNode, oldChild: DomNode, newChild: DomNode) extends Action[DomNode]
-  def replaceChild(parent: DomNode, oldChild: DomNode, newChild: DomNode): ActionF[DomNode] =
-    ReplaceChild(parent, oldChild, newChild)
+  case class ReplaceChild(parent: DomNode, newChild: DomNode, oldChild: DomNode) extends Action[DomNode]
+  def replaceChild(parent: DomNode, newChild: DomNode, oldChild: DomNode): ActionF[DomNode] =
+    ReplaceChild(parent, newChild, oldChild)
 
   case class SetAttribute(element: DomElement, name: String, value: String) extends Action[DomElement]
   def setAttribute(name: String, value: String)(elem: DomElement): ActionF[DomElement] = SetAttribute(elem, name, value)

@@ -30,7 +30,7 @@ sealed abstract class Widget(val domId: DomId) {
       oldChild ← this.element
       parent ← oldChild.getParent
       newChild ← that.create
-      _ ← parent.replaceChild(oldChild, newChild)
+      _ ← parent.replaceChild(newChild, oldChild)
     } yield oldChild
 
 }

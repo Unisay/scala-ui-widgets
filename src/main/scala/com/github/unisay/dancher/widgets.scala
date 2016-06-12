@@ -36,7 +36,7 @@ case class Label(override val domId: DomId, text: String) extends LeafWidget(dom
       span ← element
       oldChild ← span.getFirstChild
       newChild ← createTextNode(textToSet)
-      _ ← span.replaceChild(oldChild, newChild)
+      _ ← span.replaceChild(newChild, oldChild)
     } yield span
     (updatedLabel, action)
   }
