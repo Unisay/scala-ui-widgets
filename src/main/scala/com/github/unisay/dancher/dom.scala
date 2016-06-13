@@ -35,9 +35,7 @@ object dom extends gen {
     def onClick(handler: DomEventHandler) = dom.setOnClick(this, handler)
   }
 
-
   type ActionF[A] = Free[Action, A]
-  type WidgetAction = ActionF[DomElement]
 
   object NoAction extends Action[Unit]
   val noAction: ActionF[Unit] = NoAction

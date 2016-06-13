@@ -12,14 +12,14 @@ object Model {
 }
 
 case class Model(widgets: Vector[Widget] = Vector.empty,
-                 actions: Vector[WidgetAction] = Vector.empty,
+                 actions: Vector[ActionF[_]] = Vector.empty,
                  paths: Map[DomId, Path] = Map.empty) {
   import Model._
 
   def get(id: DomId): Option[Widget] = paths.get(id).flatMap(_.getOption(widgets))
   def getAs[W <: Widget](id: DomId): Option[W] = get(id).map(_.asInstanceOf[W])
 
-  def modify[W <: Widget](id: DomId)(change: W ⇒ (W, WidgetAction)): Model = {
+  def modify[W <: Widget](id: DomId)(change: W ⇒ (W, ActionF[_])): Model = {
     paths.get(id).flatMap { path ⇒
       path.getOption(widgets).map { widget ⇒
         val (modifiedWidget, action) = change(widget.asInstanceOf[W])
@@ -29,7 +29,6 @@ case class Model(widgets: Vector[Widget] = Vector.empty,
   }
 
   def within(id: DomId)(f: Model ⇒ Model): Model = ???
-  def remove(id: DomId): Model = ???
 
   def vertical(f: Model ⇒ Model)(implicit idGen: Generator[DomId]): Model =
     vertical(idGen.generate)(f)

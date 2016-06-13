@@ -7,6 +7,9 @@ sealed abstract class Widget(val domId: DomId) {
   /** Returns current DOM element */
   def element: ActionF[DomElement] = getElementById(domId)
 
+  /** Returns current DOM node */
+  def node: ActionF[DomNode] = getElementById(domId).map(element ⇒ element: DomNode)
+
   /** @return parent node */
   def parent: ActionF[DomNode] = element.flatMap(getParentNode)
 

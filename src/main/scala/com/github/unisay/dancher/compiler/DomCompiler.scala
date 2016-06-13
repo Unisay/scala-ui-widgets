@@ -33,6 +33,9 @@ class DomCompiler {
         case GetDocumentBody ⇒
           RawElement(document.body)
 
+        case GetParent(RawElement(node)) ⇒
+          RawNode(node.parentNode)
+
         case GetParent(RawNode(node)) ⇒
           RawNode(node.parentNode)
 
@@ -59,6 +62,16 @@ class DomCompiler {
           rawParent
 
         case RemoveChild(rawParent @ RawElement(parent), RawNode(child)) ⇒
+          parent.removeChild(child)
+          rawParent
+
+        // TODO-remove duplication
+        case RemoveChild(rawParent @ RawNode(parent), RawNode(child)) ⇒
+          parent.removeChild(child)
+          rawParent
+
+        // TODO-remove duplication
+        case RemoveChild(rawParent @ RawNode(parent), RawElement(child)) ⇒
           parent.removeChild(child)
           rawParent
 

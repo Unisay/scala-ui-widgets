@@ -33,10 +33,10 @@ object App extends JSApp {
         model.within('labels) { _.label("4") }
 
       case (_: RemItem, model) ⇒
-        model.remove('baz)
+        model.modify[VerticalLayout]('vertical)(_.removeChild('baz))
 
       case (_: UpdateLabel, model) ⇒
-        model.modify[Label]('foo) { _.setText("Yahoo!") }
+        model.modify[Label]('foo)(_.setText("Yahoo!"))
 
     }.run()
   }

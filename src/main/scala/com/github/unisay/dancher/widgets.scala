@@ -30,7 +30,7 @@ case class Label(override val domId: DomId, text: String) extends LeafWidget(dom
     _ ← span appendChild text
   } yield span
 
-  def setText(textToSet: String): (Label, WidgetAction) = {
+  def setText(textToSet: String): (Label, ActionF[_]) = {
     val updatedLabel = copy(text = textToSet)
     val action = for {
       span ← element
@@ -54,12 +54,16 @@ case class Button(override val domId: DomId, label: String, clickHandler: DomEve
   } yield button
 }
 
-abstract class Layout(override val domId: DomId, override val children: Traversable[Widget]) extends NodeWidget(domId) {
-  def create = for {
+abstract class HasChildren(override val domId: DomId, override val children: Traversable[Widget])
+  extends NodeWidget(domId) {
+
+  def create = for { // TODO remember created element by returning a copy of the widget
     div ← createElement("div")
+    _ ← div setId domId
     elements ← children.toList.map(_.create).sequence
     _ ← elements.map(div.appendChild).sequence
   } yield div
+
 }
 
 object VerticalLayout {
@@ -67,8 +71,12 @@ object VerticalLayout {
 }
 
 case class VerticalLayout(override val domId: DomId, override val children: Vector[Widget])
-  extends Layout(domId, children) {
+  extends HasChildren(domId, children) {
   override def create = super.create.flatMap(_.setClass("d-vertical-layout"))
+  def removeChild(id: DomId): (VerticalLayout, ActionF[DomNode]) =
+    children.find(_.domId == id)
+      .map(child ⇒ (copy(children = children.filterNot(_ == child)), child.remove))
+      .getOrElse((this, node))
 }
 
 object HorizontalLayout {
@@ -76,6 +84,10 @@ object HorizontalLayout {
 }
 
 case class HorizontalLayout(override val domId: DomId, override val children: Vector[Widget])
-  extends Layout(domId, children) {
+  extends HasChildren(domId, children) {
   override def create = super.create.flatMap(_.setClass("d-horizontal-layout"))
+  def removeChild(id: DomId): (HorizontalLayout, ActionF[DomNode]) =
+    children.find(_.domId == id)
+      .map(child ⇒ (copy(children = children.filterNot(_ == child)), child.remove))
+      .getOrElse((this, node))
 }

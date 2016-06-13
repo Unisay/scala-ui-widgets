@@ -20,10 +20,19 @@ object Arbitraries {
   def genWidgets(n: Int): Gen[Vector[Widget]] =
     Gen.listOfN(n, genWidget(n / 2)).map(_.toVector)
 
-  implicit val ArbitraryDomId: Arbitrary[DomId] = Arbitrary(genDomId)
-  implicit val ArbitraryLabel: Arbitrary[Label] = Arbitrary(genLabel)
-  implicit val ArbitraryButton: Arbitrary[Button] = Arbitrary(genButton)
-  implicit val ArbitraryModel: Arbitrary[Model] = Arbitrary {
+  implicit val arbDomId: Arbitrary[DomId] = Arbitrary(genDomId)
+  implicit val arbLabel: Arbitrary[Label] = Arbitrary(genLabel)
+  implicit val arbButton: Arbitrary[Button] = Arbitrary(genButton)
+
+  implicit val arbHorizontalLayout: Arbitrary[HorizontalLayout] = Arbitrary {
+    for { n ← Gen.size; domId ← genDomId; children ← genWidgets(n) } yield HorizontalLayout(domId, children)
+  }
+
+  implicit val arbVerticalLayout: Arbitrary[VerticalLayout] = Arbitrary {
+    for { n ← Gen.size; domId ← genDomId; children ← genWidgets(n) } yield VerticalLayout(domId, children)
+  }
+
+  implicit val arbModel: Arbitrary[Model] = Arbitrary {
     for {
       domId ← genDomId
       label ← Gen.alphaStr

@@ -9,7 +9,12 @@ case class Runtime(initialModel: Model)(handler: DomainEventHandler) {
     for {
       body ← getDocumentBody
       element ← action
-      _ ← body appendChild element
+      _ ← element match {
+        case e: DomElement ⇒
+          body appendChild e
+        case _ ⇒
+          noAction
+      }
     } yield ()
   }
 

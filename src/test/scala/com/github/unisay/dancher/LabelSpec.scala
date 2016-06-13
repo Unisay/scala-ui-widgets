@@ -10,24 +10,28 @@ class LabelSpec extends Specification with ScalaCheck {
   "Label" should {
 
     "create" in prop { (label: Label) ⇒
-      label.create must beActionAsScript(s"""
+      label.create must beActionAsScript {
+        s"""
         |var span1 = document.createElement('span')
         |span1.setAttribute('id', '${label.domId.value}')
         |span1.setAttribute('class', 'd-label')
         |var text2 = document.createTextNode('${label.text}')
         |span1.appendChild(text2)
-      """)
+        """
+      }
     }
 
     "setText" in prop { (label: Label, text: String) ⇒
       (label.text != text) ==> {
         val (modifiedLabel, action) = label.setText(text)
         modifiedLabel.text mustEqual text
-        action must beActionAsScript(s"""
+        action must beActionAsScript {
+          s"""
           |var element1 = document.getElementById('${label.domId.value}')
           |var text2 = document.createTextNode('$text')
           |element1.replaceChild(text2, element1.firstChild)
-        """)
+          """
+        }
       }
     }
 

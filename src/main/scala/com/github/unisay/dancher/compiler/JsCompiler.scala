@@ -52,6 +52,9 @@ object JsCompiler {
         case GetParent(RawNode(node)) ⇒
           result(RawNode(s"$node.parentNode"))
 
+        case GetParent(RawElement(node)) ⇒
+          result(RawNode(s"$node.parentNode"))
+
         case GetElementById(elementId) ⇒
           scriptWithCounterAndReturn[RawElement] { counter ⇒
             val variableName = "element" + counter
@@ -85,7 +88,11 @@ object JsCompiler {
         case AppendChild(rawParent@RawElement(parent), RawElement(child)) ⇒
           scriptWithReturn(s"$parent.appendChild($child)", rawParent)
 
+
         case RemoveChild(rawParent@RawElement(parent), RawNode(child)) ⇒
+          scriptWithReturn(s"$parent.removeChild($child)", rawParent)
+
+        case RemoveChild(rawParent@RawNode(parent), RawElement(child)) ⇒
           scriptWithReturn(s"$parent.removeChild($child)", rawParent)
 
         case GetFirstChild(RawNode(node)) ⇒
@@ -104,7 +111,7 @@ object JsCompiler {
           commentWithReturn(s"SetOnClick($element)", rawElement)
 
         case it ⇒
-          comment(s"ERROR: $it")
+          sys.error(s"Can't compile to JS: $it")
 
       }
     }
