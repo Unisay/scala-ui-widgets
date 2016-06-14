@@ -1,44 +1,56 @@
 package com.github.unisay.dancher
 
 import dom._
+import simulacrum.typeclass
 
-sealed abstract class Widget(val domId: DomId) {
+// TODO: structure packages like in cats
+// TODO: use simulacrum
 
-  /** Returns current DOM element */
-  def element: ActionF[DomElement] = getElementById(domId)
+@typeclass trait Widget[W] {
 
-  /** Returns current DOM node */
-  def node: ActionF[DomNode] = getElementById(domId).map(element ⇒ element: DomNode)
+  /** @return current DOM id */
+  def domId(w: W): DomId
+
+  /** @return current DOM element */
+  def element(w: W): ActionF[DomElement] = getElementById(domId(w))
+
+  /** @return current DOM node */
+  def node(w: W): ActionF[DomNode] = element(w) map (element ⇒ element: DomNode)
 
   /** @return parent node */
-  def parent: ActionF[DomNode] = element.flatMap(getParentNode)
+  def parent(w: W): ActionF[DomNode] = element(w) flatMap getParentNode
 
   /** @return first child node */
-  def firstChild: ActionF[DomNode] = element.flatMap(getFirstChild)
+  def firstChild(w: W): ActionF[DomNode] = element(w) flatMap getFirstChild
 
   /** Creates model and returns its topmost DOM element (root) */
-  def create: ActionF[DomElement]
+  def create(w: W): ActionF[DomElement]
 
   /** Removes current model from it's parent DOM node and returns parent */
-  def remove: ActionF[DomNode] =
+  def remove(w: W): ActionF[DomNode] =
     for {
-      child ← element
+      child ← element(w)
       parent ← child.getParent
       _ ← parent removeChild child
     } yield parent
 
   /** Replaces current element by other element in the parent returning old element */
-  def replaceWith(that: Widget): ActionF[DomNode] =
+  def replaceWith[B : Widget](w: W, that: B): ActionF[DomNode] =
     for {
-      oldChild ← this.element
+      oldChild ← element(w)
       parent ← oldChild.getParent
-      newChild ← that.create
+      newChild ← implicitly[Widget[B]].create(that)
       _ ← parent.replaceChild(newChild, oldChild)
     } yield oldChild
 
 }
 
-abstract class LeafWidget(override val domId: DomId) extends Widget(domId)
-abstract class NodeWidget(override val domId: DomId) extends Widget(domId) {
-  def children: Traversable[Widget]
+object Widget {
+
+  type WidgetAction[A] = (this.type, ActionF[A])
+
+  implicit class WidgetOps[T](t: T)(implicit ev: Widget[T]) {
+    def element: ActionF[DomElement] = ev.element(t)
+  }
+
 }

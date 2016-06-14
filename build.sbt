@@ -24,9 +24,11 @@ val catsVer = "0.6.0"
 val scalajsVer = "0.9.0"
 val specs2Ver = "3.8.2"
 val monocleVer = "1.2.2"
+val simulacrumVer = "0.7.0"
 
 libraryDependencies ++= Seq(
   "org.scala-js"  %%% "scalajs-dom" % scalajsVer,
+  "com.github.mpilquist" %% "simulacrum" % simulacrumVer,
 
   "org.typelevel" %%% "cats-kernel" % catsVer,
   "org.typelevel" %%% "cats-macros" % catsVer,
