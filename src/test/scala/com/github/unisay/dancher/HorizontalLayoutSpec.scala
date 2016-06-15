@@ -1,8 +1,10 @@
 package com.github.unisay.dancher
+/*
 
 import com.github.unisay.dancher.Arbitraries._
 import com.github.unisay.dancher.Matchers._
 import com.github.unisay.dancher.dom.DomId
+import com.github.unisay.dancher.widget.{HorizontalLayout, Label}
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
@@ -71,3 +73,4 @@ class HorizontalLayoutSpec extends Specification with ScalaCheck {
   }
 
 }
+*/

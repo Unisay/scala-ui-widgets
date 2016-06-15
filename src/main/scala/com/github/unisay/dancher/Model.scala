@@ -2,44 +2,58 @@ package com.github.unisay.dancher
 
 import com.github.unisay.dancher.Model.Path
 import com.github.unisay.dancher.dom._
-import com.github.unisay.dancher.widget.{Body, Button, HasChildren, Label, VerticalLayout}
-import monocle.Optional
+import com.github.unisay.dancher.widget._
+import monocle._
 import monocle.function.Index._
 import monocle.std.vector._
+import Label._
+import Button._
+import HorizontalLayout._
+import VerticalLayout._
 
 object Model {
-  type Path[W] = Optional[Vector[W], W]
+  type Path = Vector[SomeWidget] Optional SomeWidget
   def body = Model(widgets = Vector(Body(Generator[DomId].generate)))
+  def _children: SomeWidget Optional Vector[SomeWidget] = { 
+    val _getOption: SomeWidget ⇒ Option[Vector[SomeWidget]] = someWidget ⇒
+      someWidget.container.map { container ⇒
+        container.children(someWidget.instance)
+      }
+    val _set: Vector[SomeWidget] ⇒ SomeWidget ⇒ SomeWidget =
+      sww ⇒ sw ⇒ sw.container.fold(sw)(c ⇒ SomeWidget(c.setChildren(sw.instance)(sww))(sw.widget, c)) 
+    Optional(_getOption)(_set)
+  }
 }
 
-case class Model[W : Widget](widgets: Vector[W] = Vector.empty,
+case class Model(widgets: Vector[SomeWidget] = Vector.empty,
                  actions: Vector[ActionF[_]] = Vector.empty,
-                 paths: Map[DomId, Path[W]] = Map.empty) {
+                 paths: Map[DomId, Path] = Map.empty) {
   import Model._
 
-  def get(id: DomId): Option[W] = paths.get(id) flatMap (_.getOption(widgets))
-  def getAs(id: DomId): Option[W] = get(id)
+  def get(id: DomId): Option[SomeWidget] = paths.get(id).flatMap(_.getOption(widgets))
+  def getAs(id: DomId): Option[SomeWidget] = get(id)
 
-  def modify(id: DomId)(change: W ⇒ (W, ActionF[_])): Model[W] = {
+  def modify(id: DomId)(f: SomeWidget ⇒ (SomeWidget, ActionF[_])): Model = {
     paths.get(id).flatMap { path ⇒
-      path.getOption(widgets).map { widget ⇒
-        val (modifiedWidget, action) = change(widget)
-        copy(widgets = path.set(modifiedWidget).apply(widgets), actions = actions :+ action)
+      path.getOption(widgets).map { isWidget ⇒
+        val (modifiedWidget, action) = f(isWidget)
+        val someWidgets = path.set(modifiedWidget).apply(widgets)
+        copy(widgets = someWidgets, actions = actions :+ action)
       }
     }.getOrElse(this)
   }
 
-  def within(id: DomId)(f: Model[W] ⇒ Model[W]): Model[W] = ???
+  def within(id: DomId)(f: Model ⇒ Model): Model = ???
 
-  def vertical(f: Model[W] ⇒ Model[W])(implicit idGen: Generator[DomId]): Model[W] =
+  def vertical(f: Model ⇒ Model)(implicit idGen: Generator[DomId]): Model =
     vertical(idGen.generate)(f)
 
-  def vertical(id: DomId)(f: Model[W] ⇒ Model[W]): Model[W] = {
+  def vertical(id: DomId)(f: Model ⇒ Model): Model = {
     val nestedModel = f(Model())
-    val optionalCurrentWidget: Path[W] = index(widgets.length)
-    val optionalChildren = optionalCurrentWidget.composeOptional(implicitly[HasChildren[VerticalLayout[W]]]._children)
-    val childrenPaths = nestedModel.paths.mapValues(optionalChildren.composeOptional)
-    val widget = VerticalLayout(id, nestedModel.widgets)
+    val optionalCurrentWidget: Path = index(widgets.length)
+    val optionalChildren = optionalCurrentWidget.composeOptional(_children)
+    val childrenPaths: Map[DomId, Path] = nestedModel.paths.mapValues(optionalChildren.composeOptional)
+    val widget = SomeWidget(VerticalLayout(id, nestedModel.widgets))
     copy(
       widgets = widgets :+ widget,
       actions = actions :+ widget.create,
@@ -47,15 +61,15 @@ case class Model[W : Widget](widgets: Vector[W] = Vector.empty,
     )
   }
 
-  def horizontal(f: Model[W] ⇒ Model[W])(implicit idGen: Generator[DomId]): Model[W] =
+  def horizontal(f: Model ⇒ Model)(implicit idGen: Generator[DomId]): Model =
     horizontal(idGen.generate)(f)
-
-  def horizontal(id: DomId)(f: Model[W] ⇒ Model[W]): Model[W] = {
+  
+  def horizontal(id: DomId)(f: Model ⇒ Model): Model = {
     val nestedModel = f(Model())
-    val optionalCurrentWidget: Path[W] = index(widgets.length)
-    val optionalChildren = optionalCurrentWidget.composeOptional(HorizontalLayout._children)
-    val childrenPaths = nestedModel.paths.mapValues(optionalChildren.composeOptional)
-    val widget = HorizontalLayout(id, nestedModel.widgets)
+    val optionalCurrentWidget: Path = index(widgets.length)
+    val optionalChildren = optionalCurrentWidget.composeOptional(_children)
+    val childrenPaths: Map[DomId, Path] = nestedModel.paths.mapValues(optionalChildren.composeOptional)
+    val widget = SomeWidget(HorizontalLayout(id, nestedModel.widgets))
     copy(
       widgets = widgets :+ widget,
       actions = actions :+ widget.create,
@@ -77,11 +91,12 @@ case class Model[W : Widget](widgets: Vector[W] = Vector.empty,
   def label(id: DomId, text: String): Model =
     appendWidget(Label(id, text))
 
-  private def appendWidget(widget: Widget): Model = {
+  private def appendWidget[W: Widget](widget: W): Model = {
+    val isWidget = SomeWidget(widget)
     copy(
-      widgets = widgets :+ widget,
-      paths = paths + (widget.domId → index(widgets.length)),
-      actions = actions :+ widget.create
+      widgets = widgets :+ isWidget,
+      paths = paths + (isWidget.domId → index(widgets.length)),
+      actions = actions :+ isWidget.create
     )
   }
 }

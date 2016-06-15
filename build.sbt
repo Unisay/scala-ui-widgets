@@ -4,10 +4,12 @@ import sbt.TestFramework
 scalaVersion in ThisBuild := "2.11.8"
 
 scalacOptions ++= Seq(
-  "-Xfatal-warnings",
+//  "-Xfatal-warnings",
   "-unchecked",
   "-feature",
   "-deprecation:false",
+  "-language:higherKinds",
+  "-language:implicitConversions",
   "-Xlint",
   "-Xcheckinit",
   "-Ywarn-unused-import",

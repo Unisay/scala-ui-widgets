@@ -1,6 +1,6 @@
 package com.github.unisay.dancher
 
-import dom._
+import com.github.unisay.dancher.dom._
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
@@ -17,13 +17,13 @@ object App extends JSApp {
     .button(label = "Remove Item", onClick = RemItem)
     .button(label = "Update Foo",  onClick = UpdateLabel)
   }
-  .horizontal { _
-    .label('foo, "Foo")
-    .vertical('vertical) { _
-      .label("Bar")
-      .label(id = 'baz, text = "Baz")
-    }
-  }
+//  .horizontal { _
+//    .label('foo, "Foo")
+//    .vertical('vertical) { _
+//      .label("Bar")
+//      .label(id = 'baz, text = "Baz")
+//    }
+//  }
 
   @JSExport
   override def main(): Unit = {
@@ -31,12 +31,12 @@ object App extends JSApp {
 
       case (_: AddItem, model) ⇒
         model.within('labels) { _.label("4") }
+//
+//      case (_: RemItem, model) ⇒
+//        model.modify[VerticalLayout]('vertical)(_.removeChild('baz))
 
-      case (_: RemItem, model) ⇒
-        model.modify[VerticalLayout]('vertical)(_.removeChild('baz))
-
-      case (_: UpdateLabel, model) ⇒
-        model.modify[Label]('foo)(_.setText("Yahoo!"))
+//      case (_: UpdateLabel, model) ⇒
+//        model.modify('foo)(_.setText("Yahoo!"))
 
     }.run()
   }

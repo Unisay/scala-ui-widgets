@@ -1,12 +1,32 @@
 package com.github.unisay.dancher.widget
 
-import com.github.unisay.dancher.Widget
-import com.github.unisay.dancher.Widget.WidgetAction
-import com.github.unisay.dancher.dom.{DomElement, DomId, _}
+import com.github.unisay.dancher.dom._
+import Widget._
 
-object Label {
+case class Label(domId: DomId, text: String) {
+  def setText(textToSet: String): (Label, ActionF[DomElement]) = {
+    val updatedLabel = copy(text = textToSet)
+    val action = for {
+      span ← updatedLabel.element
+      oldChild ← span.getFirstChild
+      newChild ← createTextNode(updatedLabel.text)
+      _ ← span.replaceChild(newChild, oldChild)
+    } yield span
+    (updatedLabel, action)
+  }
+}
 
-  implicit val WidgetLabel = new Widget[Label] {
+object Label extends LabelInstances {
+
+  implicit class LabelOps(label: Label) {
+    def create: ActionF[DomElement] = WidgetLabel.create(label)
+  }
+
+}
+
+trait LabelInstances {
+
+  implicit val WidgetLabel: Widget[Label] = new Widget[Label] {
 
     def domId(label: Label): DomId = label.domId
 
@@ -18,21 +38,6 @@ object Label {
         text ← createTextNode(label.text)
         _ ← span appendChild text
       } yield span
-  }
-
-}
-
-case class Label(domId: DomId, text: String) {
-
-  def setText(textToSet: String): WidgetAction[DomElement] = {
-    val updatedLabel = copy(text = textToSet)
-    val action = for {
-      span ← element
-      oldChild ← span.getFirstChild
-      newChild ← createTextNode(textToSet)
-      _ ← span.replaceChild(newChild, oldChild)
-    } yield span
-    (updatedLabel, action)
   }
 
 }

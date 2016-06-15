@@ -1,6 +1,5 @@
 package com.github.unisay.dancher.widget
 
-import com.github.unisay.dancher.Widget
 import com.github.unisay.dancher.dom._
 
 case class Paragraph(domId: DomId, text: String)
