@@ -1,6 +1,7 @@
 package com.github.unisay.dancher
 
 import com.github.unisay.dancher.dom.DomId
+import com.github.unisay.dancher.widget._
 import org.scalacheck.{Arbitrary, Gen}
 
 object Arbitraries {

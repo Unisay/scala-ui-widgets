@@ -1,6 +1,7 @@
 package com.github.unisay.dancher
 
-import dom._
+import com.github.unisay.dancher.dom._
+import com.github.unisay.dancher.widget._
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
@@ -12,11 +13,13 @@ object App extends JSApp {
   case class UpdateLabel(event: DomEvent) extends DomainEvent
 
   val bodyModel = Model.body
+
   .vertical('labels) { _
     .button(label = "Add Item",    onClick = AddItem)
     .button(label = "Remove Item", onClick = RemItem)
     .button(label = "Update Foo",  onClick = UpdateLabel)
   }
+
   .horizontal { _
     .label('foo, "Foo")
     .vertical('vertical) { _
@@ -24,6 +27,8 @@ object App extends JSApp {
       .label(id = 'baz, text = "Baz")
     }
   }
+
+  .paragraph('t, "it works!")
 
   @JSExport
   override def main(): Unit = {

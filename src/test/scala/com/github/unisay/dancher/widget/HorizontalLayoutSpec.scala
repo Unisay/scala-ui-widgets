@@ -1,4 +1,4 @@
-package com.github.unisay.dancher
+package com.github.unisay.dancher.widget
 
 import com.github.unisay.dancher.Arbitraries._
 import com.github.unisay.dancher.Matchers._

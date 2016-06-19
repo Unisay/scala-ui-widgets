@@ -1,13 +1,16 @@
-package com.github.unisay.dancher
+package com.github.unisay.dancher.widget
 
-import dom._
+import com.github.unisay.dancher.dom.{DomElement, DomNode, _}
 
-sealed abstract class Widget(val domId: DomId) {
+trait Widget {
 
-  /** Returns current DOM element */
+  /** DOM id */
+  val domId: DomId
+
+  /** @return current DOM element */
   def element: ActionF[DomElement] = getElementById(domId)
 
-  /** Returns current DOM node */
+  /** @return current DOM node */
   def node: ActionF[DomNode] = getElementById(domId).map(element ⇒ element: DomNode)
 
   /** @return parent node */
@@ -36,9 +39,4 @@ sealed abstract class Widget(val domId: DomId) {
       _ ← parent.replaceChild(newChild, oldChild)
     } yield oldChild
 
-}
-
-abstract class LeafWidget(override val domId: DomId) extends Widget(domId)
-abstract class NodeWidget(override val domId: DomId) extends Widget(domId) {
-  def children: Traversable[Widget]
 }
