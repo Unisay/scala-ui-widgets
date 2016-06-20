@@ -35,7 +35,7 @@ case class Model(widgets: Vector[Widget] = Vector.empty,
     }.getOrElse(this)
   }
 
-  def within(id: DomId)(f: Model ⇒ Model): Model = ???
+  def within(id: DomId)(f: Model ⇒ Model): Model = ??? // TODO implement
 
   def appendWidget(widget: Widget): Model =
     appendWidget(widget, Map(widget.domId → index(widgets.length)))

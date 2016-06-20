@@ -37,7 +37,7 @@ class HorizontalLayoutSpec extends Specification with ScalaCheck {
     "remove existing child" in prop {
       (domId: DomId, label1: Label, label2: Label) ⇒ (label1.domId != label2.domId) ==> {
         val horizontalLayout = HorizontalLayout(domId, Vector(label1, label2))
-        val (updatedLayout, action) = horizontalLayout.removeChild(label2.domId)
+        val Some((updatedLayout, action)) = horizontalLayout.removeChild(label2.domId)
         updatedLayout mustEqual HorizontalLayout(domId, Vector(label1))
         action must beActionAsScript {
           s"""
@@ -51,8 +51,8 @@ class HorizontalLayoutSpec extends Specification with ScalaCheck {
     "remove existing child twice" in prop {
       (domId: DomId, label1: Label, label2: Label) ⇒ (label1.domId != label2.domId) ==> {
         val horizontalLayout = HorizontalLayout(domId, Vector(label1, label2))
-        val (updatedLayout1, _) = horizontalLayout.removeChild(label2.domId)
-        val (updatedLayout2, action2) = updatedLayout1.removeChild(label2.domId)
+        val Some((updatedLayout1, _)) = horizontalLayout.removeChild(label2.domId)
+        val Some((updatedLayout2, action2)) = updatedLayout1.removeChild(label2.domId)
         updatedLayout1 mustEqual HorizontalLayout(domId, Vector(label1))
         updatedLayout2 mustEqual updatedLayout1
         action2 must beActionAsScript(s"var element1 = document.getElementById('${domId.value}')")
@@ -62,7 +62,7 @@ class HorizontalLayoutSpec extends Specification with ScalaCheck {
     "remove non-existing child" in prop {
       (domId: DomId, child1: Label, child2: Label) ⇒ (child1.domId != child2.domId) ==> {
         val horizontalLayout = HorizontalLayout(domId, Vector(child1, child2))
-        val (updatedLayout, action) = horizontalLayout.removeChild('nonExisting)
+        val Some((updatedLayout, action)) = horizontalLayout.removeChild('nonExisting)
         updatedLayout mustEqual horizontalLayout
         action must beActionAsScript(s"var element1 = document.getElementById('${domId.value}')")
       }

@@ -1,6 +1,6 @@
 package com.github.unisay.dancher.widget
 
-import cats.std.list._
+import cats.std.vector._
 import cats.syntax.traverse._
 import com.github.unisay.dancher.dom._
 import monocle.Lens
@@ -8,7 +8,7 @@ import monocle.macros.GenPrism
 
 object WidgetContainer {
   private val get: (WidgetContainer) ⇒ Vector[Widget] = _.children
-  private val set: (Vector[Widget]) ⇒ (WidgetContainer) ⇒ WidgetContainer = children ⇒ _.setChildren(children)
+  private val set: (Vector[Widget]) ⇒ (WidgetContainer) ⇒ WidgetContainer = children ⇒ _.withChildren(children)
   val _childrenLens: Lens[WidgetContainer, Vector[Widget]] = Lens(get)(set)
   val _containerPrism = GenPrism[Widget, WidgetContainer]
   val _children = _containerPrism.composeLens(_childrenLens)
@@ -16,16 +16,17 @@ object WidgetContainer {
 
 trait WidgetContainer extends Widget {
 
+  type T <: WidgetContainer
+
   def children: Vector[Widget]
 
-  def setChildren(children: Vector[Widget]): WidgetContainer
+  def withChildren(children: Vector[Widget]): T
 
-  def create = for { // TODO remember created element by returning a copy of the widget
-    div ← createElement("div")
-    _ ← div setId domId
-    elements ← children.toList.map(_.create).sequence
-    _ ← elements.map(div.appendChild).sequence
-  } yield div
+  def createChildren(parent: DomElement): ActionF[Vector[DomNode]] =
+    children.map(_.create).sequence.flatMap(_.map(parent.appendChild).sequence)
+
+  def removeChild(id: DomId): Option[(T, ActionF[DomNode])] =
+    children.find(_.domId == id).map(child ⇒ (withChildren(children.filterNot(_ == child)), child.remove))
 
 }
 

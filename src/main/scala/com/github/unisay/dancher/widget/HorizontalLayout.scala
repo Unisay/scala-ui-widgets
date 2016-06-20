@@ -5,14 +5,17 @@ import com.github.unisay.dancher.dom._
 
 case class HorizontalLayout(domId: DomId, children: Vector[Widget]) extends WidgetContainer {
 
-  override def create = super.create.flatMap(_.setClass("d-horizontal-layout"))
+  type T = HorizontalLayout
 
-  def removeChild(id: DomId): (HorizontalLayout, ActionF[DomNode]) =
-    children.find(_.domId == id)
-      .map(child ⇒ (copy(children = children.filterNot(_ == child)), child.remove))
-      .getOrElse((this, node))
+  override def create =
+    for {
+      div ← createElement("div")
+      _ ← div.setId(domId)
+      _ ← div.setClass("d-horizontal-layout")
+      _ ← createChildren(div)
+    } yield div
 
-  def setChildren(children: Vector[Widget]): WidgetContainer = copy(children = children)
+  def withChildren(children: Vector[Widget]): T = copy(children = children)
 }
 
 trait HorizontalLayoutOps {
