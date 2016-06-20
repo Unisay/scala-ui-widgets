@@ -26,11 +26,15 @@ case class Model(widgets: Vector[Widget] = Vector.empty,
   def get(id: DomId): Option[Widget] = paths.get(id).flatMap(_.getOption(widgets))
   def getAs[W <: Widget](id: DomId): Option[W] = get(id).map(_.asInstanceOf[W])
 
-  def modify[W <: Widget](id: DomId)(change: W ⇒ (W, ActionF[_])): Model = {
+  def modify[W <: Widget](id: DomId)(change: W ⇒ (W, ActionF[_])): Model = modifyOpt(id)(change.andThen(Option.apply))
+
+  def modifyOpt[W <: Widget](id: DomId)(change: W ⇒ Option[(W, ActionF[_])]): Model = {
     paths.get(id).flatMap { path ⇒
-      path.getOption(widgets).map { widget ⇒
-        val (modifiedWidget, action) = change(widget.asInstanceOf[W])
-        copy(widgets = path.set(modifiedWidget).apply(widgets), actions = actions :+ action)
+      path.getOption(widgets).flatMap { widget ⇒
+        change(widget.asInstanceOf[W]).map {
+          case (modifiedWidget, action) ⇒
+            copy(widgets = path.set(modifiedWidget).apply(widgets), actions = actions :+ action)
+        }
       }
     }.getOrElse(this)
   }

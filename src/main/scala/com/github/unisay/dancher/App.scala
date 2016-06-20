@@ -38,7 +38,7 @@ object App extends JSApp {
         model.within('labels) { _.label("4") }
 
       case (_: RemItem, model) ⇒
-        model.modify[VerticalLayout]('vertical)(_.removeChild('baz).get) // TODO handle optional
+        model.modifyOpt[VerticalLayout]('vertical)(_.removeChild('baz))
 
       case (_: UpdateLabel, model) ⇒
         model.modify[Label]('foo)(_.setText("Yahoo!"))

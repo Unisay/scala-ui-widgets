@@ -24,9 +24,14 @@ val catsVer = "0.6.0"
 val scalajsVer = "0.9.0"
 val specs2Ver = "3.8.2"
 val monocleVer = "1.2.2"
+val monixVer = "2.0-RC6"
 
 libraryDependencies ++= Seq(
   "org.scala-js"  %%% "scalajs-dom" % scalajsVer,
+
+  "io.monix"      %%% "monix"       % monixVer,
+  "io.monix"      %%% "monix-eval"  % monixVer,
+  "io.monix"      %%% "monix-cats"  % monixVer,
 
   "org.typelevel" %%% "cats-kernel" % catsVer,
   "org.typelevel" %%% "cats-macros" % catsVer,
@@ -36,8 +41,8 @@ libraryDependencies ++= Seq(
   "com.github.julien-truffaut" %%% "monocle-core"    % monocleVer,
   "com.github.julien-truffaut" %%% "monocle-generic" % monocleVer,
   "com.github.julien-truffaut" %%% "monocle-macro"   % monocleVer,
-  "com.github.julien-truffaut" %%% "monocle-state"   % monocleVer,
-  "com.github.julien-truffaut" %%% "monocle-refined" % monocleVer,
+//  "com.github.julien-truffaut" %%% "monocle-state"   % monocleVer,
+//  "com.github.julien-truffaut" %%% "monocle-refined" % monocleVer,
 
   "org.specs2" %% "specs2-core"       % specs2Ver % "test",
   "org.specs2" %% "specs2-scalacheck" % specs2Ver % "test"
