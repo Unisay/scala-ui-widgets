@@ -3,6 +3,7 @@ package com.github.unisay
 import com.github.unisay.dancher.dom.DomEvent
 
 package object dancher {
-  type DomainEventHandler = PartialFunction[(DomainEvent, Model), Model]
+  type ModelEvent = (DomainEvent, Model)
+  type DomainEventHandler = PartialFunction[ModelEvent, Model]
   type DomEventHandler = DomEvent ⇒ DomainEvent
 }

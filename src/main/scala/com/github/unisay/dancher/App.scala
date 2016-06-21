@@ -1,7 +1,7 @@
 package com.github.unisay.dancher
 
 import com.github.unisay.dancher.dom._
-import com.github.unisay.dancher.widget._
+//import com.github.unisay.dancher.widget._
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
@@ -32,6 +32,7 @@ object App extends JSApp {
 
   @JSExport
   override def main(): Unit = {
+/*
     Runtime(bodyModel) {
 
       case (_: AddItem, model) ⇒
@@ -44,6 +45,7 @@ object App extends JSApp {
         model.modify[Label]('foo)(_.setText("Yahoo!"))
 
     }.run()
+*/
   }
 
 }

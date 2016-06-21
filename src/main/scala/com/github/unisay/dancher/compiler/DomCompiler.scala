@@ -3,18 +3,20 @@ package com.github.unisay.dancher.compiler
 import cats.{Id, ~>}
 import com.github.unisay.dancher._
 import com.github.unisay.dancher.dom._
+import monix.execution.Cancelable
+import monix.reactive.{Observable, OverflowStrategy}
 import org.scalajs.dom.{console, document, raw}
 
 import scala.language.implicitConversions
 
 class DomCompiler {
 
-  def compiler(model: Model, update: DomainEventUpdate) = new (Action ~> Id) {
+  def compiler(model: Model) = new (Action ~> Id) {
 
     case class RawNode(node: raw.Node) extends DomNode
     case class RawElement(element: raw.Element) extends DomElement
     case class RawNodeList(nodeList: raw.NodeList) extends DomNodeList
-    case class RawMouseEvent(event: raw.MouseEvent) extends DomMouseEvent
+    case class RawMouseEvent(event: raw.MouseEvent) extends DomMouseEvent with DomainEvent
 
     def apply[A](action: Action[A]): Id[A] = {
       implicit def nodeToA(r: RawNode): A = r.asInstanceOf[A]
@@ -97,14 +99,14 @@ class DomCompiler {
           element.setAttribute(name, value)
           rawElement
 
-        case SetOnClick(rawElement @ RawElement(element), handler) ⇒
-          element.addEventListener("click", (mouseEvent: raw.MouseEvent) ⇒ {
-            val event: DomMouseEvent = RawMouseEvent(mouseEvent)
-            val context: DomainEvent = handler.asInstanceOf[DomEventHandler](event)
-            val (updatedModel, updateAction) = update(context, model)
-            compile(updatedModel, updateAction)(update)
-          })
-          rawElement
+        case SetOnClick(rawElement @ RawElement(element)) ⇒
+          Observable[(DomainEvent, Model)] = Observable.create[ModelEvent](OverflowStrategy.DropNew(10)) { subscriber ⇒
+            element.addEventListener("click", (mouseEvent: raw.MouseEvent) ⇒ {
+              val event: DomainEvent = RawMouseEvent(mouseEvent)
+              subscriber.onNext((event, model))
+            })
+            Cancelable.empty // TODO: cancel
+          }
 
         case it@GetParent(_) ⇒ shouldNotMatch(it)
         case it@GetFirstChild(_) ⇒ shouldNotMatch(it)
@@ -112,7 +114,7 @@ class DomCompiler {
         case it@RemoveChild(_, _) ⇒ shouldNotMatch(it)
         case it@ReplaceChild(_, _, _) ⇒ shouldNotMatch(it)
         case it@SetAttribute(_, _, _) ⇒ shouldNotMatch(it)
-        case it@SetOnClick(_, _) ⇒ shouldNotMatch(it)
+        case it@SetOnClick(_) ⇒ shouldNotMatch(it)
       }
     }
 
@@ -122,11 +124,11 @@ class DomCompiler {
 
   type DomainEventUpdate = (DomainEvent, Model) ⇒ (Model, Seq[ActionF[_]])
 
-  def compile(model: Model, actions: Seq[ActionF[_]])(update: DomainEventUpdate): Unit =
-    actions.foreach(compile(model, _, update))
+  def compile(model: Model, actions: Seq[ActionF[_]]): Unit =
+    actions.foreach(compile(model, _))
 
-  def compile(model: Model, action: ActionF[_], update: DomainEventUpdate): Unit = {
-    action.foldMap(compiler(model, update))
+  def compile(model: Model, action: ActionF[_]): Unit = {
+    action.foldMap(compiler(model))
     ()
   }
 }

@@ -26,7 +26,7 @@ case class Button(domId: DomId, label: String, clickHandler: DomEventHandler = N
     _ ← button setClass "d-button"
     text ← createTextNode(label)
     _ ← button appendChild text
-    _ ← button.onClick(clickHandler)
+    _ ← button.clickStream // TODO
   } yield button
 
 }

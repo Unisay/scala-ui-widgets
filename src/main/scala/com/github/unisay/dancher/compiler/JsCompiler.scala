@@ -3,6 +3,7 @@ package com.github.unisay.dancher.compiler
 import cats.data.State
 import cats.~>
 import com.github.unisay.dancher.dom._
+import monix.reactive.Observable
 
 import scala.language.implicitConversions
 
@@ -107,8 +108,8 @@ object JsCompiler {
         case SetAttribute(rawElement@RawElement(element), name, value) ⇒
           scriptWithReturn(s"$element.setAttribute('$name', '$value')", rawElement)
 
-        case SetOnClick(rawElement@RawElement(element), handler) ⇒
-          commentWithReturn(s"SetOnClick($element)", rawElement)
+        case SetOnClick(rawElement@RawElement(element)) ⇒
+          commentWithReturn(s"SetOnClick($element)", Observable.empty)
 
         case it ⇒
           sys.error(s"Can't compile to JS: $it")
