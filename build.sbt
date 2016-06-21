@@ -4,7 +4,6 @@ import sbt.TestFramework
 scalaVersion in ThisBuild := "2.11.8"
 
 scalacOptions ++= Seq(
-  "-Xfatal-warnings",
   "-unchecked",
   "-feature",
   "-deprecation:false",

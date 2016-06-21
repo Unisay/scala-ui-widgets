@@ -1,11 +1,7 @@
 package com.github.unisay.dancher
 
-import com.github.unisay.dancher.dom.DomEvent
+import com.github.unisay.dancher.dom.DomElement
+
+case class DomBinding(element: DomElement, events: Option[ModelEvents] = None)
 
 trait DomainEvent
-
-object Unhandled extends DomainEvent
-
-object NoEventHandler extends DomEventHandler {
-  def apply(domEvent: DomEvent): DomainEvent = Unhandled
-}

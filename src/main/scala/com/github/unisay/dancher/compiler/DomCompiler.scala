@@ -5,13 +5,16 @@ import com.github.unisay.dancher._
 import com.github.unisay.dancher.dom._
 import monix.execution.Cancelable
 import monix.reactive.{Observable, OverflowStrategy}
+import org.scalajs.dom.raw.MouseEvent
 import org.scalajs.dom.{console, document, raw}
 
 import scala.language.implicitConversions
 
 class DomCompiler {
 
-  def compiler(model: Model) = new (Action ~> Id) {
+  def compile[T](model: ModelBuilder, action: ActionF[T]): T = action.foldMap(compiler(model))
+
+  def compiler(model: ModelBuilder) = new (Action ~> Id) {
 
     case class RawNode(node: raw.Node) extends DomNode
     case class RawElement(element: raw.Element) extends DomElement
@@ -100,12 +103,13 @@ class DomCompiler {
           rawElement
 
         case SetOnClick(rawElement @ RawElement(element)) ⇒
-          Observable[(DomainEvent, Model)] = Observable.create[ModelEvent](OverflowStrategy.DropNew(10)) { subscriber ⇒
-            element.addEventListener("click", (mouseEvent: raw.MouseEvent) ⇒ {
-              val event: DomainEvent = RawMouseEvent(mouseEvent)
-              subscriber.onNext((event, model))
-            })
-            Cancelable.empty // TODO: cancel
+          Observable.create[ModelEvent](OverflowStrategy.DropNew(10)) { subscriber ⇒
+            val listener = (mouseEvent: MouseEvent) ⇒ {
+              subscriber.onNext((RawMouseEvent(mouseEvent), model))
+              ()
+            }
+            element.addEventListener("click", listener)
+            Cancelable(() ⇒ element.removeEventListener("click", listener))
           }
 
         case it@GetParent(_) ⇒ shouldNotMatch(it)
@@ -122,13 +126,4 @@ class DomCompiler {
       sys.error(s"$it should have been matched by the preceding case statements")
   }
 
-  type DomainEventUpdate = (DomainEvent, Model) ⇒ (Model, Seq[ActionF[_]])
-
-  def compile(model: Model, actions: Seq[ActionF[_]]): Unit =
-    actions.foreach(compile(model, _))
-
-  def compile(model: Model, action: ActionF[_]): Unit = {
-    action.foldMap(compiler(model))
-    ()
-  }
 }

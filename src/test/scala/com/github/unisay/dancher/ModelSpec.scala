@@ -11,39 +11,39 @@ class ModelSpec extends Specification with ScalaCheck {
 
   "Model must" in {
 
-    "create label widget" in prop { (model: Model, label: Label) ⇒
+    "create label widget" in prop { (model: ModelBuilder, label: Label) ⇒
       model.label(label.domId, label.text).widgets must contain(label)
     }
 
-    "create label action" in prop { (model: Model, label: Label) ⇒
+    "create label action" in prop { (model: ModelBuilder, label: Label) ⇒
       model.label(label.domId, label.text).actions must contain(expectedAction(label.create))
     }
 
-    "create button widget" in prop { (model: Model, button: Button) ⇒
-      model.button(button.domId, button.label, button.clickHandler).widgets must contain(button)
+    "create button widget" in prop { (model: ModelBuilder, button: Button) ⇒
+      model.button(button.domId, button.label).widgets must contain(button)
     }
 
-    "create button action" in prop { (model: Model, button: Button) ⇒
-      val actions = model.button(button.domId, button.label, button.clickHandler).actions
+    "create button action" in prop { (model: ModelBuilder, button: Button) ⇒
+      val actions = model.button(button.domId, button.label).actions
       actions must contain(expectedAction(button.create))
     }
 
-    "vertical layout" in prop { (model: Model, label: Label, id: DomId) ⇒
+    "vertical layout" in prop { (model: ModelBuilder, label: Label, id: DomId) ⇒
       model.vertical(id)(_.label(label.domId, label.text)).widgets must contain(VerticalLayout(id, Vector(label)))
     }
 
-    "horizontal layout" in prop { (model: Model, label: Label, id: DomId) ⇒
+    "horizontal layout" in prop { (model: ModelBuilder, label: Label, id: DomId) ⇒
       model.horizontal(id)(_.label(label.domId, label.text)).widgets must contain(HorizontalLayout(id, Vector(label)))
     }
 
-    "vertical, horizontal" in prop { (model: Model, v: DomId, h: DomId) ⇒
+    "vertical, horizontal" in prop { (model: ModelBuilder, v: DomId, h: DomId) ⇒
       (v != h) ==> {
         model.vertical(v)(identity).horizontal(h)(identity).widgets must
           contain(VerticalLayout(v, Vector.empty), HorizontalLayout(h, Vector.empty))
       }
     }
 
-    "get nested label" in prop { (model: Model, label: Label) ⇒
+    "get nested label" in prop { (model: ModelBuilder, label: Label) ⇒
       model
         .horizontal {
           _.vertical {
@@ -56,7 +56,7 @@ class ModelSpec extends Specification with ScalaCheck {
         }.get(label.domId) must beSome(label)
     }
 
-    "modify nested label" in prop { (model: Model, label: Label, button: Button) ⇒
+    "modify nested label" in prop { (model: ModelBuilder, label: Label, button: Button) ⇒
       (button.domId != label.domId) ==> {
         val nestedModel = model
           .horizontal {
@@ -68,7 +68,7 @@ class ModelSpec extends Specification with ScalaCheck {
               }
             }
           }
-          .button(button.domId, button.label, button.clickHandler)
+          .button(button.domId, button.label)
 
         val modifiedModel = nestedModel.modify[Label](label.domId)(_.setText(label.text + "!"))
         val modifiedLabel = label.copy(text = label.text + "!")

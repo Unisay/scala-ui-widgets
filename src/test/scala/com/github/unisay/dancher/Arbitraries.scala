@@ -33,16 +33,16 @@ object Arbitraries {
     for { n ← Gen.size; domId ← genDomId; children ← genWidgets(n) } yield VerticalLayout(domId, children)
   }
 
-  implicit val arbModel: Arbitrary[Model] = Arbitrary {
+  implicit val arbModel: Arbitrary[ModelBuilder] = Arbitrary {
     for {
       domId ← genDomId
       label ← Gen.alphaStr
-      gm ← Gen.oneOf(Gen.const(Model()), Arbitrary.arbitrary[Model])
+      gm ← Gen.oneOf(Gen.const(ModelBuilder()), Arbitrary.arbitrary[ModelBuilder])
       model ← Gen.oneOf(
-        Model(),
-        Model().label(domId, label),
-        Model().horizontal(_ ⇒ gm),
-        Model().vertical(_ ⇒ gm))
+        ModelBuilder(),
+        ModelBuilder().label(domId, label),
+        ModelBuilder().horizontal(_ ⇒ gm),
+        ModelBuilder().vertical(_ ⇒ gm))
     } yield model
   }
 

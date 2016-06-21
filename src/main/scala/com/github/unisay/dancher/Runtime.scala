@@ -3,20 +3,20 @@ package com.github.unisay.dancher
 import com.github.unisay.dancher.compiler.DomCompiler
 import dom._
 
-case class Runtime(initialModel: Model) {
+case class Runtime(initialModel: ModelBuilder) {
 
-  val initActions = initialModel.actions.map { action ⇒
+/*  val initAction =
     for {
       body ← getDocumentBody
-      element ← action
-      _ ← element match {
+      binding ← initialModel.action
+      _ ← binding.element match {
         case e: DomElement ⇒
           body appendChild e
         case _ ⇒
           noAction
       }
-    } yield ()
-  }
+    } yield binding*/
+
 
   val compiler = new DomCompiler()
 

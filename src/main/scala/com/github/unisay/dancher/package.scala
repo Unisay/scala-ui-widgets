@@ -1,9 +1,11 @@
 package com.github.unisay
 
 import com.github.unisay.dancher.dom.DomEvent
+import monix.reactive.Observable
 
 package object dancher {
-  type ModelEvent = (DomainEvent, Model)
-  type DomainEventHandler = PartialFunction[ModelEvent, Model]
+  type ModelEvent = (DomainEvent, ModelBuilder)
+  type ModelEvents = Observable[ModelEvent]
+  type DomainEventHandler = PartialFunction[ModelEvent, ModelBuilder]
   type DomEventHandler = DomEvent ⇒ DomainEvent
 }

@@ -5,20 +5,20 @@ import com.github.unisay.dancher.dom._
 
 trait ButtonOps {
 
-  implicit class ModelButtonOps(model: Model) {
-    def button(label: String, onClick: DomEventHandler)(implicit idGen: Generator[DomId]): Model =
-      button(idGen.generate, label, onClick)
-    def button(id: Symbol, label: String, clickHandler: DomEventHandler): Model =
-      button(DomId(id.name), label, clickHandler)
-    def button(id: DomId, label: String, clickHandler: DomEventHandler): Model =
-      model.appendWidget(Button(id, label, clickHandler))
+  implicit class ModelButtonOps(model: ModelBuilder) {
+    def button(label: String)(implicit idGen: Generator[DomId]): ModelBuilder =
+      button(idGen.generate, label)
+    def button(id: Symbol, label: String): ModelBuilder =
+      button(DomId(id.name), label)
+    def button(id: DomId, label: String): ModelBuilder =
+      model.appendWidget(Button(id, label))
   }
 
 }
 
 object Button extends ButtonOps
 
-case class Button(domId: DomId, label: String, clickHandler: DomEventHandler = NoEventHandler) extends Widget {
+case class Button(domId: DomId, label: String) extends Widget {
 
   def create = for {
     button ← createElement("button")
@@ -26,7 +26,7 @@ case class Button(domId: DomId, label: String, clickHandler: DomEventHandler = N
     _ ← button setClass "d-button"
     text ← createTextNode(label)
     _ ← button appendChild text
-    _ ← button.clickStream // TODO
-  } yield button
+    clicks ← button.clickStream
+  } yield DomBinding(element = button, events = Some(clicks))
 
 }

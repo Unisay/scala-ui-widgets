@@ -1,5 +1,6 @@
 package com.github.unisay.dancher.widget
 
+import com.github.unisay.dancher.DomBinding
 import com.github.unisay.dancher.dom.{DomElement, DomNode, _}
 
 trait Widget {
@@ -19,8 +20,8 @@ trait Widget {
   /** @return first child node */
   def firstChild: ActionF[DomNode] = element.flatMap(getFirstChild)
 
-  /** Creates model and returns its topmost DOM element (root) */
-  def create: ActionF[DomElement]
+  /** Creates model and returns its binding */
+  def create: ActionF[DomBinding]
 
   /** Removes current model from it's parent DOM node and returns parent */
   def remove: ActionF[DomNode] =
@@ -35,8 +36,8 @@ trait Widget {
     for {
       oldChild ← this.element
       parent ← oldChild.getParent
-      newChild ← that.create
-      _ ← parent.replaceChild(newChild, oldChild)
+      created ← that.create
+      _ ← parent.replaceChild(created.element, oldChild)
     } yield oldChild
 
 }

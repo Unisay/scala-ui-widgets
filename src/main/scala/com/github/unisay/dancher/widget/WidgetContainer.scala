@@ -23,7 +23,7 @@ trait WidgetContainer extends Widget {
   def withChildren(children: Vector[Widget]): T
 
   def createChildren(parent: DomElement): ActionF[Vector[DomNode]] =
-    children.map(_.create).sequence.flatMap(_.map(parent.appendChild).sequence)
+    children.map(_.create).sequence.flatMap(_.map(binding ⇒ parent.appendChild(binding.element)).sequence)
 
   def removeChild(id: DomId): Option[(T, ActionF[DomNode])] =
     children.find(_.domId == id).map(child ⇒ (withChildren(children.filterNot(_ == child)), child.remove))

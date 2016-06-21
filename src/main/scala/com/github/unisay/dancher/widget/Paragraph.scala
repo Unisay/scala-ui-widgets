@@ -1,6 +1,6 @@
 package com.github.unisay.dancher.widget
 
-import com.github.unisay.dancher.Model
+import com.github.unisay.dancher.{DomBinding, ModelBuilder}
 import com.github.unisay.dancher.dom._
 
 case class Paragraph(domId: DomId, text: String) extends Widget {
@@ -10,13 +10,13 @@ case class Paragraph(domId: DomId, text: String) extends Widget {
     _ ← paragraph setClass "d-paragraph"
     text ← createTextNode(text)
     _ ← paragraph appendChild text
-  } yield paragraph
+  } yield DomBinding(paragraph)
 
 }
 
 trait ParagraphOps {
-  implicit class ModelParagraphOps(model: Model) {
-    def paragraph(domId: DomId, text: String): Model = model.appendWidget(Paragraph(domId, text))
+  implicit class ModelParagraphOps(model: ModelBuilder) {
+    def paragraph(domId: DomId, text: String): ModelBuilder = model.appendWidget(Paragraph(domId, text))
   }
 }
 

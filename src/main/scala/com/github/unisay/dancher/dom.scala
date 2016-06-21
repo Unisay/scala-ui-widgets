@@ -1,7 +1,6 @@
 package com.github.unisay.dancher
 
 import cats.free.Free
-import monix.reactive.Observable
 
 import scala.language.implicitConversions
 
@@ -38,8 +37,8 @@ object dom extends gen {
 
   type ActionF[A] = Free[Action, A]
 
-  object NoAction extends Action[Unit]
-  val noAction: ActionF[Unit] = NoAction
+  object NoAction extends Action[Nothing]
+  def noAction[R]: ActionF[R] = NoAction
 
   case class Log(text: String) extends Action[Unit]
   def log(message: String): ActionF[Unit] =
@@ -87,7 +86,7 @@ object dom extends gen {
   def setId(id: DomId)(element: DomElement) = setAttribute("id", id.value)(element)
   def setClass(cssClass: String)(element: DomElement) = setAttribute("class", cssClass)(element)
 
-  case class SetOnClick(element: DomElement) extends Action[Observable[ModelEvent]]
-  def setOnClick(element: DomElement): ActionF[Observable[ModelEvent]] = SetOnClick(element)
+  case class SetOnClick(element: DomElement) extends Action[ModelEvents]
+  def setOnClick(element: DomElement): ActionF[ModelEvents] = SetOnClick(element)
 
 }
