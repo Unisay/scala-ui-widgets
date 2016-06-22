@@ -16,11 +16,14 @@ object WidgetContainer {
 
 trait WidgetContainer extends Widget {
 
+
   type T <: WidgetContainer
 
   def children: Vector[Widget]
 
   def withChildren(children: Vector[Widget]): T
+
+  def appendChild(widget: Widget): WidgetContainer = ???
 
   def createChildren(parent: DomElement): ActionF[Vector[DomNode]] =
     children.map(_.create).sequence.flatMap(_.map(binding ⇒ parent.appendChild(binding.element)).sequence)
