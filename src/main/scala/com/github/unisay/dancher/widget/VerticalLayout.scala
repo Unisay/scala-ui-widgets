@@ -3,7 +3,7 @@ package com.github.unisay.dancher.widget
 import com.github.unisay.dancher.{DomBinding, ModelBuilder}
 import com.github.unisay.dancher.dom._
 
-case class VerticalLayout(domId: DomId, children: Vector[Widget]) extends WidgetContainer {
+case class VerticalLayout(domId: DomId, children: Vector[Widget] = Vector.empty) extends WidgetContainer {
 
   type T = VerticalLayout
 
@@ -19,9 +19,13 @@ case class VerticalLayout(domId: DomId, children: Vector[Widget]) extends Widget
 }
 
 trait VerticalLayoutOps {
-  implicit class ModelVerticalLayoutOps(model: ModelBuilder) {
-    def vertical(f: ModelBuilder ⇒ ModelBuilder)(implicit idGen: Generator[DomId]): ModelBuilder = vertical(idGen.generate)(f)
-    def vertical(id: DomId)(f: ModelBuilder ⇒ ModelBuilder): ModelBuilder = model.appendWidgetContainer(VerticalLayout(id, _))(f)
+  implicit class ModelVerticalLayoutOps(val builder: ModelBuilder) {
+
+    def vertical(nested: ModelBuilder ⇒ ModelBuilder)(implicit idGen: Generator[DomId]): ModelBuilder =
+      vertical(idGen.generate)(nested)
+
+    def vertical(id: DomId)(nested: ModelBuilder ⇒ ModelBuilder): ModelBuilder =
+      builder.appendWidgetContainer(VerticalLayout(id))(nested)
   }
 }
 

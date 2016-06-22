@@ -6,36 +6,42 @@ import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.widget._
 import monocle.Optional
 import monocle.function.Index._
-import monocle.std.vector._
 
-trait AllModelOps
+trait AllModelBuilderOps
   extends VerticalLayoutOps
     with HorizontalLayoutOps
     with ButtonOps
     with LabelOps
     with ParagraphOps
 
-object ModelBuilder extends AllModelOps {
+object ModelBuilder {
+  val instance = ModelBuilder()
+
   type Path = Optional[WidgetContainer, Widget]
   type MState = State[Model, ActionF[DomBinding]]
-  def body = {
-    val model = Model(Body('body))
-    ModelBuilder(State.set(model).map(_ ⇒ model.widgetContainer.create))
-  }
-  def createState = State((model: Model) ⇒ (model, model.widgetContainer.create) )
 }
 
-case class ModelBuilder(state: MState = ModelBuilder.createState) {
+case class ModelBuilder(state: MState = State((model: Model) ⇒ (model, model.widgetContainer.create))) {
 
-  def compose(that: ModelBuilder): ModelBuilder =
+  def map(f: MState ⇒ MState): ModelBuilder = ModelBuilder(f(state))
+  def flatMap(f: MState ⇒ ModelBuilder): ModelBuilder = f(state)
+
+  def compose(that: ModelBuilder): ModelBuilder = {
     for {
       thisState ← this
       thatState ← that
       thisAction ← thisState
       thatAction ← thatState
-      thisModel ← thisState.get
-      thatModel ← thatState.get
-    } yield ???
+      thisBinding ← thisAction
+      thatBinding ← thatAction
+      newState ← thisState.transform { case (thisModel, action) ⇒
+        thatState.runS()
+        val updatedWidgetContainer = thisModel.widgetContainer.appendChild(thatModel.widgetContainer)
+        val appendChildAction = thisBinding.element.appendChild(thatBinding.element)
+        (thisModel.copy(widgetContainer = updatedWidgetContainer), appendChildAction)
+      }
+    } yield newState
+  }
 
   def appendWidget(widget: Widget): ModelBuilder =
     appendWidget(widget, widget.create, container ⇒ index[WidgetContainer, Int, Widget](container.children.length))

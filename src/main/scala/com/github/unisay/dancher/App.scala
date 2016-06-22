@@ -12,7 +12,7 @@ object App extends JSApp {
   case class RemItem(event: DomEvent) extends DomainEvent
   case class UpdateLabel(event: DomEvent) extends DomainEvent
 
-  val bodyModel = ModelBuilder.body
+  val builder = ModelBuilder.instance
 
   .vertical('labels) { _
     .button(label = "Add Item")

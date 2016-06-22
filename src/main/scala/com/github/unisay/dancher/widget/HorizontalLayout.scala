@@ -3,7 +3,7 @@ package com.github.unisay.dancher.widget
 import com.github.unisay.dancher.{DomBinding, ModelBuilder}
 import com.github.unisay.dancher.dom._
 
-case class HorizontalLayout(domId: DomId, children: Vector[Widget]) extends WidgetContainer {
+case class HorizontalLayout(domId: DomId, children: Vector[Widget] = Vector.empty) extends WidgetContainer {
 
   type T = HorizontalLayout
 
@@ -20,8 +20,13 @@ case class HorizontalLayout(domId: DomId, children: Vector[Widget]) extends Widg
 
 trait HorizontalLayoutOps {
   implicit class ModelHorizontalLayoutOps(model: ModelBuilder) {
-    def horizontal(f: ModelBuilder ⇒ ModelBuilder)(implicit idGen: Generator[DomId]): ModelBuilder = horizontal(idGen.generate)(f)
-    def horizontal(id: DomId)(f: ModelBuilder ⇒ ModelBuilder): ModelBuilder = model.appendWidgetContainer(HorizontalLayout(id, _))(f)
+
+    def horizontal(nested: ModelBuilder ⇒ ModelBuilder)(implicit idGen: Generator[DomId]): ModelBuilder =
+      horizontal(idGen.generate)(nested)
+
+    def horizontal(id: DomId)(nested: ModelBuilder ⇒ ModelBuilder): ModelBuilder =
+      model.appendWidgetContainer(HorizontalLayout(id))(nested)
+
   }
 }
 
