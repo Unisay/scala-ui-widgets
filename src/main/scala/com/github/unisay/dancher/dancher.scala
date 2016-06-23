@@ -1,7 +1,7 @@
 package com.github.unisay.dancher
 
-import com.github.unisay.dancher.dom.DomElement
+import com.github.unisay.dancher.dom.DomNode
 
-case class DomBinding(element: DomElement, events: Option[ModelEvents] = None)
+case class DomBinding(node: DomNode, events: Option[ModelEvents] = None)
 
 trait DomainEvent

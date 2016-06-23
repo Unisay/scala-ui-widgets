@@ -4,8 +4,10 @@ import cats.data.State
 import com.github.unisay.dancher.ModelBuilder.{MState, Path}
 import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.widget._
+import monix.reactive.Observable
 import monocle.Optional
 import monocle.function.Index._
+import monocle.std.vector._
 
 trait AllModelBuilderOps
   extends VerticalLayoutOps
@@ -26,55 +28,60 @@ case class ModelBuilder(state: MState = State((model: Model) ⇒ (model, model.w
   def map(f: MState ⇒ MState): ModelBuilder = ModelBuilder(f(state))
   def flatMap(f: MState ⇒ ModelBuilder): ModelBuilder = f(state)
 
-  def compose(that: ModelBuilder): ModelBuilder = {
-    for {
-      thisState ← this
-      thatState ← that
-      thisAction ← thisState
-      thatAction ← thatState
-      thisBinding ← thisAction
-      thatBinding ← thatAction
-      newState ← thisState.transform { case (thisModel, action) ⇒
-        thatState.runS()
-        val updatedWidgetContainer = thisModel.widgetContainer.appendChild(thatModel.widgetContainer)
-        val appendChildAction = thisBinding.element.appendChild(thatBinding.element)
-        (thisModel.copy(widgetContainer = updatedWidgetContainer), appendChildAction)
-      }
-    } yield newState
-  }
-
-  def appendWidget(widget: Widget): ModelBuilder =
-    appendWidget(widget, widget.create, container ⇒ index[WidgetContainer, Int, Widget](container.children.length))
-
   def appendWidgetContainer(widgetContainer: WidgetContainer)(nested: ModelBuilder ⇒ ModelBuilder): ModelBuilder = {
-    compose(nested(ModelBuilder()))
+    val thatBuilder = nested(ModelBuilder())
+    map {
+      _.transform { case (thisModel, thisAction) ⇒
+        val (thatModel, thatAction) = thatBuilder.state.run(Model(widgetContainer)).value
 
-    /*    val nestedBuilder = f(ModelBuilder())
-        val optionalCurrentWidget: Path = index(widgets.length)
+        /*
         val optionalChildren = optionalCurrentWidget.composeOptional(WidgetContainer._children)
         val childrenPaths = nestedBuilder.paths.mapValues(optionalChildren.composeOptional)
-        val widgetContainer = widgetContainerFactory(nestedBuilder.widgets)
         val paths = childrenPaths.updated(widgetContainer.domId, optionalCurrentWidget)
-        appendWidget(widgetContainer, widgetContainer.create, paths)*/
+        */
+
+        val composedModel = thisModel.copy(
+          widgetContainer = thisModel.widgetContainer.appendChild(thatModel.widgetContainer),
+          paths = {
+//            thatModel.paths.mapValues(childPath ⇒ )
+            ??? // TODO: compose paths
+          }
+        )
+
+        val composedAction = for {
+          thisBinding ← thisAction
+          thatBinding ← thatAction
+          composedBinding ← thisBinding match { case DomBinding(thisNode, maybeThisEvents) ⇒
+            val composedEvents = composeOptions(maybeThisEvents, thatBinding.events)((l, r) ⇒ Observable.merge(l, r))
+            thisNode.appendChild(thatBinding.node).map(node ⇒ DomBinding(node, composedEvents))
+          }
+        } yield composedBinding
+
+        (composedModel, composedAction)
+      }
+    }
   }
 
-  private def appendWidget(widget: Widget, widgetAction: ActionF[DomBinding], f: WidgetContainer ⇒ Path): ModelBuilder = {
+  def appendWidget(widget: Widget): ModelBuilder = appendWidget(widget, widget.create)
+
+  def appendWidget(widget: Widget, widgetAction: ActionF[DomBinding]): ModelBuilder =
     copy(
       state = state.transform { case (model, action) ⇒
-        val path = widget.domId → f(model.widgetContainer)
-        val modifiedModel = model.copy(
-          widgetContainer = model.widgetContainer.appendChild(widget),
-          paths = model.paths + path)
+        val childIdx = model.widgetContainer.children.length
+        val path = widget.domId → (WidgetContainer._childrenLens ^|-? index[Vector[Widget], Int, Widget](childIdx))
+        val modifiedWidgetContainer = model.widgetContainer.appendChild(widget)
+        val modifiedModel = model.copy(widgetContainer = modifiedWidgetContainer, paths = model.paths + path)
         val modifiedAction = for {
           parentBinding ← action
           widgetBinding ← widgetAction
-          _ ← parentBinding.element.appendChild(widgetBinding.element)
+          _ ← parentBinding.node.appendChild(widgetBinding.node)
         } yield parentBinding
         (modifiedModel, modifiedAction)
       }
     )
-  }
 
+  private def composeOptions[T](oa: Option[T], ob: Option[T])(f: (T, T) ⇒ T): Option[T] =
+    oa.flatMap(a ⇒ ob.map(b ⇒ f(a, b)).orElse(oa)).orElse(ob)
 }
 
 case class Model(widgetContainer: WidgetContainer, paths: Map[DomId, Path] = Map.empty) {

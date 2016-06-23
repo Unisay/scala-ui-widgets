@@ -12,7 +12,7 @@ case class Button(domId: DomId, label: String) extends Widget {
     text ← createTextNode(label)
     _ ← button appendChild text
     clicks ← button.clickStream
-  } yield DomBinding(element = button, events = Some(clicks))
+  } yield DomBinding(node = button, events = Some(clicks))
 
 }
 

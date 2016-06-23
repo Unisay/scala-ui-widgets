@@ -37,7 +37,7 @@ trait Widget {
       oldChild ← this.element
       parent ← oldChild.getParent
       created ← that.create
-      _ ← parent.replaceChild(created.element, oldChild)
+      _ ← parent.replaceChild(created.node, oldChild)
     } yield oldChild
 
 }

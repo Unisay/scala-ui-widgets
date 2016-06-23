@@ -13,7 +13,7 @@ case class HorizontalLayout(domId: DomId, children: Vector[Widget] = Vector.empt
       _ ← div.setId(domId)
       _ ← div.setClass("d-horizontal-layout")
       _ ← createChildren(div)
-    } yield DomBinding(element = div)
+    } yield DomBinding(node = div)
 
   def withChildren(children: Vector[Widget]): T = copy(children = children)
 }
