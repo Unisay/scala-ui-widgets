@@ -3,11 +3,10 @@ package com.github.unisay.dancher
 import cats.data.State
 import com.github.unisay.dancher.ModelBuilder.{MState, Path}
 import com.github.unisay.dancher.dom._
+import com.github.unisay.dancher.widget.WidgetContainerLenses._
 import com.github.unisay.dancher.widget._
 import monix.reactive.Observable
 import monocle.Optional
-import monocle.function.Index._
-import monocle.std.vector._
 
 trait AllModelBuilderOps
   extends VerticalLayoutOps
@@ -16,14 +15,15 @@ trait AllModelBuilderOps
     with LabelOps
     with ParagraphOps
 
-object ModelBuilder {
+object ModelBuilder extends AllModelBuilderOps {
   val instance = ModelBuilder()
 
   type Path = Optional[WidgetContainer, Widget]
   type MState = State[Model, ActionF[DomBinding]]
 }
 
-case class ModelBuilder(state: MState = State((model: Model) ⇒ (model, model.widgetContainer.create))) {
+case class ModelBuilder(state: MState = State((model: Model) ⇒ (model, model.widgetContainer.create)))
+  extends AllModelBuilderOps {
 
   def map(f: MState ⇒ MState): ModelBuilder = ModelBuilder(f(state))
   def flatMap(f: MState ⇒ ModelBuilder): ModelBuilder = f(state)
@@ -34,19 +34,12 @@ case class ModelBuilder(state: MState = State((model: Model) ⇒ (model, model.w
       _.transform { case (thisModel, thisAction) ⇒
         val (thatModel, thatAction) = thatBuilder.state.run(Model(widgetContainer)).value
 
-        /*
-        val optionalChildren = optionalCurrentWidget.composeOptional(WidgetContainer._children)
-        val childrenPaths = nestedBuilder.paths.mapValues(optionalChildren.composeOptional)
-        val paths = childrenPaths.updated(widgetContainer.domId, optionalCurrentWidget)
-        */
+        val composedWidgetContainer = thisModel.widgetContainer.appendChild(thatModel.widgetContainer)
 
-        val composedModel = thisModel.copy(
-          widgetContainer = thisModel.widgetContainer.appendChild(thatModel.widgetContainer),
-          paths = {
-//            thatModel.paths.mapValues(childPath ⇒ )
-            ??? // TODO: compose paths
-          }
-        )
+        val currentChildPath = _childByIndex(thisModel.widgetContainer.children.length) ^<-? _containerPrism
+        val composedPaths = thatModel.paths.mapValues(currentChildPath.composeOptional)
+
+        val composedModel = thisModel.copy(widgetContainer = composedWidgetContainer, paths = composedPaths)
 
         val composedAction = for {
           thisBinding ← thisAction
@@ -68,7 +61,7 @@ case class ModelBuilder(state: MState = State((model: Model) ⇒ (model, model.w
     copy(
       state = state.transform { case (model, action) ⇒
         val childIdx = model.widgetContainer.children.length
-        val path = widget.domId → (WidgetContainer._childrenLens ^|-? index[Vector[Widget], Int, Widget](childIdx))
+        val path = widget.domId → _childByIndex(childIdx)
         val modifiedWidgetContainer = model.widgetContainer.appendChild(widget)
         val modifiedModel = model.copy(widgetContainer = modifiedWidgetContainer, paths = model.paths + path)
         val modifiedAction = for {

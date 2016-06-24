@@ -38,9 +38,10 @@ object Arbitraries {
       domId ← genDomId
       label ← Gen.alphaStr
       gm ← Gen.oneOf(Gen.const(ModelBuilder()), Arbitrary.arbitrary[ModelBuilder])
+      builder: ModelBuilder = ModelBuilder()
       model ← Gen.oneOf(
         ModelBuilder(),
-        ModelBuilder().label(domId, label),
+        builder.label(domId, label),
         ModelBuilder().horizontal(_ ⇒ gm),
         ModelBuilder().vertical(_ ⇒ gm))
     } yield model
