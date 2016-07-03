@@ -16,6 +16,7 @@ case class VerticalLayout(domId: DomId, children: Vector[Widget] = Vector.empty)
     } yield DomBinding(div)
 
   def withChildren(children: Vector[Widget]): T = copy(children = children)
+  def appendChild(widget: Widget): T = copy(children = children :+ widget)
 }
 
 trait VerticalLayoutOps {

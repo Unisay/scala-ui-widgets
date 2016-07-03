@@ -7,6 +7,9 @@ import org.specs2.matcher.MustMatchers._
 
 object Matchers {
 
+  def beContainedInScript(substring: String): Matcher[ActionF[_]] =
+    compileToScript(_: ActionF[_]).mkString("\n") must contain(substring.stripMargin.trim)
+
   def beActionAsScript(script: String): Matcher[ActionF[_]] =
     compileToScript(_: ActionF[_]).mkString("\n") must_=== script.stripMargin.trim
 

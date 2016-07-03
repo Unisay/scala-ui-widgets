@@ -16,6 +16,7 @@ case class HorizontalLayout(domId: DomId, children: Vector[Widget] = Vector.empt
     } yield DomBinding(node = div)
 
   def withChildren(children: Vector[Widget]): T = copy(children = children)
+  def appendChild(widget: Widget): T = copy(children = children :+ widget)
 }
 
 trait HorizontalLayoutOps {

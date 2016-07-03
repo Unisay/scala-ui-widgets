@@ -16,7 +16,7 @@ trait AllModelBuilderOps
     with ParagraphOps
 
 object ModelBuilder extends AllModelBuilderOps {
-  val instance = ModelBuilder()
+  val instance: ModelBuilder = ModelBuilder()
 
   type Path = Optional[WidgetContainer, Widget]
   type MState = State[Model, ActionF[DomBinding]]
@@ -75,6 +75,8 @@ case class ModelBuilder(state: MState = State((model: Model) ⇒ (model, model.w
 
   private def composeOptions[T](oa: Option[T], ob: Option[T])(f: (T, T) ⇒ T): Option[T] =
     oa.flatMap(a ⇒ ob.map(b ⇒ f(a, b)).orElse(oa)).orElse(ob)
+
+  def build(widgetContainer: WidgetContainer): (Model, ActionF[DomBinding]) = state.run(Model(widgetContainer)).value
 }
 
 case class Model(widgetContainer: WidgetContainer, paths: Map[DomId, Path] = Map.empty) {

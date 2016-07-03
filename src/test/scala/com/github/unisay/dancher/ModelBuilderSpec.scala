@@ -7,15 +7,18 @@ import com.github.unisay.dancher.widget._
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
-class ModelSpec extends Specification with ScalaCheck {
+class ModelBuilderSpec extends Specification with ScalaCheck {
 
-  "Model must" in {
+  "ModelBuilder must" in {
 
-    "create label widget" in prop { (model: ModelBuilder, label: Label) ⇒
-      model.label(label.domId, label.text).widgets must contain(label)
+    "create label widget" in prop { (builder: ModelBuilder, label: Label) ⇒
+      val (model, action) = builder.label(label.domId, label.text).build(Body('body))
+      model.widgetContainer.children must contain(label)
+      model.paths must haveKey(label.domId)
+      action must beContainedInScript(".setAttribute('class', 'd-label')")
     }
 
-    "create label action" in prop { (model: ModelBuilder, label: Label) ⇒
+    /*    "create label action" in prop { (model: ModelBuilder, label: Label) ⇒
       model.label(label.domId, label.text).actions must contain(expectedAction(label.create))
     }
 
@@ -75,7 +78,7 @@ class ModelSpec extends Specification with ScalaCheck {
         modifiedModel.get(label.domId) must beSome(modifiedLabel)
         modifiedModel.get(button.domId) must beSome(button)
       }
-    }
+    }*/
 
   }
 
