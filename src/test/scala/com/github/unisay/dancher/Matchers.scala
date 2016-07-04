@@ -1,6 +1,6 @@
 package com.github.unisay.dancher
 
-import com.github.unisay.dancher.compiler.JsCompiler.{Script, compile ⇒ compileToScript}
+import com.github.unisay.dancher.interpreter.JsInterpreter.{Script, compile ⇒ compileToScript}
 import com.github.unisay.dancher.dom._
 import org.specs2.matcher.MustMatchers._
 import org.specs2.matcher.{ContainWithResultSeq, Matcher, ValueCheck}

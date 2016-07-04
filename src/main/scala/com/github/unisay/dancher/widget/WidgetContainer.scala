@@ -2,6 +2,7 @@ package com.github.unisay.dancher.widget
 
 import cats.std.vector._
 import cats.syntax.traverse._
+import com.github.unisay.dancher.DomBinding
 import com.github.unisay.dancher.dom._
 import monocle.function.Index._
 import monocle.macros.GenPrism
@@ -36,8 +37,14 @@ trait WidgetContainer extends Widget {
   def createChildren(parent: DomElement): ActionF[Vector[DomNode]] =
     children.map(_.create).sequence.flatMap(_.map(binding ⇒ parent.appendChild(binding.node)).sequence)
 
-  def removeChild(id: DomId): Option[(T, ActionF[DomNode])] =
-    children.find(_.domId == id).map(child ⇒ (withChildren(children.filterNot(_ == child)), child.remove))
+  def removeChild(id: DomId): Option[(T, ActionF[DomBinding])] =
+    children
+      .find(_.domId == id)
+      .map(child ⇒ {
+        val container: T = withChildren(children.filterNot(_ == child))
+        val actionF: ActionF[DomNode] = child.remove
+        (container, actionF.map(DomBinding(_)))
+      })
 
 }
 

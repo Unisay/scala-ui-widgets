@@ -1,4 +1,4 @@
-package com.github.unisay.dancher.compiler
+package com.github.unisay.dancher.interpreter
 
 import cats.data.State
 import cats.~>
@@ -7,7 +7,7 @@ import monix.reactive.Observable
 
 import scala.language.implicitConversions
 
-object JsCompiler {
+object JsInterpreter {
 
   case class RawElement(element: String) extends DomElement
   case class RawNodeList(nodeList: String) extends DomNodeList
@@ -16,31 +16,31 @@ object JsCompiler {
 
   type Script = List[String]
   type CounterWithScript = (Int, Script)
-  type CompilerState[A] = State[CounterWithScript, A]
+  type InterpreterState[A] = State[CounterWithScript, A]
 
-  val compiler: Action ~> CompilerState = new (Action ~> CompilerState) {
+  val interpreter: Action ~> InterpreterState = new (Action ~> InterpreterState) {
 
-    def result[A](a: A): CompilerState[A] = State.pure(a)
+    def result[A](a: A): InterpreterState[A] = State.pure(a)
 
-    def commentWithReturn[A](comment: String, a: A): CompilerState[A] =
+    def commentWithReturn[A](comment: String, a: A): InterpreterState[A] =
       scriptWithReturn(s"/* $comment */", a)
 
-    def comment(c: String): CompilerState[Unit] =
+    def comment(c: String): InterpreterState[Unit] =
       State.modify { case (counter, script) ⇒
         (counter, s"/* $c */" :: script)
     }
 
-    def scriptWithReturn[A](line: String, a: A): CompilerState[A] =
+    def scriptWithReturn[A](line: String, a: A): InterpreterState[A] =
       State.modify[CounterWithScript]{ case (counter, script) ⇒ (counter, line :: script) }.map(_ ⇒ a)
 
-    def scriptWithCounterAndReturn[A](f: Int ⇒ (String, A)): CompilerState[A] =
+    def scriptWithCounterAndReturn[A](f: Int ⇒ (String, A)): InterpreterState[A] =
       State { case (counter, script) ⇒
         val (line, a) = f(counter)
         ((counter + 1, line :: script), a)
       }
 
-    override def apply[A](action: Action[A]): CompilerState[A] = {
-      implicit def toA(aw: CompilerState[_]): CompilerState[A] = aw.asInstanceOf[CompilerState[A]]
+    override def apply[A](action: Action[A]): InterpreterState[A] = {
+      implicit def toA(aw: InterpreterState[_]): InterpreterState[A] = aw.asInstanceOf[InterpreterState[A]]
 
       action match {
 
@@ -108,7 +108,7 @@ object JsCompiler {
         case SetAttribute(rawElement@RawElement(element), name, value) ⇒
           scriptWithReturn(s"$element.setAttribute('$name', '$value')", rawElement)
 
-        case SetOnClick(rawElement@RawElement(element)) ⇒
+        case SetOnClick(rawElement@RawElement(element), _) ⇒
           commentWithReturn(s"SetOnClick($element)", Observable.empty)
 
         case it ⇒
@@ -119,7 +119,7 @@ object JsCompiler {
   }
 
   def compile[A](action: ActionF[A]): Script = {
-    val (_, reverseScript) = action.foldMap(compiler).runS((1, Nil)).value
+    val (_, reverseScript) = action.foldMap(interpreter).runS((1, Nil)).value
     reverseScript.reverse
   }
 

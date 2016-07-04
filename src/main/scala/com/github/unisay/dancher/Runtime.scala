@@ -1,6 +1,6 @@
 package com.github.unisay.dancher
 
-import com.github.unisay.dancher.compiler.DomInterpreter
+import com.github.unisay.dancher.interpreter.DomInterpreter
 
 case class Runtime(initialModel: ModelBuilder) {
 

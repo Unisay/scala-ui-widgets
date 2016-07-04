@@ -1,4 +1,4 @@
-package com.github.unisay.dancher.compiler
+package com.github.unisay.dancher.interpreter
 
 import cats.{Id, ~>}
 import com.github.unisay.dancher._
@@ -19,7 +19,7 @@ class DomInterpreter {
       case class RawNode(node: raw.Node) extends DomNode
       case class RawElement(element: raw.Element) extends DomElement
       case class RawNodeList(nodeList: raw.NodeList) extends DomNodeList
-      case class RawMouseEvent(event: raw.MouseEvent) extends DomMouseEvent with DomainEvent
+      case class RawMouseEvent(event: raw.MouseEvent) extends DomMouseEvent
 
       def apply[A](action: Action[A]): Id[A] = {
         implicit def nodeToA(r: RawNode): A = r.asInstanceOf[A]
@@ -102,11 +102,12 @@ class DomInterpreter {
             element.setAttribute(name, value)
             rawElement
 
-          case SetOnClick(rawElement@RawElement(element)) ⇒
+          case SetOnClick(rawElement@RawElement(element), domEventHandler) ⇒
             // TODO: choose appropriate overflow strategy
             Observable.create[ModelEvent](OverflowStrategy.DropNew(10)) { subscriber ⇒
               val listener = (mouseEvent: MouseEvent) ⇒ {
-                subscriber.onNext((RawMouseEvent(mouseEvent), model))
+                val domainEvent = domEventHandler(RawMouseEvent(mouseEvent))
+                subscriber.onNext((domainEvent, model))
                 ()
               }
               element.addEventListener("click", listener)
@@ -119,7 +120,7 @@ class DomInterpreter {
           case it@RemoveChild(_, _) ⇒ shouldNotMatch(it)
           case it@ReplaceChild(_, _, _) ⇒ shouldNotMatch(it)
           case it@SetAttribute(_, _, _) ⇒ shouldNotMatch(it)
-          case it@SetOnClick(_) ⇒ shouldNotMatch(it)
+          case it@SetOnClick(_, _) ⇒ shouldNotMatch(it)
         }
       }
 

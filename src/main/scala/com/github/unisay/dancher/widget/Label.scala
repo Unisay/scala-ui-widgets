@@ -13,14 +13,14 @@ case class Label(override val domId: DomId, text: String) extends Widget {
     _ ← span appendChild text
   } yield DomBinding(span)
 
-  def setText(textToSet: String): (Label, ActionF[_]) = {
+  def setText(textToSet: String): (Label, ActionF[DomBinding]) = {
     val updatedLabel = copy(text = textToSet)
     val action = for {
       span ← element
       oldChild ← span.getFirstChild
       newChild ← createTextNode(textToSet)
       _ ← span.replaceChild(newChild, oldChild)
-    } yield span
+    } yield DomBinding(span)
     (updatedLabel, action)
   }
 

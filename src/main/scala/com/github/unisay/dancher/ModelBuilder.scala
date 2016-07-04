@@ -94,10 +94,10 @@ case class Model(widgetContainer: WidgetContainer, paths: Map[DomId, Path] = Map
 
   def get(id: DomId): Option[Widget] = paths.get(id).flatMap(_.getOption(widgetContainer))
 
-  def modify[W <: Widget](id: DomId)(change: W ⇒ (W, ActionF[DomBinding])): Option[(Model, ActionF[DomBinding])] =
+  def modify[W <: Widget](id: DomId)(change: W ⇒ (W, ActionF[DomBinding])): Option[Frame] =
     modifyOpt(id)(change.andThen(Option.apply))
 
-  def modifyOpt[W <: Widget](id: DomId)(change: W ⇒ Option[(W, ActionF[DomBinding])]): Option[(Model, ActionF[DomBinding])] = {
+  def modifyOpt[W <: Widget](id: DomId)(change: W ⇒ Option[(W, ActionF[DomBinding])]): Option[Frame] = {
     paths.get(id).flatMap { path ⇒
       path.getOption(widgetContainer).flatMap { widget ⇒
         change(widget.asInstanceOf[W]).map { case (modifiedWidget, modifyAction) ⇒
@@ -107,5 +107,5 @@ case class Model(widgetContainer: WidgetContainer, paths: Map[DomId, Path] = Map
     }
   }
 
-  def within(id: DomId)(f: Model ⇒ Model): Model = ??? /* TODO implement*/
+  def within(id: DomId)(f: ModelBuilder ⇒ ModelBuilder): Option[Frame] = ??? /* TODO implement*/
 }
