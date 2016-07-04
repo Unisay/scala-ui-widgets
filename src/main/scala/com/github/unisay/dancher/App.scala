@@ -1,7 +1,12 @@
 package com.github.unisay.dancher
 
+import com.github.unisay.dancher.compiler.DomInterpreter
 import com.github.unisay.dancher.dom._
+import com.github.unisay.dancher.widget.Body
+import monix.execution.Ack
+import monix.execution.Scheduler.Implicits.global
 
+import scala.concurrent.Future
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
 
@@ -11,7 +16,7 @@ object App extends JSApp {
   case class RemItem(event: DomEvent) extends DomainEvent
   case class UpdateLabel(event: DomEvent) extends DomainEvent
 
-  val builder = ModelBuilder.instance
+  val builder: ModelBuilder = ModelBuilder.instance
 
   .vertical('labels) { _
     .button(label = "Add Item")
@@ -29,8 +34,20 @@ object App extends JSApp {
 
   .paragraph('t, "it works!")
 
+  val compiler = new DomInterpreter()
+
   @JSExport
   override def main(): Unit = {
+    val (model, action) = builder.build(Body('body))
+    val domBinding: DomBinding = compiler.interpret(model, action)
+    domBinding.events.foreach { modelEvents ⇒
+      modelEvents.subscribe((modelEvent: ModelEvent) ⇒ modelEvent match {
+        case (event, m) ⇒
+          println(event)
+          Future.successful(Ack.Continue)
+      })
+    }
+
 /*
     Runtime(bodyModel) {
 

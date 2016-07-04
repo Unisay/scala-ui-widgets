@@ -10,16 +10,14 @@ class ButtonSpec extends Specification with ScalaCheck {
   "Button" should {
 
     "create" in prop { (button: Button) ⇒
-      button.create must beActionAsScript(
-        s"""
-        |var button1 = document.createElement('button')
-        |button1.setAttribute('id', '${button.domId.value}')
-        |button1.setAttribute('class', 'd-button')
-        |var text2 = document.createTextNode('${button.label}')
-        |button1.appendChild(text2)
-        |/* SetOnClick(button1) */
-        """
-      )
+      button.create.asScript must containScriptTemplate(s"""
+        var button\\d+ = document\\.createElement\\('button'\\)
+        button\\d+\\.setAttribute\\('id', '${button.domId.value}'\\)
+        button\\d+\\.setAttribute\\('class', 'd-button'\\)
+        var text\\d+ = document\\.createTextNode\\('${button.label}'\\)
+        button\\d+\\.appendChild\\(text\\d+\\)
+        /\\* SetOnClick\\(button\\d+\\) \\*/
+      """)
     }
 
   }

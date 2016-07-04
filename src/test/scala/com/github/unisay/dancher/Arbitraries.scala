@@ -12,6 +12,8 @@ object Arbitraries {
     for {domId ← genDomId; label ← Gen.alphaStr} yield Button(domId, label)
   val genLabel: Gen[Label] =
     for {domId ← genDomId; text ← Gen.alphaStr} yield Label(domId, text)
+  def genBody(n: Int): Gen[Body] =
+    for {domId ← genDomId; widgets ← genWidgets(n / 2)} yield Body(domId, widgets)
   def genVerticalLayout(n: Int) =
     for {domId ← genDomId; widgets ← genWidgets(n / 2)} yield VerticalLayout(domId, widgets)
   def genHorizontalLayout(n: Int) =
@@ -22,6 +24,7 @@ object Arbitraries {
     Gen.listOfN(n, genWidget(n / 2)).map(_.toVector)
 
   implicit val arbDomId: Arbitrary[DomId] = Arbitrary(genDomId)
+  implicit val arbBody: Arbitrary[Body] = Arbitrary(Gen.sized(genBody))
   implicit val arbLabel: Arbitrary[Label] = Arbitrary(genLabel)
   implicit val arbButton: Arbitrary[Button] = Arbitrary(genButton)
 

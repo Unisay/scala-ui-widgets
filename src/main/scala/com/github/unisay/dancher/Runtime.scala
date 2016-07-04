@@ -1,6 +1,6 @@
 package com.github.unisay.dancher
 
-import com.github.unisay.dancher.compiler.DomCompiler
+import com.github.unisay.dancher.compiler.DomInterpreter
 
 case class Runtime(initialModel: ModelBuilder) {
 
@@ -17,7 +17,7 @@ case class Runtime(initialModel: ModelBuilder) {
     } yield binding*/
 
 
-  val compiler = new DomCompiler()
+  val compiler = new DomInterpreter()
 
 /*  def run(): Observable[ModelEvent] = {
     ???

@@ -36,16 +36,21 @@ case class ModelBuilder(state: MState = State((model: Model) ⇒ (model, model.w
 
         val composedWidgetContainer = thisModel.widgetContainer.appendChild(thatModel.widgetContainer)
 
-        val currentChildPath = _childByIndex(thisModel.widgetContainer.children.length) ^<-? _containerPrism
-        val composedPaths = thatModel.paths.mapValues(currentChildPath.composeOptional)
+        val currentChildPath = _childByIndex(thisModel.widgetContainer.children.length)
+        val currentChildContainerPath = currentChildPath ^<-? _containerPrism
+        val composedPaths = thatModel.paths.mapValues(currentChildContainerPath.composeOptional)
+          .updated(thatModel.widgetContainer.domId, currentChildPath)
 
-        val composedModel = thisModel.copy(widgetContainer = composedWidgetContainer, paths = composedPaths)
+        val composedModel = thisModel.copy(
+          widgetContainer = composedWidgetContainer,
+          paths = composedPaths
+        )
 
         val composedAction = for {
           thisBinding ← thisAction
           thatBinding ← thatAction
           composedBinding ← thisBinding match { case DomBinding(thisNode, maybeThisEvents) ⇒
-            val composedEvents = composeOptions(maybeThisEvents, thatBinding.events)((l, r) ⇒ Observable.merge(l, r))
+            val composedEvents = composeEvents(maybeThisEvents, thatBinding.events)
             thisNode.appendChild(thatBinding.node).map(node ⇒ DomBinding(node, composedEvents))
           }
         } yield composedBinding
@@ -68,13 +73,19 @@ case class ModelBuilder(state: MState = State((model: Model) ⇒ (model, model.w
           parentBinding ← action
           widgetBinding ← widgetAction
           _ ← parentBinding.node.appendChild(widgetBinding.node)
-        } yield parentBinding
+          events = composeEvents(parentBinding.events, widgetBinding.events)
+        } yield DomBinding(parentBinding.node, events)
         (modifiedModel, modifiedAction)
       }
     )
 
   private def composeOptions[T](oa: Option[T], ob: Option[T])(f: (T, T) ⇒ T): Option[T] =
     oa.flatMap(a ⇒ ob.map(b ⇒ f(a, b)).orElse(oa)).orElse(ob)
+
+  private def composeEvents(oa: Option[Observable[ModelEvent]],
+                            ob: Option[Observable[ModelEvent]]): Option[Observable[ModelEvent]] =
+    composeOptions(oa, ob)((a, b) ⇒ Observable.merge(a, b))
+
 
   def build(widgetContainer: WidgetContainer): (Model, ActionF[DomBinding]) = state.run(Model(widgetContainer)).value
 }
