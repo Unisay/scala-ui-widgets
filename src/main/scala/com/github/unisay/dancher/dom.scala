@@ -1,6 +1,7 @@
 package com.github.unisay.dancher
 
 import cats.free.Free
+import monix.reactive.Observable
 
 import scala.language.implicitConversions
 
@@ -86,7 +87,8 @@ object dom extends gen {
   def setId(id: DomId)(element: DomElement) = setAttribute("id", id.value)(element)
   def setClass(cssClass: String)(element: DomElement) = setAttribute("class", cssClass)(element)
 
-  case class SetOnClick(element: DomElement, handler: DomEventHandler) extends Action[ModelEvents]
-  def setOnClick(element: DomElement, handler: DomEventHandler): ActionF[ModelEvents] = SetOnClick(element, handler)
+  case class SetOnClick(element: DomElement, handler: DomEventHandler) extends Action[Observable[ModelEvent]]
+  def setOnClick(element: DomElement, handler: DomEventHandler): ActionF[Observable[ModelEvent]] =
+    SetOnClick(element, handler)
 
 }

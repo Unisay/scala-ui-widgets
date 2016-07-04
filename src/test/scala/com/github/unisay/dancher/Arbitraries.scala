@@ -9,7 +9,7 @@ object Arbitraries {
   val genDomId: Gen[DomId] =
     Gen.alphaStr.map(s ⇒ DomId(s"id$s"))
   val genButton: Gen[Button] =
-    for {domId ← genDomId; label ← Gen.alphaStr} yield Button(domId, label)
+    for {domId ← genDomId; label ← Gen.alphaStr} yield Button(domId, label, ClickEvent)
   val genLabel: Gen[Label] =
     for {domId ← genDomId; text ← Gen.alphaStr} yield Label(domId, text)
   def genBody(n: Int): Gen[Body] =

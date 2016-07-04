@@ -1,7 +1,7 @@
 package com.github.unisay.dancher
 
 import cats.data.State
-import com.github.unisay.dancher.ModelBuilder.{MState, Path}
+import com.github.unisay.dancher.ModelBuilder.MState
 import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.widget.WidgetContainerLenses._
 import com.github.unisay.dancher.widget._
@@ -87,25 +87,6 @@ case class ModelBuilder(state: MState = State((model: Model) ⇒ (model, model.w
     composeOptions(oa, ob)((a, b) ⇒ Observable.merge(a, b))
 
 
-  def build(widgetContainer: WidgetContainer): (Model, ActionF[DomBinding]) = state.run(Model(widgetContainer)).value
-}
-
-case class Model(widgetContainer: WidgetContainer, paths: Map[DomId, Path] = Map.empty) {
-
-  def get(id: DomId): Option[Widget] = paths.get(id).flatMap(_.getOption(widgetContainer))
-
-  def modify[W <: Widget](id: DomId)(change: W ⇒ (W, ActionF[DomBinding])): Option[Frame] =
-    modifyOpt(id)(change.andThen(Option.apply))
-
-  def modifyOpt[W <: Widget](id: DomId)(change: W ⇒ Option[(W, ActionF[DomBinding])]): Option[Frame] = {
-    paths.get(id).flatMap { path ⇒
-      path.getOption(widgetContainer).flatMap { widget ⇒
-        change(widget.asInstanceOf[W]).map { case (modifiedWidget, modifyAction) ⇒
-          (copy(widgetContainer = path.set(modifiedWidget).apply(widgetContainer)), modifyAction)
-        }
-      }
-    }
-  }
-
-  def within(id: DomId)(f: ModelBuilder ⇒ ModelBuilder): Option[Frame] = ??? /* TODO implement*/
+  def build(widgetContainer: WidgetContainer): Frame =
+    state.run(Model(widgetContainer)).map { case (model, action) ⇒ Frame(model, action) }.value
 }

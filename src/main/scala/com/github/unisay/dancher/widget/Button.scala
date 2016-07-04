@@ -19,10 +19,10 @@ case class Button(domId: DomId, label: String, onClick: DomEventHandler) extends
 trait ButtonOps {
   implicit class ModelButtonOps(model: ModelBuilder) {
 
-    def button(label: String, onClick: DomEventHandler = ClickEvent)(implicit idGen: Generator[DomId]): ModelBuilder =
+    def button(label: String, onClick: DomEventHandler)(implicit idGen: Generator[DomId]): ModelBuilder =
       button(idGen.generate, label, onClick)
 
-    def button(id: Symbol, label: String, onClick: DomEventHandler = ClickEvent): ModelBuilder =
+    def button(id: Symbol, label: String, onClick: DomEventHandler): ModelBuilder =
       button(DomId(id.name), label, onClick)
 
     def button(id: DomId, label: String, onClick: DomEventHandler = ClickEvent): ModelBuilder =
