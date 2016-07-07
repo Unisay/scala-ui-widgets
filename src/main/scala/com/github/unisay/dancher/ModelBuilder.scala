@@ -38,8 +38,9 @@ case class ModelBuilder(state: MState = State((model: Model) ⇒ (model, model.w
 
         val currentChildPath = _childByIndex(thisModel.widgetContainer.children.length)
         val currentChildContainerPath = currentChildPath ^<-? _containerPrism
-        val composedPaths = thatModel.paths.mapValues(currentChildContainerPath.composeOptional)
-          .updated(thatModel.widgetContainer.domId, currentChildPath)
+        val composedPaths = thisModel.paths ++
+          thatModel.paths.mapValues(currentChildContainerPath.composeOptional) +
+          thatModel.widgetContainer.domId → currentChildPath
 
         val composedModel = thisModel.copy(
           widgetContainer = composedWidgetContainer,

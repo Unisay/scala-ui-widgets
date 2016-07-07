@@ -55,8 +55,8 @@ object App extends JSApp {
   def handleEvents(events: Observable[ModelEvent]): Cancelable =
     events
       .map(domainEventHandler)
-      .subscribe(nextFn = { case Frame(model, action) ⇒
-        val DomBinding(_, frameEvents) = interpreter.interpret(model, action)
+      .subscribe(nextFn = { case frame ⇒
+        val DomBinding(_, frameEvents) = interpreter.interpret(frame)
         frameEvents.foreach(handleEvents)
         Future.successful(Ack.Continue)
       })
@@ -64,8 +64,8 @@ object App extends JSApp {
 
   @JSExport
   override def main(): Unit = {
-    val (initialModel, initialAction) = builder.build(Body('body))
-    val initialBinding = interpreter.interpret(initialModel, initialAction)
+    val frame = builder.build(Body('body))
+    val initialBinding = interpreter.interpret(frame)
     initialBinding.events.foreach(handleEvents)
   }
 

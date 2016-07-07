@@ -12,13 +12,13 @@ class ModelBuilderSpec extends Specification with ScalaCheck {
   "ModelBuilder must" in {
 
     "create label model" in prop { (builder: ModelBuilder, body: Body, label: Label) ⇒
-      val (model, _) = builder.label(label.domId, label.text).build(body)
+      val model = builder.label(label.domId, label.text).build(body).model
       model.widgetContainer.children must contain(label)
       model.paths must haveKey(label.domId)
     }
 
     "create label action" in prop { (builder: ModelBuilder, body: Body, label: Label) ⇒
-      val (_, action) = builder.label(label.domId, label.text).build(body)
+      val action = builder.label(label.domId, label.text).build(body).action
       action.asScript must containScriptTemplate("""
         var span\d+ = document\.createElement\('span'\)
         span\d+\.setAttribute\('id', 'id\w*'\)
@@ -30,13 +30,13 @@ class ModelBuilderSpec extends Specification with ScalaCheck {
     }
 
     "create button model" in prop { (builder: ModelBuilder, body: Body, button: Button) ⇒
-      val (model, _) = builder.button(button.domId, button.label).build(body)
+      val model = builder.button(button.domId, button.label).build(body).model
       model.widgetContainer.children must contain(button)
       model.paths must haveKey(button.domId)
     }
 
     "create button action" in prop { (builder: ModelBuilder, body: Body, button: Button) ⇒
-      val (_, action) = builder.button(button.domId, button.label).build(body)
+      val action = builder.button(button.domId, button.label).build(body).action
       action.asScript must containScriptTemplate("""
         var button\d+ = document\.createElement\('button'\)
         button\d+\.setAttribute\('id', 'id\w*'\)
@@ -48,14 +48,14 @@ class ModelBuilderSpec extends Specification with ScalaCheck {
     }
 
     "vertical layout model" in prop { (builder: ModelBuilder, body: Body, label: Label, id: DomId) ⇒
-      val (model, _) = builder.vertical(id)(_.label(label.domId, label.text)).build(body)
+      val model = builder.vertical(id)(_.label(label.domId, label.text)).build(body).model
       model.widgetContainer.children must contain(VerticalLayout(id, Vector(label)))
       model.paths must haveKey(id)
       model.paths must haveKey(label.domId)
     }
 
     "vertical layout action" in prop { (builder: ModelBuilder, body: Body, label: Label, id: DomId) ⇒
-      val (_, action) = builder.vertical(id)(_.label(label.domId, label.text)).build(body)
+      val action = builder.vertical(id)(_.label(label.domId, label.text)).build(body).action
       action.asScript must containScriptTemplate("""
         var div\d+ = document\.createElement\('div'\)
         div\d+\.setAttribute\('id', 'id\w*'\)
@@ -65,14 +65,14 @@ class ModelBuilderSpec extends Specification with ScalaCheck {
     }
 
     "horizontal layout model" in prop { (builder: ModelBuilder, body: Body, label: Label, id: DomId) ⇒
-      val (model, _) = builder.horizontal(id)(_.label(label.domId, label.text)).build(body)
+      val model = builder.horizontal(id)(_.label(label.domId, label.text)).build(body).model
       model.widgetContainer.children must contain(HorizontalLayout(id, Vector(label)))
       model.paths must haveKey(id)
       model.paths must haveKey(label.domId)
     }
 
     "horizontal layout action" in prop { (builder: ModelBuilder, body: Body, label: Label, id: DomId) ⇒
-      val (_, action) = builder.horizontal(id)(_.label(label.domId, label.text)).build(body)
+      val action = builder.horizontal(id)(_.label(label.domId, label.text)).build(body).action
       action.asScript must containScriptTemplate("""
         var div\d+ = document\.createElement\('div'\)
         div\d+\.setAttribute\('id', 'id\w*'\)
@@ -81,14 +81,21 @@ class ModelBuilderSpec extends Specification with ScalaCheck {
        """)
     }
 
-    /*
-
-    "vertical, horizontal" in prop { (model: ModelBuilder, v: DomId, h: DomId) ⇒
+    "vertical, horizontal" in prop { (builder: ModelBuilder, body: Body, v: DomId, h: DomId) ⇒
       (v != h) ==> {
-        model.vertical(v)(identity).horizontal(h)(identity).widgets must
-          contain(VerticalLayout(v, Vector.empty), HorizontalLayout(h, Vector.empty))
+        val model = builder
+          .vertical(v)(identity)
+          .horizontal(h)(identity)
+          .build(body)
+          .model
+
+        model.widgetContainer.children must contain(VerticalLayout(v), HorizontalLayout(h))
+        model.paths must haveKey(v)
+        model.paths must haveKey(h)
       }
     }
+    /*
+
 
     "get nested label" in prop { (model: ModelBuilder, label: Label) ⇒
       model

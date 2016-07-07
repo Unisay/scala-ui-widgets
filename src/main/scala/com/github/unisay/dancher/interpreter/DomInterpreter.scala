@@ -12,7 +12,8 @@ import scala.language.implicitConversions
 
 class DomInterpreter {
 
-  def interpret[T](model: Model, action: ActionF[T]): T = {
+  def interpret(frame: Frame): DomBinding = {
+    val Frame(model, action) = frame
 
     val compiler = new (Action ~> Id) {
 
