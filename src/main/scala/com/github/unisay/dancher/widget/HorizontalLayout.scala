@@ -20,13 +20,13 @@ case class HorizontalLayout(domId: DomId, children: Vector[Widget] = Vector.empt
 }
 
 trait HorizontalLayoutOps {
-  implicit class ModelHorizontalLayoutOps(model: ModelBuilder) {
+  implicit class ModelHorizontalLayoutOps(val builder: ModelBuilder) {
 
     def horizontal(nested: ModelBuilder ⇒ ModelBuilder)(implicit idGen: Generator[DomId]): ModelBuilder =
       horizontal(idGen.generate)(nested)
 
     def horizontal(id: DomId)(nested: ModelBuilder ⇒ ModelBuilder): ModelBuilder =
-      model.appendWidgetContainer(HorizontalLayout(id))(nested)
+      builder.appendWidgetContainer(HorizontalLayout(id))(nested)
 
   }
 }

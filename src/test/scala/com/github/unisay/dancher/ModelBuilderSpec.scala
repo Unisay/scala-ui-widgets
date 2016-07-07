@@ -94,11 +94,9 @@ class ModelBuilderSpec extends Specification with ScalaCheck {
         model.paths must haveKey(h)
       }
     }
-    /*
 
-
-    "get nested label" in prop { (model: ModelBuilder, label: Label) ⇒
-      model
+    "get nested label" in prop { (builder: ModelBuilder, body: Body, label: Label) ⇒
+      val model = builder
         .horizontal {
           _.vertical {
             _.horizontal {
@@ -107,8 +105,14 @@ class ModelBuilderSpec extends Specification with ScalaCheck {
               }
             }
           }
-        }.get(label.domId) must beSome(label)
+        }
+        .build(body)
+        .model
+
+      model.get(label.domId) must beSome(label)
     }
+
+    /*
 
     "modify nested label" in prop { (model: ModelBuilder, label: Label, button: Button) ⇒
       (button.domId != label.domId) ==> {
