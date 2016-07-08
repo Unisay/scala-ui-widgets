@@ -112,28 +112,25 @@ class ModelBuilderSpec extends Specification with ScalaCheck {
       model.get(label.domId) must beSome(label)
     }
 
-    /*
-
-    "modify nested label" in prop { (model: ModelBuilder, label: Label, button: Button) ⇒
-      (button.domId != label.domId) ==> {
-        val nestedModel = model
-          .horizontal {
-            _.vertical {
-              _.horizontal {
-                _.vertical {
-                  _.label(label.domId, label.text)
-                }
+    "modify nested label" in prop { (builder: ModelBuilder, body: Body, label: Label) ⇒
+      val model = builder
+        .horizontal {
+          _.vertical {
+            _.horizontal {
+              _.vertical {
+                _.label(label.domId, label.text)
               }
             }
           }
-          .button(button.domId, button.label)
+        }
+        .build(body)
+        .model
 
-        val modifiedModel = nestedModel.modify[Label](label.domId)(_.setText(label.text + "!"))
-        val modifiedLabel = label.copy(text = label.text + "!")
-        modifiedModel.get(label.domId) must beSome(modifiedLabel)
-        modifiedModel.get(button.domId) must beSome(button)
-      }
-    }*/
+      val Some(Frame(modifiedModel, _)) = model.modify[Label](label.domId)(_.setText("modified"))
+      val expectedLabel = label.setText("modified")._1
+      val maybeActualLabel = modifiedModel.get(label.domId)
+      maybeActualLabel must beSome(expectedLabel)
+    }
 
   }
 
