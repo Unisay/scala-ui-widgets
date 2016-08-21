@@ -1,11 +1,19 @@
 package com.github.unisay.dancher.widget
 
+import cats.data.Ior
 import com.github.unisay.dancher.DomainEvent
 import com.github.unisay.dancher.dom._
 import monix.reactive.Observable
 import monocle.Lens
 
+object ModelEvent {
+  type ModelEvent[N] = N Ior DomainEvent
+  def apply[M](domainEvent: DomainEvent): ModelEvent[M] = Ior.Right(domainEvent)
+  def apply[M](model: M, domainEvent: DomainEvent): ModelEvent[M] = Ior.Both(model, domainEvent)
+}
+
 trait Widget[M] {
+
   def render(model: M): RenderAction[M]
   def update(model: M, event: DomainEvent): (M, ActionF[Unit]) = (model, noAction)
 }
@@ -51,6 +59,7 @@ trait WidgetSyntax extends RenderActionOps {
 object Widget extends WidgetSyntax with RenderActionOps
 
 trait WidgetHelpers {
+  // TODO: use magnet
   def const[M, C](constant: C): Lens[M, C] = Lens[M, C](_ => constant)(_ => identity)
 
   def createRender[M](action: RenderAction[M]) = new Widget[M] {

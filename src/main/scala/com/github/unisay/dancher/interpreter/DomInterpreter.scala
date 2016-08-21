@@ -1,14 +1,13 @@
 package com.github.unisay.dancher.interpreter
 
-import cats.data.Ior
 import cats.{Id, ~>}
-import com.github.unisay.dancher._
 import com.github.unisay.dancher.dom._
+import com.github.unisay.dancher.widget.ModelEvent.ModelEvent
 import monix.execution.Cancelable
+import monix.execution.Scheduler.Implicits.global
 import monix.reactive.{Observable, OverflowStrategy}
 import org.scalajs.dom.raw.MouseEvent
 import org.scalajs.dom.{console, document, raw}
-import monix.execution.Scheduler.Implicits.global
 
 import scala.language.implicitConversions
 
@@ -108,7 +107,7 @@ class DomInterpreter {
             rawElement
 
           case SetOnClick(rawElement@RawElement(element), domEventHandler) =>
-            Observable.create[M Ior DomainEvent](OverflowStrategy.Unbounded) { subscriber =>
+            Observable.create[ModelEvent[M]](OverflowStrategy.Unbounded) { subscriber =>
               val listener = (mouseEvent: MouseEvent) => {
                 domEventHandler.asInstanceOf[DomEventHandler[M]](RawMouseEvent(mouseEvent)).foreach { item =>
                   subscriber.onNext(item)

@@ -39,7 +39,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
     )
     val renderAction = widget.render(())
 
-    renderAction.asScriptString must_==
+    renderAction.interpretJsString(()) must_==
       """
         |var b = document.body;
         |var div0 = document.createElement('div');
@@ -85,7 +85,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
         |b.appendChild(div0);
       """.stripMargin.trim
 
-    val DomBinding(element, modelEvents) = renderAction.asValue(model = (), domEvents = Observable(
+    val (element, modelEvents, _) = renderAction.interpretJs(model = (), domEvents = Observable(
       "button0" -> domEvent1,
       "button1" -> domEvent2,
       "button2" -> domEvent3
@@ -114,7 +114,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
 
     val action = Header().render(john)
 
-    action.asScriptString mustEqual
+    action.interpretJsString mustEqual
       """
         |var div0 = document.createElement('div');
         |div0.setAttribute('class', 'd-vertical');
@@ -182,7 +182,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
 
     val action = Header().render(john)
 
-    action.asScriptString mustEqual
+    action.interpretJsString mustEqual
       """
         |var div0 = document.createElement('div');
         |div0.setAttribute('class', 'd-vertical');
@@ -221,7 +221,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
 
     val actionSara = Header().render(sara)
 
-    actionSara.asScriptString mustEqual
+    actionSara.interpretJsString mustEqual
       """
         |var div0 = document.createElement('div');
         |div0.setAttribute('class', 'd-vertical');

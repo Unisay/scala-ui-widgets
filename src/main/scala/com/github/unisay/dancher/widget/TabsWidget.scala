@@ -1,6 +1,5 @@
 package com.github.unisay.dancher.widget
 
-import cats.data.Ior
 import com.github.unisay.dancher._
 import com.github.unisay.dancher.dom._
 import monix.reactive.Observable
@@ -11,14 +10,15 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets with WidgetSyntax {
   case class TabActivated[M](index: Int) extends DomainEvent
 
   def Tabs[M](activeTabIndexLens: Lens[M, Int])(children: (String, Widget[M])*): Widget[M] = new Widget[M] {
+
     def render(model: M): RenderAction[M] = {
       val activeTabIndex = Math.max(Math.min(activeTabIndexLens.get(model), children.length), 0)
       val (buttonTexts, childWidgets) = children.toList.unzip
 
       val buttons = buttonTexts.zipWithIndex.map { case (text, index) =>
-        Button[M](text, clickHandler = Some { _ =>
+        Button[M](const(text), clickHandler = Some { _ =>
           val updatedModel = activeTabIndexLens.set(index)(model)
-          Observable(Ior.Both(updatedModel, TabActivated(index)))
+          Observable(ModelEvent(updatedModel, TabActivated(index)))
         },
           cssClasses = "d-tab" :: (if (index == activeTabIndex) List("d-tab-active") else Nil))
       }
@@ -37,7 +37,7 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets with WidgetSyntax {
 
       Vertical(
         Horizontal(buttons) >
-          Vertical(hiddenChildWidgets)
+        Vertical(hiddenChildWidgets)
       ).render(model)
     }
 

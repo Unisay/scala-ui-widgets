@@ -19,7 +19,7 @@ object TestApp extends JSApp {
   override def main(): Unit = {
     println("TestApp started")
 
-    val widget = Body[Unit] +> Button[Unit]("Click it")
+    val widget = Body[Unit] +> Button[Unit](const("Click it"))
 
     val binding = interpreter.interpret((), widget.render(()))
 

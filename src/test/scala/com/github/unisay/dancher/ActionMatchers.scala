@@ -1,21 +1,25 @@
 package com.github.unisay.dancher
 
+import cats.data.Ior
 import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.JsInterpreter._
+import com.github.unisay.dancher.widget.RenderAction
 import monix.reactive.Observable
 import org.specs2.matcher.MustMatchers._
 import org.specs2.matcher.{ContainWithResultSeq, Matcher, ValueCheck}
 
 object ActionMatchers {
 
-  implicit class ActionAs[A](actionF: ActionF[A]) {
-    def asValue[M](model: M, domEvents: Observable[(String, DomEvent)] = Observable.empty): A =
-      interpret(model, actionF, domEvents)._1
-    def asValue: A = asValue(())
-    def asScript[M](model: M): Script = interpret((), actionF)._2
-    def asScript: Script = asScript(())
-    def asScriptString[M](model: M): String = asScript(model).mkString("", ";\n", ";").trim
-    def asScriptString: String = asScriptString(())
+  implicit class ActionAs[M](actionF: RenderAction[M]) {
+    def interpretJs(model: M, domEvents: Observable[(String, DomEvent)] = Observable.empty):
+    (DomElement, Observable[Ior[M, DomainEvent]], String) = {
+      val result = interpret(model, actionF, domEvents)
+      (result._1.element, result._1.events, result._2.mkString("", ";\n", ";").trim)
+    }
+    def interpretJs: (DomElement, Observable[Ior[M, DomainEvent]], String) = interpretJs(model = ().asInstanceOf[M])
+
+    def interpretJsString(model: M): String = interpretJs(model)._3
+    def interpretJsString: String = interpretJsString(model = ().asInstanceOf[M])
   }
 
   def containScriptTemplate(lines: String): Matcher[Script] = {

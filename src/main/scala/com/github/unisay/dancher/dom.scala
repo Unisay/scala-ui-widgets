@@ -2,19 +2,16 @@ package com.github.unisay.dancher
 
 import cats.data.Ior
 import cats.free.Free
+import com.github.unisay.dancher.widget.ModelEvent.ModelEvent
 import monix.reactive.Observable
 
 import scala.language.implicitConversions
 
-object dom extends gen {
+object dom {
 
   implicit def actionToFree[A](action: Action[A]): ActionF[A] = Free.liftF(action)
 
   sealed trait Action[+N]
-
-  object DomId {
-    implicit def symbolToDomId(symbol: Symbol): DomId = DomId(symbol.name)
-  }
 
   case class DomId(value: String) extends AnyVal
 
@@ -22,7 +19,7 @@ object dom extends gen {
   trait DomMouseEvent extends DomEvent
   trait DomNodeList
 
-  type DomEventHandler[M] = DomEvent => Observable[Ior[M, DomainEvent]]
+  type DomEventHandler[M] = DomEvent => Observable[ModelEvent[M]]
 
   trait DomNode {
     def getParent = dom.getParentNode(this)

@@ -11,11 +11,11 @@ trait BasicWidgets extends WidgetHelpers {
 
   def Body[M] = createRender(getDocumentBody.map(DomBinding[M](_)))
 
-  def Button[M](text: String,
+  def Button[M](text: Lens[M, String],
                 clickHandler: Option[DomEventHandler[M]] = None,
                 cssClasses: List[String] = Nil): Widget[M] =
     TextContainer(
-      text = const(text),
+      text = text,
       tag = "button",
       cssClasses = "d-button" :: cssClasses,
       clickHandler = clickHandler
@@ -34,7 +34,7 @@ trait BasicWidgets extends WidgetHelpers {
       for {
         element ← createElement(tag)
         events <- clickHandler.fold { value[Option[Observable[M Ior DomainEvent]]](None) }
-        { element.onClick(_).map(Some(_)) }
+                                    { element.onClick(_).map(Some(_)) }
         _ <- if (cssClasses.isEmpty) noAction else element.setClasses(cssClasses).void
         _ <- element appendText text.get(model)
       } yield DomBinding(element, events.getOrElse(Observable.empty))

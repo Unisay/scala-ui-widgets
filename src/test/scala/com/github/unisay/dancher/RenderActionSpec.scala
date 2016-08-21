@@ -28,8 +28,8 @@ class RenderActionSpec(implicit ee: ExecutionEnv) extends Specification {
     "appendReturningParent" in {
       val renderAction = appendReturningParent(parentAction, childAction)
 
-      renderAction.asScriptString must beEqualTo("parent.appendChild(child);")
-      val DomBinding(element, events) = renderAction.asValue
+      renderAction.interpretJsString must beEqualTo("parent.appendChild(child);")
+      val (element, events, _) = renderAction.interpretJs
       element must beEqualTo(parentElement)
       events.toList must beEqualTo(List(event(1), event(2), event(3)))
     }
@@ -37,8 +37,8 @@ class RenderActionSpec(implicit ee: ExecutionEnv) extends Specification {
     "appendReturningChild" in {
       val renderAction = appendReturningChild(parentAction, childAction)
 
-      renderAction.asScriptString must beEqualTo("parent.appendChild(child);")
-      val DomBinding(element, events) = renderAction.asValue
+      renderAction.interpretJsString must beEqualTo("parent.appendChild(child);")
+      val (element, events, _) = renderAction.interpretJs
       element must beEqualTo(childElement)
       events.toList must beEqualTo(List(event(1), event(2), event(3)))
     }
