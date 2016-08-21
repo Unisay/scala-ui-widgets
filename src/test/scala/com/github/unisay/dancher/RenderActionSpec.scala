@@ -3,9 +3,10 @@ package com.github.unisay.dancher
 import cats.data.Ior
 import com.github.unisay.dancher.ActionMatchers._
 import com.github.unisay.dancher.ObservableMatchers._
-import com.github.unisay.dancher.RenderAction._
 import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.JsInterpreter.RawElement
+import com.github.unisay.dancher.widget.RenderAction
+import com.github.unisay.dancher.widget.all._
 import monix.reactive.Observable
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable.Specification

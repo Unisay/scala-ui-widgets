@@ -1,6 +1,7 @@
 package com.github.unisay.dancher
 
-import com.github.unisay.dancher.Widget._
+import com.github.unisay.dancher.widget.Widget
+import com.github.unisay.dancher.widget.all._
 import monocle.macros.Lenses
 
 object DemoPage {

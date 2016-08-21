@@ -3,9 +3,10 @@ package com.github.unisay.dancher
 import cats.data.Ior
 import com.github.unisay.dancher.ActionMatchers._
 import com.github.unisay.dancher.ObservableMatchers._
-import com.github.unisay.dancher.Widget._
-import com.github.unisay.dancher.dom.{DomBinding, DomEvent, DomEventHandler}
+import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.JsInterpreter.RawElement
+import com.github.unisay.dancher.widget.Widget
+import com.github.unisay.dancher.widget.all._
 import monix.reactive.Observable
 import monocle.Lens
 import monocle.macros.Lenses
@@ -30,9 +31,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
     val domEvent1 = domEvent(1)
     val domEvent2 = domEvent(2)
     val domEvent3 = domEvent(3)
-    val domEvent4 = domEvent(4)
 
-    val modelEvent = (de: DomEvent) => Ior.right[Unit, DomainEvent](ClickEvent(de))
     val widget: Widget[Unit] = Body +> Tabs(const(1))(
       "Tab 1" -> Header("Tab 1", size = 2),
       "Tab 2" -> Header("Tab 2", size = 2),
