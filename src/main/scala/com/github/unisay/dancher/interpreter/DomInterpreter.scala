@@ -1,121 +1,142 @@
 package com.github.unisay.dancher.interpreter
 
+import cats.data.Ior
 import cats.{Id, ~>}
+import com.github.unisay.dancher.DomainEvent
 import com.github.unisay.dancher.dom._
-import com.github.unisay.dancher.widget.ModelEvent.ModelEvent
 import monix.execution.Cancelable
 import monix.execution.Scheduler.Implicits.global
 import monix.reactive.{Observable, OverflowStrategy}
-import org.scalajs.dom.raw.MouseEvent
-import org.scalajs.dom.{console, document, raw}
+import org.scalajs.dom._
 
 import scala.language.implicitConversions
 
-class DomInterpreter {
+class DomInterpreter extends ActionInterpreter {
+
+  type DomNodeT = Node
+  type DomElemT = Element
+
+  implicit val domNodeEvidence: DomNode[DomNodeT] = new DomNode[DomNodeT] {}
+  implicit val domElemEvidence: DomElem[DomElemT] = new DomElem[DomElemT] {}
 
   def interpret[R, M](model: M, action: ActionF[R]): R = {
+    var lastModel = model
 
     val interpreter = new (Action ~> Id) {
 
-      case class RawNode(node: raw.Node) extends DomNode
-      case class RawElement(element: raw.Element) extends DomElement
-      case class RawNodeList(nodeList: raw.NodeList) extends DomNodeList
-      case class RawMouseEvent(event: raw.MouseEvent) extends DomMouseEvent
+      case class RawNodeList(nodeList: NodeList) extends DomNodeList
+      case class RawEvent(element: Element, event: Event) extends DomMouseEvent
 
       def apply[A](action: Action[A]): Id[A] = {
-        implicit def nodeToA(r: RawNode): A = r.asInstanceOf[A]
-        implicit def elementToA(r: RawElement): A = r.asInstanceOf[A]
-        implicit def nodeListToA(r: RawNodeList): A = r.asInstanceOf[A]
+        implicit def unitToA(unit: Unit): A = unit.asInstanceOf[A]
+        implicit def nodeToA(node: Node): A = node.asInstanceOf[A]
+        implicit def elementToA(element: Element): A = element.asInstanceOf[A]
+        implicit def nodeListToA(nodeList: RawNodeList): A = nodeList.asInstanceOf[A]
+        def shouldNotMatch(it: Any): Unit =
+          console.error(s"$it should have been matched by the preceding case statements")
 
         action match {
 
           case NoAction =>
-            ().asInstanceOf[A]
+            debug("NoAction")
+            ()
 
           case Value(a: Any) =>
+            debug(s"Value($a)")
             a.asInstanceOf[A]
 
           case Log(text) =>
             console.info(text)
-            ().asInstanceOf[A]
+            ()
 
-          case GetDocumentBody =>
-            RawElement(document.body)
+          case _: GetDocumentBody[_] =>
+            debug("GetDocumentBody")
+            document.body
 
-          case GetParent(RawElement(node)) =>
-            RawNode(node.parentNode)
-
-          case GetParent(RawNode(node)) =>
-            RawNode(node.parentNode)
+          case GetParent(node: Node) =>
+            debug(s"GetParent($node)")
+            node.parentNode
 
           case GetElementById(elementId) =>
-            RawElement(document.getElementById(elementId.value))
+            debug(s"GetElementById($elementId)")
+            document.getElementById(elementId.value)
 
           case GetElementsByName(name) =>
+            debug(s"GetElementsByName($name)")
             RawNodeList(document.getElementsByName(name))
 
           case GetElementsByTagName(name) =>
+            debug(s"GetElementsByTagName($name)")
             RawNodeList(document.getElementsByName(name))
 
           case GetElementsByClassName(name) =>
+            debug(s"GetElementsByClassName($name)")
             RawNodeList(document.getElementsByName(name))
 
           case CreateElement(tagName) =>
-            RawElement(document.createElement(tagName)).asInstanceOf[A]
+            debug(s"CreateElement($tagName)")
+            document.createElement(tagName)
 
           case CreateTextNode(text) =>
-            RawNode(document.createTextNode(text)).asInstanceOf[A]
+            debug(s"CreateTextNode($text)")
+            document.createTextNode(text)
 
-          case AppendChild(rawParent@RawElement(parent), RawNode(child)) =>
-            parent.appendChild(child)
-            rawParent
+          case AppendChild(parent: Node, child: Node) =>
+            debug(s"AppendChild($parent, $child)")
+            parent.asInstanceOf[Element].appendChild(child)
+            parent
 
-          case RemoveChild(rawParent@RawElement(parent), RawNode(child)) =>
+          case RemoveChild(parent: Node, child: Node) =>
+            debug(s"RemoveChild($parent, $child)")
             parent.removeChild(child)
-            rawParent
+            parent
 
-          // TODO-remove duplication
-          case RemoveChild(rawParent@RawNode(parent), RawNode(child)) =>
-            parent.removeChild(child)
-            rawParent
+          case GetFirstChild(node: Node) =>
+            debug(s"GetFirstChild($node)")
+            node.firstChild
 
-          // TODO-remove duplication
-          case RemoveChild(rawParent@RawNode(parent), RawElement(child)) =>
-            parent.removeChild(child)
-            rawParent
-
-          case GetFirstChild(RawNode(node)) =>
-            RawNode(node.firstChild)
-
-          case GetFirstChild(RawElement(node)) =>
-            RawNode(node.firstChild)
-
-          case ReplaceChild(rawParent@RawElement(parent), RawNode(newChild), RawNode(oldChild)) =>
+          case ReplaceChild(parent: Node, newChild: Node, oldChild: Node) =>
+            debug(s"ReplaceChild($parent, $newChild, $oldChild)")
             parent.replaceChild(newChild, oldChild)
-            rawParent
+            parent
 
-          // Has to provide separate case for RawElement child,
-          // because if RawElement is made a subclass of RawNode
-          // then custom unapply breaks the exhaustiveness checker
-          // https://issues.scala-lang.org/browse/SI-8511
-          case AppendChild(rawParent@RawElement(parent), RawElement(child)) =>
-            parent.appendChild(child)
-            rawParent
+          case GetAttribute(element: Element, name: String) =>
+            debug(s"GetAttribute($element, $name)")
+            element.getAttribute(name) match {
+              case "" => None
+              case null => None
+              case value => Some(value)
+            }
 
-          case SetAttribute(rawElement@RawElement(element), name, value) =>
+          case SetAttribute(element: Element, name: String, value: String) =>
+            debug(s"SetAttribute($element, $name, $value)")
             element.setAttribute(name, value)
-            rawElement
+            element
 
-          case SetOnClick(rawElement@RawElement(element), domEventHandler) =>
-            Observable.create[ModelEvent[M]](OverflowStrategy.Unbounded) { subscriber =>
-              val listener = (mouseEvent: MouseEvent) => {
-                domEventHandler.asInstanceOf[DomEventHandler[M]](RawMouseEvent(mouseEvent)).foreach { item =>
-                  subscriber.onNext(item)
-                  ()
-                }
+          case HandleEvents(element: Element, eventHandlers) =>
+            debug(s"HandleEvents($element)")
+            Observable.create[(M, DomainEvent)](OverflowStrategy.Unbounded) { subscriber =>
+              val listeners = eventHandlers.asInstanceOf[DomEventHandlers[M]].map {
+                case (eventType, handler) =>
+                  val listener = (event: Event) => handler(lastModel, RawEvent(element, event))
+                    .foreach {
+                      case (handledModel, Ior.Right(domainEvent)) =>
+                        lastModel = handledModel
+                        subscriber.onNext((lastModel, domainEvent))
+                        ()
+                      case (handledModel, Ior.Left(actionF)) =>
+                        lastModel = handledModel
+                        interpret(lastModel, actionF)
+                      case (handledModel, Ior.Both(actionF, domainEvent)) =>
+                        lastModel = handledModel
+                        interpret(lastModel, actionF)
+                        subscriber.onNext((handledModel, domainEvent))
+                        ()
+                    }
+                  (eventType.toString.toLowerCase, listener)
               }
-              element.addEventListener("click", listener)
-              Cancelable(() => element.removeEventListener("click", listener))
+              listeners.foreach { case (e, l) => element.addEventListener(e, l) }
+              Cancelable(() => listeners.foreach{ case (e, l) => element.removeEventListener(e, l) })
             }.asInstanceOf[A]
 
           case it@GetParent(_) => shouldNotMatch(it)
@@ -123,15 +144,16 @@ class DomInterpreter {
           case it@AppendChild(_, _) => shouldNotMatch(it)
           case it@RemoveChild(_, _) => shouldNotMatch(it)
           case it@ReplaceChild(_, _, _) => shouldNotMatch(it)
+          case it@GetAttribute(_, _) => shouldNotMatch(it)
           case it@SetAttribute(_, _, _) => shouldNotMatch(it)
-          case it@SetOnClick(_, _) => shouldNotMatch(it)
+          case it@HandleEvents(_, _) => shouldNotMatch(it)
         }
       }
 
-      def shouldNotMatch(it: Any) =
-        sys.error(s"$it should have been matched by the preceding case statements")
     }
 
     action.foldMap(interpreter)
   }
+
+  private def debug(message: => String) = console.info(message)
 }

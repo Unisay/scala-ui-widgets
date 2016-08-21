@@ -1,3 +1,9 @@
+@import 'https://fonts.googleapis.com/css?family=Open+Sans:600';
+
+* {
+    font-family: 'Open Sans', sans-serif;
+}
+
 .d-hidden {
     display: none;
 }
@@ -15,12 +21,15 @@ div.d-horizontal-layout {
 }
 
 .d-tab {
-    border: 1px solid gray;
-    padding: 2px 5px;
-    margin: 0 1px;
+    font-size: 14px;
+    font-weight: bold;
+    border: 0;
+    padding: 5px 10px;
+    margin: 1px;
     cursor: pointer;
+    outline: none;
 }
 
 .d-tab-active {
-    font-weight: bold;
+    background-color: #ffc107;
 }

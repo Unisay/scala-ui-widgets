@@ -1,14 +1,11 @@
 package com.github.unisay.dancher
 
-import cats.data.Ior
 import com.github.unisay.dancher.ActionTestHelpers._
-import com.github.unisay.dancher.ObservableMatchers._
-import com.github.unisay.dancher.dom._
-import com.github.unisay.dancher.interpreter.JsInterpreter.RawElement
+import com.github.unisay.dancher.interpreter.JsInterpreter
 import com.github.unisay.dancher.widget.Widget
+import com.github.unisay.dancher.widget.WidgetHelpers._
 import com.github.unisay.dancher.widget.all._
 import monix.execution.schedulers.TestScheduler
-import monix.reactive.Observable
 import monocle.Lens
 import monocle.macros.Lenses
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -16,6 +13,8 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class FuncWidgetSpec extends FlatSpec with MustMatchers {
 
   implicit val scheduler = TestScheduler()
+  implicit val interpreter = JsInterpreter
+  import interpreter._
 
   sealed trait Gender
   case object Male extends Gender
@@ -27,83 +26,9 @@ class FuncWidgetSpec extends FlatSpec with MustMatchers {
   val john = User(Male, "John", "Doe", Address("Oak blvd.", "666"))
   val sara = User(Female, "Sara", "Connor", Address("Red Square", "1"))
 
-  "Event propagation" must "verify list" in {
-    def domEvent(index: Int): DomEvent = new DomEvent(){ override def toString = s"domEvent$index" }
-
-    val domEvent1 = domEvent(1)
-    val domEvent2 = domEvent(2)
-    val domEvent3 = domEvent(3)
-
-    val widget: Widget[Unit] = Body +> Tabs(const(1))(
-      "Tab 1" -> Header("Tab 1", size = 2),
-      "Tab 2" -> Header("Tab 2", size = 2),
-      "Tab 3" -> Header("Tab 3", size = 2)
-    )
-    val renderAction = widget.render(())
-
-    renderAction.interpretJsString(()) must be
-      """
-        |var b = document.body;
-        |var div0 = document.createElement('div');
-        |div0.setAttribute('class', 'd-vertical');
-        |var div1 = document.createElement('div');
-        |div1.setAttribute('class', 'd-horizontal');
-        |var button0 = document.createElement('button');
-        |/* SetOnClick(button0) */;
-        |button0.setAttribute('class', 'd-button d-tab');
-        |var text0 = document.createTextNode('Tab 1');
-        |button0.appendChild(text0);
-        |div1.appendChild(button0);
-        |var button1 = document.createElement('button');
-        |/* SetOnClick(button1) */;
-        |button1.setAttribute('class', 'd-button d-tab d-tab-active');
-        |var text1 = document.createTextNode('Tab 2');
-        |button1.appendChild(text1);
-        |div1.appendChild(button1);
-        |var button2 = document.createElement('button');
-        |/* SetOnClick(button2) */;
-        |button2.setAttribute('class', 'd-button d-tab');
-        |var text2 = document.createTextNode('Tab 3');
-        |button2.appendChild(text2);
-        |div1.appendChild(button2);
-        |div0.appendChild(div1);
-        |var div2 = document.createElement('div');
-        |div2.setAttribute('class', 'd-vertical');
-        |var h20 = document.createElement('h2');
-        |var text3 = document.createTextNode('Tab 1');
-        |h20.appendChild(text3);
-        |h20.setAttribute('class', 'd-hidden');
-        |div2.appendChild(h20);
-        |var h21 = document.createElement('h2');
-        |var text4 = document.createTextNode('Tab 2');
-        |h21.appendChild(text4);
-        |div2.appendChild(h21);
-        |var h22 = document.createElement('h2');
-        |var text5 = document.createTextNode('Tab 3');
-        |h22.appendChild(text5);
-        |h22.setAttribute('class', 'd-hidden');
-        |div2.appendChild(h22);
-        |div0.appendChild(div2);
-        |b.appendChild(div0);
-      """.stripMargin.trim
-
-    val (element, modelEvents, _) = renderAction.interpretJs(model = (), domEvents = Observable(
-      "button0" -> domEvent1,
-      "button1" -> domEvent2,
-      "button2" -> domEvent3
-    ))
-
-    element mustBe RawElement("b")
-    modelEvents.toList() must contain theSameElementsInOrderAs List(
-      Ior.both[Unit, DomainEvent]((), TabActivated[Unit](0)),
-      Ior.both[Unit, DomainEvent]((), TabActivated[Unit](1)),
-      Ior.both[Unit, DomainEvent]((), TabActivated[Unit](2))
-    )
-  }
-
   "Library widgets" must "render correctly" in {
 
-    def Header(): Widget[User] = {
+    def Header: Widget[User] = {
       Vertical(
         Horizontal(
           Label(User.name) > Label(User.surname)
@@ -114,7 +39,7 @@ class FuncWidgetSpec extends FlatSpec with MustMatchers {
       )
     }
 
-    val action = Header().render(john)
+    val action = Header(john)
 
     action.interpretJsString(john) mustEqual
       """
@@ -161,28 +86,24 @@ class FuncWidgetSpec extends FlatSpec with MustMatchers {
 
     object Badge {
       /* Example of conditional logic */
-      def apply(): Widget[User] = new Widget[User] {
-        def render(user: User) = {
-          val prefix = user.gender match {
-            case Male => "Sir"
-            case Female => "Lady"
-          }
-          Horizontal (
-            Label(const(prefix)) > Label(User.name) > Label(User.surname), cssClasses = List("badge")
-          ).render(user)
+      def apply(): Widget[User] = Widget { (user: User) =>
+        val prefix = user.gender match {
+          case Male => "Sir"
+          case Female => "Lady"
         }
+        Horizontal (
+          Label(const(prefix)) > Label(User.name) > Label(User.surname), cssClasses = List("badge")
+        ).apply(user)
       }
     }
 
-    object Header {
-      def apply(): Widget[User] =
-        Vertical (
-          Badge() >
-          AddressBar(User.address)
-        )
-    }
+    def Header: Widget[User] =
+      Vertical (
+        Badge() >
+        AddressBar(User.address)
+      )
 
-    val action = Header().render(john)
+    val action = Header(john)
 
     action.interpretJsString(john) mustEqual
       """
@@ -221,7 +142,7 @@ class FuncWidgetSpec extends FlatSpec with MustMatchers {
         |div0.appendChild(div2);
       """.stripMargin.trim
 
-    val actionSara = Header().render(sara)
+    val actionSara = Header(sara)
 
     actionSara.interpretJsString(sara) mustEqual
       """

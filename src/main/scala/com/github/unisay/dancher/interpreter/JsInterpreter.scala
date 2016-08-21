@@ -1,27 +1,36 @@
 package com.github.unisay.dancher.interpreter
 
 import cats._
-import cats.data.State
+import cats.data.{Ior, State}
 import cats.instances.all._
 import cats.syntax.eq._
+import com.github.unisay.dancher.DomainEvent
 import com.github.unisay.dancher.dom._
 import monix.reactive.Observable
 
 import scala.language.implicitConversions
 
-object JsInterpreter {
+object JsInterpreter extends ActionInterpreter {
 
-  case class RawElement(element: String) extends DomElement
+  type DomNodeT = JsInterpreterNode
+  type DomElemT = JsInterpreterElement
+  implicit val domElemEvidence: DomElem[DomElemT] = new DomElem[DomElemT] {}
+
+  case class EffectActionEvent(effect: String) extends DomainEvent
+  case class JsInterpreterNode(name: String)
+  case class JsInterpreterElement(name: String)
   case class RawNodeList(nodeList: String) extends DomNodeList
-  case class RawMouseEvent(event: String) extends DomMouseEvent
-  case class RawNode(node: String) extends DomNode
+  case class RawMouseEvent(element: JsInterpreterElement, event: String) extends DomMouseEvent
 
   type Script = List[String]
   type Result = (Map[String, Int], Script)
   type InterpreterState[A] = State[Result, A]
 
-  def interpret[R, M](model: M, action: ActionF[R],
-                      domEvents: Observable[(String, DomEvent)] = Observable.empty): (R, Script) = {
+  def interpret[R, M](model: M, action: ActionF[R]): R = interpretScript(model, action, Observable.empty)._1
+
+  def interpretScript[R, M](model: M, action: ActionF[R],
+                            domEvents: Observable[(String, (DomEventType, DomEvent))] = Observable.empty,
+                            attributes: Map[JsInterpreterElement, Map[String, String]] = Map.empty): (R, String) = {
     val interpreter: Action ~> InterpreterState = new (Action ~> InterpreterState) {
 
       def result[A](a: A): InterpreterState[A] =
@@ -47,6 +56,8 @@ object JsInterpreter {
         }
 
       override def apply[A](action: Action[A]): InterpreterState[A] = {
+        implicit def nodeToA(node: JsInterpreterNode): A = node.asInstanceOf[A]
+        implicit def elementToA(element: JsInterpreterElement): A = element.asInstanceOf[A]
         implicit def toA(aw: InterpreterState[_]): InterpreterState[A] = aw.asInstanceOf[InterpreterState[A]]
 
         action match {
@@ -57,18 +68,18 @@ object JsInterpreter {
           case Value(a: Any) =>
             result(a.asInstanceOf[A])
 
-          case GetDocumentBody =>
-            scriptWithReturn("var b = document.body", RawElement("b"))
+          case _: GetDocumentBody[_] =>
+            scriptWithReturn("var b = document.body", JsInterpreterElement("b"))
 
-          case GetParent(RawNode(node)) =>
-            result(RawNode(s"$node.parentNode"))
+          case GetParent(JsInterpreterNode(node)) =>
+            result(JsInterpreterNode(s"$node.parentNode"))
 
-          case GetParent(RawElement(node)) =>
-            result(RawNode(s"$node.parentNode"))
+          case GetParent(JsInterpreterElement(node)) =>
+            result(JsInterpreterNode(s"$node.parentNode"))
 
           case GetElementById(elementId) =>
-            scriptWithCounterAndReturn[RawElement]("element") { variableName =>
-              (s"var $variableName = document.getElementById('${elementId.value}')", RawElement(variableName))
+            scriptWithCounterAndReturn[JsInterpreterElement]("element") { variableName =>
+              (s"var $variableName = document.getElementById('${elementId.value}')", JsInterpreterElement(variableName))
             }
 
           case GetElementsByName(name) =>
@@ -81,48 +92,67 @@ object JsInterpreter {
             result(RawNodeList(s"document.getElementsByName('$name')"))
 
           case CreateElement(tagName) =>
-            scriptWithCounterAndReturn[RawElement](tagName) { variableName =>
-              (s"var $variableName = document.createElement('$tagName')", RawElement(variableName))
+            scriptWithCounterAndReturn[JsInterpreterElement](tagName) { variableName =>
+              (s"var $variableName = document.createElement('$tagName')", JsInterpreterElement(variableName))
             }
 
           case CreateTextNode(text) =>
-            scriptWithCounterAndReturn[RawNode]("text") { variableName =>
-              (s"var $variableName = document.createTextNode('$text')", RawNode(variableName))
+            scriptWithCounterAndReturn[JsInterpreterNode]("text") { variableName =>
+              (s"var $variableName = document.createTextNode('$text')", JsInterpreterNode(variableName))
             }
 
-          case AppendChild(rawParent@RawElement(parent), RawNode(child)) =>
-            scriptWithReturn[RawElement](s"$parent.appendChild($child)", rawParent)
+          case AppendChild(rawParent@JsInterpreterElement(parent), JsInterpreterNode(child)) =>
+            scriptWithReturn[JsInterpreterElement](s"$parent.appendChild($child)", rawParent)
 
-          case AppendChild(rawParent@RawElement(parent), RawElement(child)) =>
-            scriptWithReturn[RawElement](s"$parent.appendChild($child)", rawParent)
+          case AppendChild(rawParent@JsInterpreterElement(parent), JsInterpreterElement(child)) =>
+            scriptWithReturn[JsInterpreterElement](s"$parent.appendChild($child)", rawParent)
 
 
-          case RemoveChild(rawParent@RawElement(parent), RawNode(child)) =>
+          case RemoveChild(rawParent@JsInterpreterElement(parent), JsInterpreterNode(child)) =>
             scriptWithReturn(s"$parent.removeChild($child)", rawParent)
 
-          case RemoveChild(rawParent@RawNode(parent), RawElement(child)) =>
+          case RemoveChild(rawParent@JsInterpreterNode(parent), JsInterpreterElement(child)) =>
             scriptWithReturn(s"$parent.removeChild($child)", rawParent)
 
-          case GetFirstChild(RawNode(node)) =>
-            result(RawNode(s"$node.firstChild"))
+          case GetFirstChild(JsInterpreterNode(node)) =>
+            result(JsInterpreterNode(s"$node.firstChild"))
 
-          case GetFirstChild(RawElement(node)) =>
-            result(RawNode(s"$node.firstChild"))
+          case GetFirstChild(JsInterpreterElement(node)) =>
+            result(JsInterpreterNode(s"$node.firstChild"))
 
-          case ReplaceChild(rawParent@RawElement(parent), RawNode(newChild), RawNode(oldChild)) =>
+          case ReplaceChild(rawParent@JsInterpreterElement(parent), JsInterpreterNode(newChild), JsInterpreterNode(oldChild)) =>
             scriptWithReturn(s"$parent.replaceChild($newChild, $oldChild)", rawParent)
 
-          case SetAttribute(rawElement@RawElement(element), name, value) =>
-            scriptWithReturn(s"$element.setAttribute('$name', '$value')", rawElement)
+          case GetAttribute(rawElement@JsInterpreterElement(element), name) =>
+            val value = for {
+              elementAttributes <- attributes.get(rawElement)
+              attributeValue <- elementAttributes.get(name)
+            } yield attributeValue
+            scriptWithReturn(s"""$element.getAttribute("$name")""", value)
 
-          case SetOnClick(rawElement@RawElement(element), domEventHandler) =>
+          case SetAttribute(rawElement@JsInterpreterElement(element), name, value) =>
+            scriptWithReturn(s"""$element.setAttribute("$name", "$value")""", rawElement)
+
+          case HandleEvents(JsInterpreterElement(element), domEventHandlers) =>
             val result = domEvents
               .flatMap {
                 case (el, domEvent) if el === element => Observable(domEvent)
                 case _ => Observable.empty
               }
-              .flatMap(domEventHandler.asInstanceOf[DomEventHandler[M]])
-            scriptWithReturn(s"/* SetOnClick($element) */", result)
+              .flatMap {
+                case (eventType, event) =>
+                  val handlers = domEventHandlers.asInstanceOf[DomEventHandlers[M]]
+                  Observable.fromIterable(handlers.get(eventType).map(_ (model, event)).toList).flatten
+              }
+              .flatMap {
+                case (m, Ior.Right(domainEvent)) =>
+                  Observable((m, domainEvent))
+                case (_, Ior.Left(actionF)) =>
+                  Observable((null, EffectActionEvent(interpretScript(model, actionF)._2)))
+                case (m, Ior.Both(actionF, domainEvent)) =>
+                  Observable((m, EffectActionEvent(interpretScript(model, actionF)._2)), (m, domainEvent))
+              }
+            scriptWithReturn(s"/* HandleEvents($element) */", result)
 
           case it =>
             sys.error(s"Can't compile to JS: $it")
@@ -133,7 +163,7 @@ object JsInterpreter {
 
     val interpreterState = action.foldMap(interpreter)
     val ((_, reverseScript), a) = interpreterState.run((Map.empty, Nil)).value
-    (a, reverseScript.reverse)
+    (a, reverseScript.reverse.mkString("", ";\n", ";").trim)
   }
 
 }

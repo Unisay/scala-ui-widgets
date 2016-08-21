@@ -1,70 +1,78 @@
 package com.github.unisay.dancher.widget
 
-import cats.data.Ior
+import cats.data.Ior._
+import cats.data.{Ior, Reader}
 import com.github.unisay.dancher.DomainEvent
 import com.github.unisay.dancher.dom._
+import com.github.unisay.dancher.interpreter.ActionInterpreter
 import monix.reactive.Observable
 import monocle.Lens
 
-object ModelEvent {
-  type ModelEvent[N] = N Ior DomainEvent
-  def apply[M](domainEvent: DomainEvent): ModelEvent[M] = Ior.Right(domainEvent)
-  def apply[M](model: M, domainEvent: DomainEvent): ModelEvent[M] = Ior.Both(model, domainEvent)
+import scala.language.implicitConversions
+
+object HandlerResult {
+  type HandlerResult[M] = (M, EffectAction Ior DomainEvent)
+  def apply[M](model: M, domainEvent: DomainEvent): HandlerResult[M] =
+    (model, right(domainEvent))
+  def apply[M](model: M, action: EffectAction): HandlerResult[M] =
+    (model, left(action))
+  def apply[M](model: M, domainEvent: DomainEvent, action: EffectAction): HandlerResult[M] =
+    (model, both(action, domainEvent))
 }
 
-trait Widget[M] {
-
-  def render(model: M): RenderAction[M]
-  def update(model: M, event: DomainEvent): (M, ActionF[Unit]) = (model, noAction)
-}
-
-trait RenderActionOps {
-
-  def appendReturningChild[M](parent: RenderAction[M], child: RenderAction[M]): RenderAction[M] =
+object RenderAction {
+  def append[M](parent: RenderAction, child: RenderAction): RenderAction =
     for {
-      parentBinding <- parent
-      childBinding  <- child
-      _ <- parentBinding.element.appendChild(childBinding.element)
-    } yield DomBinding(childBinding.element, Observable.merge(parentBinding.events, childBinding.events))
-
-  def appendReturningParent[M](parent: RenderAction[M], child: RenderAction[M]): RenderAction[M] =
-    for {
-      parentBinding <- parent
-      childBinding  <- child
-      parentElement <- parentBinding.element.appendChild(childBinding.element)
-    } yield DomBinding(parentElement, Observable.merge(parentBinding.events, childBinding.events))
-
-
-  def hide[M](action: RenderAction[M]) =
-    for { domBinding <- action; hiddenElement <- domBinding.element.hide }
-      yield DomBinding(hiddenElement, domBinding.events)
+      pb <- parent
+      cb  <- child
+      parentElement <- appendChild(pb.element, cb.element)(cb.elementEvidence, pb.elementEvidence)
+    } yield DomBinding(
+       parentElement,
+       pb.nested :+ cb,
+       Observable.merge(pb.events, cb.events)
+    )(cb.elementEvidence)
 }
 
-trait WidgetSyntax extends RenderActionOps {
+trait WidgetSyntax {
+  implicit def widgetSyntax[M](widget: Widget[M]): WidgetOps[M] = new WidgetOps[M](widget)
+  implicit def widgetListSyntax[M](widgets: List[Widget[M]]): WidgetListOps[M] = new WidgetListOps(widgets)
+}
 
-  implicit class WidgetSyntax[M](widget: Widget[M]) {
-    def >(other: Widget[M]): List[Widget[M]] = widget :: other :: Nil
+final class WidgetListOps[M](val widgets: List[Widget[M]]) extends AnyVal {
+  def >(widget: Widget[M]): List[Widget[M]] = widgets :+ widget
+}
 
-    /** Append child to parent returning parent */
-    def +>(child: Widget[M]): Widget[M] = new Widget[M] {
-      def render(model: M): RenderAction[M] = appendReturningParent(widget.render(model), child.render(model))
+final class WidgetOps[M](val widget: Widget[M]) extends AnyVal {
+  import RenderAction._
+
+  def >(other: Widget[M]): List[Widget[M]] = widget :: other :: Nil
+
+  /** Append child to parent returning parent */
+  def +>(child: Widget[M]): Widget[M] = Widget(model => append(widget(model), child(model)))
+
+  def flatMapBinding(f: DomBinding => ActionF[DomBinding]): Widget[M] =
+    widget.map(_.flatMap(f))
+
+  def flatMapElement(f: (DomBinding#E, DomElem[DomBinding#E]) => ActionF[DomBinding#E]): Widget[M] =
+    flatMapBinding { (binding: DomBinding) =>
+      f(binding.element, binding.elementEvidence).map { (e: DomBinding#E) =>
+        DomBinding(e, binding.nested, binding.events)(binding.elementEvidence)
+      }
     }
-  }
 
-  implicit class WidgetListSyntax[M](widgets: List[Widget[M]]) {
-    def >(widget: Widget[M]): List[Widget[M]] = widgets :+ widget
-  }
+  def render(model: M)(implicit interpreter: ActionInterpreter): DomBinding =
+    interpreter.interpret(model, widget(model))
 }
 
-object Widget extends WidgetSyntax with RenderActionOps
+object Widget extends WidgetSyntax {
+  def apply[M](f: M => RenderAction): Widget[M] = Reader(f)
+  def pure[M](renderAction: RenderAction): Widget[M] = Widget(_ => renderAction)
+  def lift[M](binding: DomBinding): Widget[M] = pure(value(binding))
+}
 
-trait WidgetHelpers {
+object WidgetHelpers {
   // TODO: use magnet
   def const[M, C](constant: C): Lens[M, C] = Lens[M, C](_ => constant)(_ => identity)
-
-  def createRender[M](action: RenderAction[M]) = new Widget[M] {
-    def render(model: M) = action
-  }
 }
 
 object all

@@ -1,12 +1,33 @@
 package com.github.unisay.dancher
 
-import com.github.unisay.dancher.dom.DomEvent
-import org.scalacheck.{Arbitrary, Gen}
+import cats.Eq
+import com.github.unisay.dancher.dom._
+import com.github.unisay.dancher.interpreter.JsInterpreter.JsInterpreterElement
+import org.scalacheck._
 
 object DomArbitraries {
 
-  implicit val arbDomEvent = Arbitrary {
-    Gen.numChar.map(index => new DomEvent() { override def toString = s"domEvent$index" })
+  case class CssClass(value: String) extends AnyVal {
+    override def toString = value
+  }
+
+  implicit val cssClassEquality: Eq[CssClass] = new Eq[CssClass] {
+    def eqv(x: CssClass, y: CssClass) = x == y
+  }
+
+  implicit val arbitraryCssClass: Arbitrary[CssClass] = Arbitrary {
+    Gen.alphaStr.suchThat(_.nonEmpty).map(CssClass)
+  }
+
+  implicit val arbitraryJsInterpreterElement: Arbitrary[JsInterpreterElement] = Arbitrary {
+    Gen.numChar.map(index => JsInterpreterElement(s"element$index"))
+  }
+
+  implicit val arbDomEvent: Arbitrary[DomEvent] = Arbitrary {
+    for {
+      index <- Gen.numChar
+      domElement <- Arbitrary.arbitrary[JsInterpreterElement]
+    } yield new DomEvent() { val element = domElement; override def toString = s"domEvent$index" }
   }
 
 }

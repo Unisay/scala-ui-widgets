@@ -18,18 +18,19 @@ scalacOptions ++= Seq(
   "-encoding", "UTF-8"
 )
 
-val catsVer = "0.7.0"
-val scalajsVer = "0.9.0"
-val specs2Ver = "3.8.2"
-val monocleVer = "1.2.2"
-val monixVer = "2.0-RC11"
+val catsVer       = "0.7.0"
+val scalajsDomVer = "0.9.1"
+val specs2Ver     = "3.8.2"
+val monocleVer    = "1.2.2"
+val monixVer      = "2.0-RC11"
 
 libraryDependencies ++= Seq(
-  "org.scala-js"  %%% "scalajs-dom" % scalajsVer,
+  "org.scala-js"  %%% "scalajs-dom" % scalajsDomVer,
 
   "io.monix"      %%% "monix"       % monixVer,
   "io.monix"      %%% "monix-eval"  % monixVer,
-  "io.monix"      %%% "monix-cats"  % monixVer,
+
+  //  "io.monix"      %%% "monix-cats"  % monixVer,
 
   "org.typelevel" %%% "cats-kernel" % catsVer,
   "org.typelevel" %%% "cats-macros" % catsVer,

@@ -1,8 +1,12 @@
 package com.github.unisay.dancher
 
-import cats.data.Ior
+import java.util.UUID
+
+import cats.data.{Ior, NonEmptyList}
 import cats.free.Free
-import com.github.unisay.dancher.widget.ModelEvent.ModelEvent
+import com.github.unisay.dancher.interpreter.ActionInterpreter
+import com.github.unisay.dancher.widget.EffectAction
+import com.github.unisay.dancher.widget.HandlerResult.HandlerResult
 import monix.reactive.Observable
 
 import scala.language.implicitConversions
@@ -13,35 +17,71 @@ object dom {
 
   sealed trait Action[+N]
 
+  object DomId {
+    def unique: DomId = DomId(UUID.randomUUID().toString)
+  }
+
   case class DomId(value: String) extends AnyVal
 
+/*    def getParent = dom.getParentNode(this)
+    def getFirstChild = dom.getFirstChild(this)
+    def removeChild(child: DomNode) = dom.removeChild(this, child)
+    def replaceChild(newChild: DomNode, oldChild: DomNode) = dom.replaceChild(this, newChild, oldChild)*/
+
+  trait DomNode[+N]
+  trait DomElem[+E] extends DomNode[E]
+
   trait DomEvent
+
+  sealed trait DomEventType
+  case object Click extends DomEventType
+  case object MouseEnter extends DomEventType
+
   trait DomMouseEvent extends DomEvent
   trait DomNodeList
 
-  type DomEventHandler[M] = DomEvent => Observable[ModelEvent[M]]
+  type DomEventHandler[M] = (M, DomEvent) => Observable[HandlerResult[M]]
+  type DomEventHandlers[M] = Map[DomEventType, DomEventHandler[M]]
 
-  trait DomNode {
-    def getParent = dom.getParentNode(this)
-    def getFirstChild = dom.getFirstChild(this)
-    def removeChild(child: DomNode) = dom.removeChild(this, child)
-    def replaceChild(newChild: DomNode, oldChild: DomNode) = dom.replaceChild(this, newChild, oldChild)
+  object DomEventHandlers {
+    def NoHandlers[M] = Map.empty[DomEventType, (M, DomEvent) => Observable[(M, EffectAction Ior DomainEvent)]]
+    def On[M](eventType: DomEventType)(handler: DomEventHandler[M]): DomEventHandlers[M] = Map(eventType -> handler)
   }
 
-  trait DomElement extends DomNode {
-    def setId(id: DomId) = dom.setId(id)(this)
-    def appendChild[C <: DomNode](child: C) = dom.appendChild(this, child)
-    def appendText(text: String) = dom.createTextNode(text).flatMap(this.appendChild)
-    def setAttribute(name: String, value: String) = dom.setAttribute(name, value)(this)
-    def setClass(cssClass: String) = dom.setClass(cssClass)(this)
-    def hide = setClass("d-hidden")
-    def setClasses(cssClasses: List[String]) = setClass(cssClasses.map(_.trim).filter(_.nonEmpty).mkString(" "))
-    def onClick[M](handler: DomEventHandler[M]) = dom.setOnClick(this, handler)
+  trait DomBinding {
+    type M
+    type E
+    implicit val elementEvidence: DomElem[E]
+    val element: E
+    val nested: Vector[DomBinding]
+    val events: Observable[(M, DomainEvent)]
+
+    def flatMapElement(f: E => ActionF[E]): ActionF[DomBinding] =
+      f(element).map(ee => DomBinding(ee, nested, events))
   }
 
-  case class DomBinding[M](element: DomElement, events: Observable[M Ior DomainEvent] = Observable.empty)
+  object DomBinding {
+    def apply[M0, E0: DomElem](element0: E0,
+                               nested0: Vector[DomBinding] = Vector.empty,
+                               events0: Observable[(M0, DomainEvent)] = Observable.empty): DomBinding = new DomBinding {
+      type M = M0
+      type E = E0
+
+      val elementEvidence = implicitly[DomElem[E0]]
+      val element = element0
+      val events = events0
+      val nested = nested0
+    }
+  }
+
 
   type ActionF[A] = Free[Action, A]
+
+  implicit class ActionOps[A](action: ActionF[A]) {
+    def followedBy[B](action2: ActionF[B]): ActionF[B] = action.flatMap(_ => action2)
+    def interpret[M](model: M)(implicit interpreter: ActionInterpreter): A =
+      interpreter.interpret(model, action)
+  }
 
   object NoAction extends Action[Nothing]
   def noAction[R]: ActionF[R] = NoAction
@@ -50,14 +90,14 @@ object dom {
   def value[A](a: A): ActionF[A] = Value(a)
 
   case class Log(text: String) extends Action[Unit]
-  def log(message: String): ActionF[Unit] =
+  def log(message: String): EffectAction =
     Log(message)
 
-  object GetDocumentBody extends Action[DomElement]
-  def getDocumentBody: ActionF[DomElement] = GetDocumentBody
+  class GetDocumentBody[E] extends Action[E]
+  def getDocumentBody[E: DomElem]: ActionF[E] = new GetDocumentBody[E]
 
-  case class GetElementById(id: DomId) extends Action[DomElement]
-  def getElementById(id: DomId): ActionF[DomElement] = GetElementById(id)
+  case class GetElementById[E: DomElem](id: DomId) extends Action[E]
+  def getElementById[E: DomElem](id: DomId): ActionF[E] = GetElementById[E](id)
 
   case class GetElementsByName(Name: String) extends Action[DomNodeList]
   def getElementsByName(Name: String): ActionF[DomNodeList] = GetElementsByName(Name)
@@ -68,36 +108,90 @@ object dom {
   case class GetElementsByClassName(className: String) extends Action[DomNodeList]
   def getElementsByClassName(className: String): ActionF[DomNodeList] = GetElementsByClassName(className)
 
-  case class CreateElement(tagName: String) extends Action[DomElement]
-  def createElement(tagName: String): ActionF[DomElement] = CreateElement(tagName)
+  case class CreateElement[E: DomElem](tagName: String) extends Action[E]
+  def createElement[E: DomElem](tagName: String): ActionF[E] = CreateElement[E](tagName)
 
-  case class CreateTextNode(text: String) extends Action[DomNode]
-  def createTextNode(text: String): ActionF[DomNode] = CreateTextNode(text)
+  case class CreateTextNode[N: DomNode](text: String) extends Action[N]
+  def createTextNode[N: DomNode](text: String): ActionF[N] = CreateTextNode[N](text)
 
-  case class GetParent(node: DomNode) extends Action[DomNode]
-  def getParentNode(node: DomNode): ActionF[DomNode] = GetParent(node)
+  case class GetParent[N: DomNode](node: N) extends Action[N]
+  def getParentNode[N: DomNode](node: N): ActionF[N] = GetParent(node)
 
-  case class GetFirstChild(node: DomNode) extends Action[DomNode]
-  def getFirstChild(node: DomNode): ActionF[DomNode] = GetFirstChild(node)
+  case class GetFirstChild[N: DomNode](node: N) extends Action[N]
+  def getFirstChild[N: DomNode](node: N): ActionF[N] = GetFirstChild(node)
 
-  case class AppendChild[C <: DomNode](parent: DomElement, child: C) extends Action[C]
-  def appendChild[C <: DomNode](parent: DomElement, child: C): ActionF[C] = AppendChild(parent, child)
+  case class AppendChild[N: DomNode, E: DomElem](parent: E, child: N) extends Action[N]
+  def appendChild[N: DomNode, E: DomElem](parent: E, child: N): ActionF[N] = AppendChild(parent, child)
 
-  case class RemoveChild(parent: DomNode, child: DomNode) extends Action[DomNode]
-  def removeChild(parent: DomNode, child: DomNode): ActionF[DomNode] = RemoveChild(parent, child)
+  case class RemoveChild[N: DomNode](parent: N, child: N) extends Action[N]
+  def removeChild[N: DomNode](parent: N, child: N): ActionF[N] = RemoveChild(parent, child)
 
-  case class ReplaceChild(parent: DomNode, newChild: DomNode, oldChild: DomNode) extends Action[DomNode]
-  def replaceChild(parent: DomNode, newChild: DomNode, oldChild: DomNode): ActionF[DomNode] =
+  case class ReplaceChild[N: DomNode](parent: N, newChild: N, oldChild: N) extends Action[N]
+  def replaceChild[N: DomNode](parent: N, newChild: N, oldChild: N): ActionF[N] =
     ReplaceChild(parent, newChild, oldChild)
 
-  case class SetAttribute(element: DomElement, name: String, value: String) extends Action[DomElement]
-  def setAttribute(name: String, value: String)(elem: DomElement): ActionF[DomElement] = SetAttribute(elem, name, value)
-  def setId(id: DomId)(element: DomElement) = setAttribute("id", id.value)(element)
-  def setClass(cssClass: String)(element: DomElement) = setAttribute("class", cssClass)(element)
+  case class GetAttribute[E: DomElem](element: E, name: String) extends Action[Option[String]]
+  def getAttribute[E: DomElem](name: String)(element: E): ActionF[Option[String]] = GetAttribute[E](element, name)
 
-  case class SetOnClick[M](element: DomElement, handler: DomEventHandler[M])
-    extends Action[Observable[M Ior DomainEvent]]
-  def setOnClick[M](element: DomElement, handler: DomEventHandler[M]): ActionF[Observable[M Ior DomainEvent]] =
-    SetOnClick(element, handler)
+  case class SetAttribute[E: DomElem](element: E, name: String, value: String) extends Action[E]
+  def setAttribute[E: DomElem](name: String, value: String)(elem: E): ActionF[E] = SetAttribute(elem, name, value)
 
+  case class HandleEvents[M, E: DomElem](element: E, handler: DomEventHandlers[M])
+    extends Action[Observable[(M, DomainEvent)]]
+  def handleEvents[M, E: DomElem](element: E, handler: DomEventHandlers[M]): ActionF[Observable[(M, DomainEvent)]] =
+    HandleEvents(element, handler)
+
+  def getId[E: DomElem](element: E) =
+    getAttribute("id")(element) /* TODO: get element id directly */
+
+  def setId[E: DomElem](element: E, id: DomId) =
+    setAttribute("id", id.value)(element)
+
+  def appendText[N: DomNode, E: DomElem](element: E, text: String) =
+    createTextNode[N](text) flatMap (appendChild(element, _))
+
+  def cssClass[E: DomElem](element: E): ActionF[Option[String]] = getAttribute("class")(element)
+
+  def setClass[E: DomElem](element: E, class0: String) = { // TODO: test
+    val class1 = class0.trim
+      if (class1.isEmpty) value(element) else setAttribute("class", class1)(element)
+  }
+
+  def setClasses[E: DomElem](element: E, cssClasses: NonEmptyList[String]) =
+    cssClasses.map(addClass(_)(element)).toList.reduce(_ followedBy _)
+
+  def addClass[E: DomElem](class0: String)(element: E) = {
+    val class1 = class0.trim
+    if (class1.isEmpty)
+      value(element)
+    else
+      cssClass(element)
+        .map(_.fold(class1)((class0: String) => (class0.split(" ").toSet + class1).mkString(" ")))
+        .flatMap(setAttribute("class", _)(element))
+  }
+
+  def addClasses[E: DomElem](element: E, cssClasses: NonEmptyList[String]): ActionF[E] = {
+    cssClass(element)
+      .map(_.fold(cssClasses.toList.toSet)((class0: String) => cssClasses.toList ++: class0.split(" ").toSet))
+      .flatMap((classes: Set[String]) => setAttribute("class", classes.toList.sorted.mkString(" "))(element))
+  }
+
+  def removeClass[E: DomElem](class0: String)(element: E): ActionF[E] = {
+    val class1 = class0.trim
+    if (class1.isEmpty)
+      value(element)
+    else
+      cssClass(element).flatMap(_.fold(value(element)) { class0 =>
+        setAttribute("class", (class0.split(" ").toSet - class1).mkString(" "))(element)
+      })
+  }
+
+  def hide[E: DomElem](element: E) =
+    addClass("d-hidden")(element) // TODO: test
+
+  def show[E: DomElem](element: E) =
+    removeClass("d-hidden")(element) // TODO: test
+
+  def onClick[M, E: DomElem](element: E, handler: DomEventHandler[M]) =
+    handleEvents(element, Map(Click -> handler))
 }
