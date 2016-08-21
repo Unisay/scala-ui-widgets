@@ -1,5 +1,6 @@
 package com.github.unisay.dancher
 
+import cats.data.Ior
 import cats.free.Free
 import monix.reactive.Observable
 
@@ -21,25 +22,35 @@ object dom extends gen {
   trait DomMouseEvent extends DomEvent
   trait DomNodeList
 
+  type DomEventHandler[M] = DomEvent => Observable[Ior[M, DomainEvent]]
+
   trait DomNode {
     def getParent = dom.getParentNode(this)
     def getFirstChild = dom.getFirstChild(this)
-    def appendChild(child: DomNode) = dom.appendChild(this, child)
     def removeChild(child: DomNode) = dom.removeChild(this, child)
     def replaceChild(newChild: DomNode, oldChild: DomNode) = dom.replaceChild(this, newChild, oldChild)
   }
 
   trait DomElement extends DomNode {
     def setId(id: DomId) = dom.setId(id)(this)
+    def appendChild[C <: DomNode](child: C) = dom.appendChild(this, child)
+    def appendText(text: String) = dom.createTextNode(text).flatMap(this.appendChild)
     def setAttribute(name: String, value: String) = dom.setAttribute(name, value)(this)
     def setClass(cssClass: String) = dom.setClass(cssClass)(this)
-    def clickStream(handler: DomEventHandler) = dom.setOnClick(this, handler)
+    def hide = setClass("d-hidden")
+    def setClasses(cssClasses: List[String]) = setClass(cssClasses.map(_.trim).filter(_.nonEmpty).mkString(" "))
+    def onClick[M](handler: DomEventHandler[M]) = dom.setOnClick(this, handler)
   }
+
+  case class DomBinding[M](element: DomElement, events: Observable[M Ior DomainEvent] = Observable.empty)
 
   type ActionF[A] = Free[Action, A]
 
   object NoAction extends Action[Nothing]
   def noAction[R]: ActionF[R] = NoAction
+
+  case class Value[A](a: A) extends Action[A]
+  def value[A](a: A): ActionF[A] = Value(a)
 
   case class Log(text: String) extends Action[Unit]
   def log(message: String): ActionF[Unit] =
@@ -72,8 +83,8 @@ object dom extends gen {
   case class GetFirstChild(node: DomNode) extends Action[DomNode]
   def getFirstChild(node: DomNode): ActionF[DomNode] = GetFirstChild(node)
 
-  case class AppendChild(parent: DomNode, child: DomNode) extends Action[DomNode]
-  def appendChild(parent: DomNode, child: DomNode): ActionF[DomNode] = AppendChild(parent, child)
+  case class AppendChild[C <: DomNode](parent: DomElement, child: C) extends Action[C]
+  def appendChild[C <: DomNode](parent: DomElement, child: C): ActionF[C] = AppendChild(parent, child)
 
   case class RemoveChild(parent: DomNode, child: DomNode) extends Action[DomNode]
   def removeChild(parent: DomNode, child: DomNode): ActionF[DomNode] = RemoveChild(parent, child)
@@ -87,8 +98,9 @@ object dom extends gen {
   def setId(id: DomId)(element: DomElement) = setAttribute("id", id.value)(element)
   def setClass(cssClass: String)(element: DomElement) = setAttribute("class", cssClass)(element)
 
-  case class SetOnClick(element: DomElement, handler: DomEventHandler) extends Action[Observable[ModelEvent]]
-  def setOnClick(element: DomElement, handler: DomEventHandler): ActionF[Observable[ModelEvent]] =
+  case class SetOnClick[M](element: DomElement, handler: DomEventHandler[M])
+    extends Action[Observable[M Ior DomainEvent]]
+  def setOnClick[M](element: DomElement, handler: DomEventHandler[M]): ActionF[Observable[M Ior DomainEvent]] =
     SetOnClick(element, handler)
 
 }

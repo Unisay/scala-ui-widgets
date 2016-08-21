@@ -1,3 +1,7 @@
+.d-hidden {
+    display: none;
+}
+
 div.d-vertical-layout {
     /* border: 1px dotted orange; */
 }
@@ -8,4 +12,15 @@ div.d-vertical-layout > * {
 
 div.d-horizontal-layout {
     /* border: 1px dotted blue; */
+}
+
+.d-tab {
+    border: 1px solid gray;
+    padding: 2px 5px;
+    margin: 0 1px;
+    cursor: pointer;
+}
+
+.d-tab-active {
+    font-weight: bold;
 }
