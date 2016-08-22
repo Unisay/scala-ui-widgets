@@ -7,11 +7,14 @@ import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.JsInterpreter.RawElement
 import com.github.unisay.dancher.widget.RenderAction
 import com.github.unisay.dancher.widget.all._
+import monix.execution.schedulers.TestScheduler
 import monix.reactive.Observable
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable.Specification
 
 class RenderActionSpec(implicit ee: ExecutionEnv) extends Specification {
+
+  implicit val scheduler = TestScheduler()
 
   case class Ev(value: Int) extends DomainEvent
   def event(value: Int): Unit Ior DomainEvent = Ior.right(Ev(value))
@@ -31,7 +34,7 @@ class RenderActionSpec(implicit ee: ExecutionEnv) extends Specification {
       renderAction.interpretJsString must beEqualTo("parent.appendChild(child);")
       val (element, events, _) = renderAction.interpretJs
       element must beEqualTo(parentElement)
-      events.toList must beEqualTo(List(event(1), event(2), event(3)))
+      events.toList() must beEqualTo(List(event(1), event(2), event(3)))
     }
 
     "appendReturningChild" in {
@@ -40,7 +43,7 @@ class RenderActionSpec(implicit ee: ExecutionEnv) extends Specification {
       renderAction.interpretJsString must beEqualTo("parent.appendChild(child);")
       val (element, events, _) = renderAction.interpretJs
       element must beEqualTo(childElement)
-      events.toList must beEqualTo(List(event(1), event(2), event(3)))
+      events.toList() must beEqualTo(List(event(1), event(2), event(3)))
     }
 
   }

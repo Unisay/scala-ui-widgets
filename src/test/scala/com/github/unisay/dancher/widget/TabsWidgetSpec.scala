@@ -7,11 +7,15 @@ import com.github.unisay.dancher.ObservableMatchers._
 import com.github.unisay.dancher.dom.DomEvent
 import com.github.unisay.dancher.interpreter.JsInterpreter.RawElement
 import com.github.unisay.dancher.widget.TabsWidget._
-import monix.reactive.Observable
+import monix.execution.schedulers.TestScheduler
+import monix.reactive.subjects.ConcurrentSubject
+import monix.reactive.{Observable, OverflowStrategy}
 import monocle.macros.Lenses
 import org.specs2.ScalaCheck
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable.Specification
+
+import scala.concurrent.duration._
 
 class TabsWidgetSpec(implicit ee: ExecutionEnv) extends Specification with ScalaCheck {
 
@@ -26,14 +30,12 @@ class TabsWidgetSpec(implicit ee: ExecutionEnv) extends Specification with Scala
 
     val model = TabsModel(0)
 
-    "render" in prop { (domEvent: DomEvent) =>
+    "render" in {
+      val domEvent = new DomEvent {}
+      implicit val scheduler = TestScheduler()
+      val domEvents = ConcurrentSubject.publish[(String, DomEvent)](OverflowStrategy.Unbounded)
 
-      val domEvents = Observable[(String, DomEvent)](
-        "button0" -> domEvent,
-        "button1" -> domEvent
-      )
-
-      val (element, events, script) = tabs.render(model).interpretJs(model, domEvents)
+      val (element, modelEvents, script) = tabs.render(model).interpretJs(model, domEvents)
 
       element must_=== RawElement("div0")
       script must_===
@@ -72,7 +74,10 @@ class TabsWidgetSpec(implicit ee: ExecutionEnv) extends Specification with Scala
           |div0.appendChild(div2);
         """.stripMargin.trim
 
-      events.toList must contain(exactly(
+      scheduler.scheduleOnce(1.second) { val _ = domEvents.onNext("button0" -> domEvent) }
+      scheduler.scheduleOnce(1.second) { val _ = domEvents.onNext("button1" -> domEvent) }
+
+      modelEvents.toList() must contain(exactly(
         ModelEvent(TabsModel(0), TabActivated(0)),
         ModelEvent(TabsModel(1), TabActivated(1))
       ))

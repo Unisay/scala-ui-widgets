@@ -7,6 +7,7 @@ import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.JsInterpreter.RawElement
 import com.github.unisay.dancher.widget.Widget
 import com.github.unisay.dancher.widget.all._
+import monix.execution.schedulers.TestScheduler
 import monix.reactive.Observable
 import monocle.Lens
 import monocle.macros.Lenses
@@ -14,6 +15,8 @@ import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable.Specification
 
 class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
+
+  implicit val scheduler = TestScheduler()
 
   sealed trait Gender
   case object Male extends Gender
@@ -92,7 +95,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
     ))
 
     element must beEqualTo(RawElement("b"))
-    modelEvents.toList must contain(exactly(
+    modelEvents.toList() must contain(exactly(
       Ior.both[Unit, DomainEvent]((), TabActivated[Unit](0)),
       Ior.both[Unit, DomainEvent]((), TabActivated[Unit](1)),
       Ior.both[Unit, DomainEvent]((), TabActivated[Unit](2))
