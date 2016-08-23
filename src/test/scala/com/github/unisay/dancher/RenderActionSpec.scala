@@ -1,7 +1,7 @@
 package com.github.unisay.dancher
 
 import cats.data.Ior
-import com.github.unisay.dancher.ActionMatchers._
+import com.github.unisay.dancher.ActionTestHelpers._
 import com.github.unisay.dancher.ObservableMatchers._
 import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.JsInterpreter.RawElement
@@ -9,10 +9,9 @@ import com.github.unisay.dancher.widget.RenderAction
 import com.github.unisay.dancher.widget.all._
 import monix.execution.schedulers.TestScheduler
 import monix.reactive.Observable
-import org.specs2.concurrent.ExecutionEnv
-import org.specs2.mutable.Specification
+import org.scalatest.{FlatSpec, MustMatchers}
 
-class RenderActionSpec(implicit ee: ExecutionEnv) extends Specification {
+class RenderActionSpec extends FlatSpec with MustMatchers {
 
   implicit val scheduler = TestScheduler()
 
@@ -26,25 +25,24 @@ class RenderActionSpec(implicit ee: ExecutionEnv) extends Specification {
   val parentAction: RenderAction[Unit] = dom.value(DomBinding(element = parentElement, events = parentEvents))
   val childAction: RenderAction[Unit] = dom.value(DomBinding(element = childElement, events = childEvents))
 
-  "RenderAction" should {
+  behavior of "RenderAction"
 
-    "appendReturningParent" in {
-      val renderAction = appendReturningParent(parentAction, childAction)
+  it must "appendReturningParent" in {
+    val renderAction = appendReturningParent(parentAction, childAction)
 
-      renderAction.interpretJsString must beEqualTo("parent.appendChild(child);")
-      val (element, events, _) = renderAction.interpretJs
-      element must beEqualTo(parentElement)
-      events.toList() must beEqualTo(List(event(1), event(2), event(3)))
-    }
-
-    "appendReturningChild" in {
-      val renderAction = appendReturningChild(parentAction, childAction)
-
-      renderAction.interpretJsString must beEqualTo("parent.appendChild(child);")
-      val (element, events, _) = renderAction.interpretJs
-      element must beEqualTo(childElement)
-      events.toList() must beEqualTo(List(event(1), event(2), event(3)))
-    }
-
+    renderAction.interpretJsString(()) mustEqual "parent.appendChild(child);"
+    val (element, events, _) = renderAction.interpretJs
+    element mustBe parentElement
+    events.toList() must contain theSameElementsInOrderAs List(event(1), event(2), event(3))
   }
+
+  it must "appendReturningChild" in {
+    val renderAction = appendReturningChild(parentAction, childAction)
+
+    renderAction.interpretJsString(()) mustEqual "parent.appendChild(child);"
+    val (element, events, _) = renderAction.interpretJs
+    element mustBe childElement
+    events.toList() must contain theSameElementsInOrderAs List(event(1), event(2), event(3))
+  }
+
 }

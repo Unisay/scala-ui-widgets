@@ -1,7 +1,7 @@
 package com.github.unisay.dancher
 
 import cats.data.Ior
-import com.github.unisay.dancher.ActionMatchers._
+import com.github.unisay.dancher.ActionTestHelpers._
 import com.github.unisay.dancher.ObservableMatchers._
 import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.JsInterpreter.RawElement
@@ -11,10 +11,9 @@ import monix.execution.schedulers.TestScheduler
 import monix.reactive.Observable
 import monocle.Lens
 import monocle.macros.Lenses
-import org.specs2.concurrent.ExecutionEnv
-import org.specs2.mutable.Specification
+import org.scalatest.{FlatSpec, MustMatchers}
 
-class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
+class FuncWidgetSpec extends FlatSpec with MustMatchers {
 
   implicit val scheduler = TestScheduler()
 
@@ -28,7 +27,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
   val john = User(Male, "John", "Doe", Address("Oak blvd.", "666"))
   val sara = User(Female, "Sara", "Connor", Address("Red Square", "1"))
 
-  "Event propagation" in {
+  "Event propagation" must "verify list" in {
     def domEvent(index: Int): DomEvent = new DomEvent(){ override def toString = s"domEvent$index" }
 
     val domEvent1 = domEvent(1)
@@ -42,7 +41,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
     )
     val renderAction = widget.render(())
 
-    renderAction.interpretJsString(()) must_==
+    renderAction.interpretJsString(()) must be
       """
         |var b = document.body;
         |var div0 = document.createElement('div');
@@ -94,15 +93,15 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
       "button2" -> domEvent3
     ))
 
-    element must beEqualTo(RawElement("b"))
-    modelEvents.toList() must contain(exactly(
+    element mustBe RawElement("b")
+    modelEvents.toList() must contain theSameElementsInOrderAs List(
       Ior.both[Unit, DomainEvent]((), TabActivated[Unit](0)),
       Ior.both[Unit, DomainEvent]((), TabActivated[Unit](1)),
       Ior.both[Unit, DomainEvent]((), TabActivated[Unit](2))
-    ))
+    )
   }
 
-  "Library widgets" in {
+  "Library widgets" must "render correctly" in {
 
     def Header(): Widget[User] = {
       Vertical(
@@ -117,7 +116,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
 
     val action = Header().render(john)
 
-    action.interpretJsString mustEqual
+    action.interpretJsString(john) mustEqual
       """
         |var div0 = document.createElement('div');
         |div0.setAttribute('class', 'd-vertical');
@@ -150,7 +149,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
       """.stripMargin.trim
   }
 
-  "Domain specific widgets" in {
+  "Domain specific widgets" must "render correctly" in {
 
     object AddressBar {
       def apply(): Widget[Address] =
@@ -185,7 +184,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
 
     val action = Header().render(john)
 
-    action.interpretJsString mustEqual
+    action.interpretJsString(john) mustEqual
       """
         |var div0 = document.createElement('div');
         |div0.setAttribute('class', 'd-vertical');
@@ -224,7 +223,7 @@ class FuncWidgetSpec(implicit ee: ExecutionEnv) extends Specification {
 
     val actionSara = Header().render(sara)
 
-    actionSara.interpretJsString mustEqual
+    actionSara.interpretJsString(sara) mustEqual
       """
         |var div0 = document.createElement('div');
         |div0.setAttribute('class', 'd-vertical');
