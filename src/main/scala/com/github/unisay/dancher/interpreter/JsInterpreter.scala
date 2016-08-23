@@ -2,7 +2,7 @@ package com.github.unisay.dancher.interpreter
 
 import cats._
 import cats.data.State
-import cats.std.all._
+import cats.instances.all._
 import cats.syntax.eq._
 import com.github.unisay.dancher.dom._
 import monix.reactive.Observable
