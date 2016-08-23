@@ -7,15 +7,16 @@ import com.github.unisay.dancher.ObservableMatchers._
 import com.github.unisay.dancher.dom.DomEvent
 import com.github.unisay.dancher.interpreter.JsInterpreter.RawElement
 import com.github.unisay.dancher.widget.TabsWidget._
-import monix.execution.schedulers.TestScheduler
+import monix.execution.schedulers.{ExecutionModel, TestScheduler}
 import monix.reactive.subjects.ConcurrentSubject
 import monix.reactive.{Observable, OverflowStrategy}
 import monocle.macros.Lenses
 import org.specs2.ScalaCheck
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable.Specification
-
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.util.Success
 
 class TabsWidgetSpec(implicit ee: ExecutionEnv) extends Specification with ScalaCheck {
 
@@ -30,8 +31,21 @@ class TabsWidgetSpec(implicit ee: ExecutionEnv) extends Specification with Scala
 
     val model = TabsModel(0)
 
-    "render" in {
-      val domEvent = new DomEvent {}
+    "test scheduler" in {
+      implicit val scheduler = TestScheduler()
+      val subject = ConcurrentSubject.publish[Int](OverflowStrategy.Unbounded)
+
+      scheduler.scheduleOnce(1.second) { subject.onNext(1); () }
+      scheduler.scheduleOnce(2.second) { subject.onNext(2); () }
+      scheduler.scheduleOnce(3.second) { subject.onNext(3); () }
+      scheduler.scheduleOnce(4.second) { subject.onComplete()  }
+
+      val eventualList = subject.toListL.runAsync
+      scheduler.tick(10.seconds)
+      eventualList.value must beSome(Success(contain(1, 2, 3)))
+    }
+
+    "render" in prop { (domEvent: DomEvent) ⇒
       implicit val scheduler = TestScheduler()
       val domEvents = ConcurrentSubject.publish[(String, DomEvent)](OverflowStrategy.Unbounded)
 
@@ -74,13 +88,26 @@ class TabsWidgetSpec(implicit ee: ExecutionEnv) extends Specification with Scala
           |div0.appendChild(div2);
         """.stripMargin.trim
 
-      scheduler.scheduleOnce(1.second) { val _ = domEvents.onNext("button0" -> domEvent) }
-      scheduler.scheduleOnce(1.second) { val _ = domEvents.onNext("button1" -> domEvent) }
+      scheduler.scheduleOnce(1.second) { domEvents.onNext("button0" -> domEvent); () }
+      scheduler.scheduleOnce(1.second) { domEvents.onNext("button1" -> domEvent); () }
 
+      val future = modelEvents.toListL.runAsync
+      scheduler.tickOne()
+      scheduler.tickOne()
+      scheduler.tickOne()
+      scheduler.tickOne()
+      scheduler.tickOne()
+      scheduler.tickOne()
+      scheduler.tickOne()
+      Await.result(future, 1.second)
+
+      ok
+/*
       modelEvents.toList() must contain(exactly(
         ModelEvent(TabsModel(0), TabActivated(0)),
         ModelEvent(TabsModel(1), TabActivated(1))
       ))
+*/
     }
 
   }
