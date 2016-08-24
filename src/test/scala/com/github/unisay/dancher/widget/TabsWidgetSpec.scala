@@ -1,6 +1,7 @@
 package com.github.unisay.dancher.widget
 
 import com.github.unisay.dancher.ActionTestHelpers._
+import com.github.unisay.dancher.ObservableMatchers._
 import com.github.unisay.dancher.ClickEvent
 import com.github.unisay.dancher.DomArbitraries._
 import com.github.unisay.dancher.dom.DomEvent
@@ -12,7 +13,6 @@ import monix.reactive.{Observable, OverflowStrategy}
 import monocle.macros.Lenses
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{MustMatchers, PropSpec}
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class TabsWidgetSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatchers {
@@ -81,14 +81,11 @@ class TabsWidgetSpec extends PropSpec with GeneratorDrivenPropertyChecks with Mu
       scheduler.tickOne()
       scheduler.tickOne()
       scheduler.tickOne()
-      Await.result(future, 1.second)
 
-/*
-      modelEvents.toList() must contain(exactly(
+      modelEvents.toList() must contain theSameElementsInOrderAs List(
         ModelEvent(TabsModel(0), TabActivated(0)),
         ModelEvent(TabsModel(1), TabActivated(1))
-      ))
-*/
+      )
     }
   }
 

@@ -11,11 +11,13 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets with WidgetSyntax {
 
   def Tabs[M](activeTabIndexLens: Lens[M, Int])(children: (String, Widget[M])*): Widget[M] = new Widget[M] {
 
+    val _children = children.toList
+
     def render(model: M): RenderAction[M] = {
       val activeTabIndex = Math.max(Math.min(activeTabIndexLens.get(model), children.length), 0)
-      val (buttonTexts, childWidgets) = children.toList.unzip
 
-      val buttons = buttonTexts.zipWithIndex.map { case (text, index) =>
+
+      val buttons = _children.map(_._1).zipWithIndex.map { case (text, index) =>
         Button[M](const(text), clickHandler = Some { _ =>
           val updatedModel = activeTabIndexLens.set(index)(model)
           Observable(ModelEvent(updatedModel, TabActivated(index)))
@@ -23,7 +25,7 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets with WidgetSyntax {
           cssClasses = "d-tab" :: (if (index == activeTabIndex) List("d-tab-active") else Nil))
       }
 
-      val hiddenChildWidgets = childWidgets.zipWithIndex.map {
+      val hiddenChildWidgets = _children.map(_._2).zipWithIndex.map {
         case (widget, index) if index != activeTabIndex =>
           createRender {
             for {

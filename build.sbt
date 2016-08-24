@@ -60,7 +60,7 @@ lazy val dancher = project.in(file("."))
     organization := "com.github.unisay",
     scalacOptions in Test ++= Seq("-Yrangepos"),
     maxErrors := 5,
-    logLevel := Level.Warn,
-    requiresDOM := true,
+    logLevel := Level.Info,
+    requiresDOM := false,
     scalaJSUseRhino := false
   )

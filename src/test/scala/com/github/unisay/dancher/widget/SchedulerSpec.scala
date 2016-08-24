@@ -20,7 +20,7 @@ class SchedulerSpec extends FlatSpec with MustMatchers {
 
     val eventualList = subject.toListL.runAsync
     scheduler.tick(10.seconds)
-    eventualList.value must contain(Success(contain theSameElementsInOrderAs List(1, 2, 3)))
+    eventualList.value must contain(Success(List(1, 2, 3)))
   }
 
 }
