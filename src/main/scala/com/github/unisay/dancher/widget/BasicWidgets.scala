@@ -5,7 +5,7 @@ import cats.syntax.all._
 import com.github.unisay.dancher.dom.DomEventHandlers.NoHandlers
 import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.ActionInterpreter
-import com.github.unisay.dancher.widget.WidgetHelpers._
+import com.github.unisay.dancher.widget.Widget._
 import monix.reactive.Observable
 import monocle.Lens
 
@@ -23,6 +23,10 @@ trait BasicWidgets {
       cssClasses = "d-button" :: cssClasses,
       eventHandlers = eventHandlers
     )
+
+  def Text[M](text: Lens[M, String], cssClasses: List[String] = Nil)
+             (implicit interpreter: ActionInterpreter): Widget[M] =
+    TextContainer(text, tag = "p", cssClasses =  "d-text" :: cssClasses)
 
   def Label[M](text: Lens[M, String], cssClasses: List[String] = Nil)
               (implicit interpreter: ActionInterpreter): Widget[M] =

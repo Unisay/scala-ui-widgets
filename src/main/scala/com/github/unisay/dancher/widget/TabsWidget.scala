@@ -7,7 +7,6 @@ import com.github.unisay.dancher._
 import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.ActionInterpreter
 import com.github.unisay.dancher.widget.Widget._
-import com.github.unisay.dancher.widget.WidgetHelpers._
 import monix.reactive.Observable
 import monocle._
 import monocle.macros.Lenses
@@ -21,8 +20,6 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets {
   def Tabs[M](tabsLens: Lens[M, TabsModel], switchOn: DomEventType = Click)
              (children: (String, Widget[M])*)
              (implicit interpreter: ActionInterpreter): Widget[M] = {
-
-    import interpreter._
 
     def activate[E: DomElem](oldIndex: Int, newIndex: Int, domElements: Iterable[E],
                              activate: E => ActionF[_], deactivate: E => ActionF[_]): EffectAction =

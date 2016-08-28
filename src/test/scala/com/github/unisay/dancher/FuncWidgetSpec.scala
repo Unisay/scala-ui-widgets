@@ -3,8 +3,7 @@ package com.github.unisay.dancher
 import com.github.unisay.dancher.ActionTestHelpers._
 import com.github.unisay.dancher.interpreter.JsInterpreter
 import com.github.unisay.dancher.widget.Widget
-import com.github.unisay.dancher.widget.WidgetHelpers._
-import com.github.unisay.dancher.widget.all._
+import com.github.unisay.dancher.widget.Widget._
 import monix.execution.schedulers.TestScheduler
 import monocle.Lens
 import monocle.macros.Lenses
@@ -14,7 +13,6 @@ class FuncWidgetSpec extends FlatSpec with MustMatchers {
 
   implicit val scheduler = TestScheduler()
   implicit val interpreter = JsInterpreter
-  import interpreter._
 
   sealed trait Gender
   case object Male extends Gender

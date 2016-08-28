@@ -4,10 +4,7 @@ import com.github.unisay.dancher.ActionTestHelpers._
 import com.github.unisay.dancher.dom.DomBinding
 import com.github.unisay.dancher.interpreter.JsInterpreter
 import com.github.unisay.dancher.interpreter.JsInterpreter.JsInterpreterElement
-import com.github.unisay.dancher.widget.BasicWidgets._
-import com.github.unisay.dancher.widget.LayoutWidgets._
 import com.github.unisay.dancher.widget.Widget._
-import com.github.unisay.dancher.widget.WidgetHelpers._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{MustMatchers, PropSpec}
 

@@ -33,11 +33,6 @@ object RenderAction {
     )(cb.elementEvidence)
 }
 
-trait WidgetSyntax {
-  implicit def widgetSyntax[M](widget: Widget[M]): WidgetOps[M] = new WidgetOps[M](widget)
-  implicit def widgetListSyntax[M](widgets: List[Widget[M]]): WidgetListOps[M] = new WidgetListOps(widgets)
-}
-
 final class WidgetListOps[M](val widgets: List[Widget[M]]) extends AnyVal {
   def >(widget: Widget[M]): List[Widget[M]] = widgets :+ widget
 }
@@ -64,19 +59,14 @@ final class WidgetOps[M](val widget: Widget[M]) extends AnyVal {
     interpreter.interpret(model, widget(model))
 }
 
-object Widget extends WidgetSyntax {
+object Widget
+  extends BasicWidgets
+  with LayoutWidgets
+  with TabsWidget {
+  implicit def widgetOps[M](widget: Widget[M]): WidgetOps[M] = new WidgetOps[M](widget)
+  implicit def widgetListOps[M](widgets: List[Widget[M]]): WidgetListOps[M] = new WidgetListOps(widgets)
   def apply[M](f: M => RenderAction): Widget[M] = Reader(f)
   def pure[M](renderAction: RenderAction): Widget[M] = Widget(_ => renderAction)
   def lift[M](binding: DomBinding): Widget[M] = pure(value(binding))
+  def const[M, C](constant: C): Lens[M, C] = Lens[M, C](_ => constant)(_ => identity) // TODO: use magnet
 }
-
-object WidgetHelpers {
-  // TODO: use magnet
-  def const[M, C](constant: C): Lens[M, C] = Lens[M, C](_ => constant)(_ => identity)
-}
-
-object all
-  extends WidgetSyntax
-  with BasicWidgets
-  with LayoutWidgets
-  with TabsWidget

@@ -3,16 +3,13 @@ package com.github.unisay.dancher.widget
 import com.github.unisay.dancher.ActionTestHelpers._
 import com.github.unisay.dancher.DomArbitraries._
 import com.github.unisay.dancher.ObservableMatchers._
-import com.github.unisay.dancher.dom.{DomEvent, _}
+import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.JsInterpreter
-import com.github.unisay.dancher.interpreter.JsInterpreter.{EffectActionEvent, JsInterpreterElement}
-import com.github.unisay.dancher.widget.TabsWidget._
-import com.github.unisay.dancher.widget.WidgetHelpers._
+import com.github.unisay.dancher.widget.Widget._
 import com.github.unisay.dancher.{ClickEvent, DomainEvent}
 import monix.execution.schedulers.TestScheduler
 import monix.reactive.subjects.ConcurrentSubject
 import monix.reactive.{Observable, OverflowStrategy}
-import monocle.macros.Lenses
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{MustMatchers, PropSpec}
 
@@ -23,12 +20,10 @@ class TabsSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatc
   implicit val interpreter = JsInterpreter
   import interpreter._
 
-  @Lenses case class TabsModel(activeTab: Int)
-
-  val tabs: Widget[TabsModel] = Tabs(TabsModel.activeTab)(
+  val tabs: Widget[TabsModel] = Tabs(const(TabsModel(1)))(
     "Tab 1" -> Label(const("Label")),
     "Tab 2" -> Button(const("Button"), eventHandlers =
-      DomEventHandlers.OnClick((model, domEvent) => Observable(HandlerResult(model, ClickEvent(domEvent)))))
+      DomEventHandlers.On(Click)((model, domEvent) => Observable(HandlerResult(model, ClickEvent(domEvent)))))
   )
 
   val model = TabsModel(0)

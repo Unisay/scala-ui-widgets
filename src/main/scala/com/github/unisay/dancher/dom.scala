@@ -35,7 +35,11 @@ object dom {
 
   sealed trait DomEventType
   case object Click extends DomEventType
+  case object MouseUp extends DomEventType
+  case object MouseDown extends DomEventType
+  case object MouseMove extends DomEventType
   case object MouseEnter extends DomEventType
+  case object MouseLeave extends DomEventType
 
   trait DomMouseEvent extends DomEvent
   trait DomNodeList
@@ -192,6 +196,4 @@ object dom {
   def show[E: DomElem](element: E) =
     removeClass("d-hidden")(element) // TODO: test
 
-  def onClick[M, E: DomElem](element: E, handler: DomEventHandler[M]) =
-    handleEvents(element, Map(Click -> handler))
 }
