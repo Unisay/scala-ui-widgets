@@ -31,7 +31,7 @@ class TabsSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatc
   property("Tabs widget renders correctly") {
     forAll { (domEvent: DomEvent) ⇒
       implicit val scheduler = TestScheduler()
-      val domEvents = ConcurrentSubject.publish[(String, (DomEventType, DomEvent))](OverflowStrategy.Unbounded)
+      val domEvents = ConcurrentSubject.publish[(String, (DomEvent, DomEvent))](OverflowStrategy.Unbounded)
 
       val renderAction = tabs(model)
 

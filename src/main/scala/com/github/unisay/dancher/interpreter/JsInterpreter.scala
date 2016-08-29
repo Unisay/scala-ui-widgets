@@ -20,7 +20,6 @@ object JsInterpreter extends ActionInterpreter {
   case class JsInterpreterNode(name: String)
   case class JsInterpreterElement(name: String)
   case class RawNodeList(nodeList: String) extends DomNodeList
-  case class RawMouseEvent(element: JsInterpreterElement, event: String) extends DomMouseEvent
 
   type Script = List[String]
   type Result = (Map[String, Int], Script)
@@ -29,7 +28,7 @@ object JsInterpreter extends ActionInterpreter {
   def interpret[R, M](model: M, action: ActionF[R]): R = interpretScript(model, action, Observable.empty)._1
 
   def interpretScript[R, M](model: M, action: ActionF[R],
-                            domEvents: Observable[(String, (DomEventType, DomEvent))] = Observable.empty,
+                            domEvents: Observable[(String, DomEvent)] = Observable.empty,
                             attributes: Map[JsInterpreterElement, Map[String, String]] = Map.empty): (R, String) = {
     val interpreter: Action ~> InterpreterState = new (Action ~> InterpreterState) {
 
@@ -133,24 +132,11 @@ object JsInterpreter extends ActionInterpreter {
           case SetAttribute(rawElement@JsInterpreterElement(element), name, value) =>
             scriptWithReturn(s"""$element.setAttribute("$name", "$value")""", rawElement)
 
-          case HandleEvents(JsInterpreterElement(element), domEventHandlers) =>
+          case HandleEvents(JsInterpreterElement(element), eventTypes) =>
             val result = domEvents
               .flatMap {
-                case (el, domEvent) if el === element => Observable(domEvent)
+                case (el, domEvent) if el === element => Observable(Ior.Left(domEvent))
                 case _ => Observable.empty
-              }
-              .flatMap {
-                case (eventType, event) =>
-                  val handlers = domEventHandlers.asInstanceOf[DomEventHandlers[M]]
-                  Observable.fromIterable(handlers.get(eventType).map(_ (model, event)).toList).flatten
-              }
-              .flatMap {
-                case (m, Ior.Right(domainEvent)) =>
-                  Observable((m, domainEvent))
-                case (_, Ior.Left(actionF)) =>
-                  Observable((null, EffectActionEvent(interpretScript(model, actionF)._2)))
-                case (m, Ior.Both(actionF, domainEvent)) =>
-                  Observable((m, EffectActionEvent(interpretScript(model, actionF)._2)), (m, domainEvent))
               }
             scriptWithReturn(s"/* HandleEvents($element) */", result)
 

@@ -24,10 +24,6 @@ object dom {
 
   trait DomNode[+N]
   trait DomElem[+E] extends DomNode[E]
-  trait DomEvent[+V] {
-    val eventType: DomEventType
-    val instance: V
-  }
 
   sealed trait DomEventType
   case object Click extends DomEventType
@@ -37,39 +33,50 @@ object dom {
   case object MouseEnter extends DomEventType
   case object MouseLeave extends DomEventType
 
+  sealed trait DomEvent { val eventType: DomEventType }
+  trait ClickEvent extends DomEvent { final val eventType = Click }
+  trait MouseUpEvent extends DomEvent { final val eventType = MouseUp }
+  trait MouseDownEvent extends DomEvent { final val eventType = MouseDown }
+  trait MouseMoveEvent extends DomEvent { final val eventType = MouseMove }
+  trait MouseEnterEvent extends DomEvent { final val eventType = MouseEnter }
+  trait MouseLeaveEvent extends DomEvent { final val eventType = MouseLeave }
+
   trait DomNodeList
 
   trait DomBinding {
     type M // Model
     type E // DOM Element
-    type V // DOM Event
     implicit val elementEvidence: DomElem[E]
     val element: E
     val nested: Vector[DomBinding]
-    val highEvents: Observable[(M, DomainEvent)]
-    val lowEvents: Observable[(M, DomEvent[V])]
+    val events: Observable[(M, DomainEvent)]
+    val actions: Observable[DomEvent Ior EffectAction]
 
     def flatMapElement(f: E => ActionF[E]): ActionF[DomBinding] =
-      f(element).map(ee => DomBinding(ee, nested, events))
+    f(element).map(ee => DomBinding(ee, nested, events))
   }
-
-  type Item[M] = (M, Option[DomainEvent],  Option[EffectAction], Option[])
 
   object DomBinding {
-    def apply[M0, E0: DomElem](element0: E0,
-                               nested0: Vector[DomBinding] = Vector.empty,
-                               events0: Observable[Item[M0]] = Observable.empty): DomBinding =
-    new DomBinding {
-      type M = M0
-      type E = E0
-
-      val elementEvidence = implicitly[DomElem[E0]]
-      val element = element0
-      val events = events0
-      val nested = nested0
+    def apply[M0, E0](element: E0,
+                      nested: Vector[DomBinding] = Vector.empty,
+                      domainStream: Observable[(M0, DomainEvent)] = Observable.empty,
+                      domStream: Observable[DomEvent Ior EffectAction] = Observable.empty)
+                     (implicit elementEv: DomElem[E0]): DomBinding = {
+      val _element = element
+      val _nested = nested
+      val _events = domainStream
+      val _actions = domStream
+      new DomBinding {
+        type M = M0
+        type E = E0
+        val elementEvidence = elementEv
+        val element = _element
+        val events = _events
+        val nested = _nested
+        val actions = _actions
+      }
     }
   }
-
 
   type ActionF[A] = Free[Action, A]
 
@@ -132,10 +139,10 @@ object dom {
   case class SetAttribute[E: DomElem](element: E, name: String, value: String) extends Action[E]
   def setAttribute[E: DomElem](name: String, value: String)(elem: E): ActionF[E] = SetAttribute(elem, name, value)
 
-  case class HandleEvents[M, E: DomElem, V: DomEvent](element: E, eventTypes: Iterable[DomEventType])
-    extends Action[Observable[(M, DomEventType, V)]]
-  def handleEvents[M, E: DomElem, V: DomEvent](element: E, eventTypes: Iterable[DomEventType]): ActionF[Observable[(M, DomEventType, V)]] =
-    HandleEvents[M, E, V](element, eventTypes)
+  case class HandleEvents[M, E: DomElem](element: E, eventTypes: Iterable[DomEventType])
+    extends Action[Observable[DomEvent Ior EffectAction]]
+  def handleEvents[M, E: DomElem](element: E, eventTypes: Iterable[DomEventType]): ActionF[Observable[DomEvent Ior EffectAction]] =
+    HandleEvents[M, E](element, eventTypes)
 
   def getId[E: DomElem](element: E) =
     getAttribute("id")(element) /* TODO: get element id directly */

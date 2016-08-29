@@ -1,7 +1,9 @@
 package com.github.unisay.dancher.interpreter
 
+import cats.data.Ior
 import cats.{Id, ~>}
 import com.github.unisay.dancher.dom._
+import com.github.unisay.dancher.widget.EffectAction
 import monix.execution.Cancelable
 import monix.reactive.{Observable, OverflowStrategy}
 import org.scalajs.dom._
@@ -15,6 +17,18 @@ class DomInterpreter extends ActionInterpreter {
 
   implicit val domNodeEvidence: DomNode[DomNodeT] = new DomNode[DomNodeT] {}
   implicit val domElemEvidence: DomElem[DomElemT] = new DomElem[DomElemT] {}
+
+  def makeEvent(eventType: DomEventType, event: Event): DomEvent Ior EffectAction =
+    Ior.Left {
+      eventType match {
+        case Click      => new ClickEvent      {}
+        case MouseEnter => new MouseEnterEvent {}
+        case MouseLeave => new MouseLeaveEvent {}
+        case MouseUp    => new MouseUpEvent    {}
+        case MouseDown  => new MouseDownEvent  {}
+        case MouseMove  => new MouseMoveEvent  {}
+      }
+    }
 
   def interpret[R, M](model: M, action: ActionF[R]): R = {
 
@@ -110,9 +124,9 @@ class DomInterpreter extends ActionInterpreter {
 
           case HandleEvents(element: Element, eventTypes) =>
             debug(s"HandleEvents($element)")
-            Observable.create[(M, DomEventType, Event)](OverflowStrategy.Unbounded) { subscriber =>
+            Observable.create[DomEvent Ior EffectAction](OverflowStrategy.Unbounded) { subscriber =>
               val listeners = eventTypes.map { eventType =>
-                eventType.toString.toLowerCase -> ((event: Event) => subscriber.onNext((model, eventType, event)))
+                eventType.toString.toLowerCase -> ((event: Event) => subscriber.onNext(makeEvent(eventType, event)))
               }
               listeners.foreach { case (e, l) => element.addEventListener(e, l) }
               Cancelable(() => listeners.foreach{ case (e, l) => element.removeEventListener(e, l) })

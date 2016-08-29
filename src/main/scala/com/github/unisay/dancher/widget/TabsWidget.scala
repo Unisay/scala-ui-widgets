@@ -45,9 +45,9 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets {
       }
 
       val buttonWidgets: List[Widget[M]] = labels.zipWithIndex.map { case (label, index) =>
-        val cssClasses: List[String] = "d-tab" :: (if (index == activeTabIndex) List("d-tab-active") else Nil)
-        val eventHandlers = DomEventHandlers.NoHandlers[M]
-        Button(const(label), eventHandlers, cssClasses)
+        Button[M](const(label),
+          eventTypes = List(Click),
+          cssClasses = "d-tab" :: (if (index == activeTabIndex) List("d-tab-active") else Nil))
       }
 
       val verticalWidget = Vertical(

@@ -42,12 +42,9 @@ trait LayoutWidgets {
     Widget { model: M =>
       val divAction: RenderAction = for {
         element <- createElement("div")
-        events <- if (eventTypes.isEmpty)
-                    value(Observable.empty[(M, DomEventType, DomEventT)])
-                  else
-                    handleEvents(element, eventTypes)
+        events <- if (eventTypes.isEmpty) value(Observable.empty) else handleEvents(element, eventTypes)
         _ <- cssClasses.toNel.map(setClasses(element, _)).getOrElse(noAction).void
-      } yield DomBinding(element, events0 = events)
+      } yield DomBinding(element, domStream = events)
 
       val renderActions = children.map(_(model))
       renderActions.foldLeft(divAction) {
