@@ -28,33 +28,33 @@ class ObservableStateMachineSpec extends FlatSpec with MustMatchers {
     scheduler.scheduleOnce(180.millis) { events.onNext(MouseUp);    () }
     scheduler.scheduleOnce(900.millis) { events.onComplete()           }
 
-    case class Drag(inside: Boolean, dragging: Boolean)
-    val initial = Drag(inside = false, dragging = false)
+    case class Drag(inside: Boolean, dragging: Boolean, draggingEnd: Boolean, event: Option[DomEventType])
+    val initial = Drag(inside = false, dragging = false, draggingEnd = false, event = None)
 
     val drags = events.scan(initial) {
-      case (drag @ Drag(false, _), MouseEnter) =>
-        drag.copy(inside = true)
-      case (drag @ Drag(true, _), MouseLeave) =>
-        drag.copy(inside = false)
-      case (drag @ Drag(true, false), MouseDown) =>
-        drag.copy(dragging = true)
-      case (drag @ Drag(_, true), MouseUp) =>
-        drag.copy(dragging = false)
+      case (drag @ Drag(_, _, _, _), MouseMove) =>
+        drag.copy(event = Some(MouseMove))
+      case (drag @ Drag(false, _, _, _), MouseEnter) =>
+        drag.copy(inside = true, event = Some(MouseEnter))
+      case (drag @ Drag(true, _, _, _), MouseLeave) =>
+        drag.copy(inside = false, event = Some(MouseLeave))
+      case (drag @ Drag(true, false, _, _), MouseDown ) =>
+        drag.copy(dragging = true, event = Some(MouseDown))
+      case (drag @ Drag(_, true, _, _), MouseUp) =>
+        drag.copy(dragging = false, draggingEnd = true, event = Some(MouseUp))
+      case (drag @ Drag(_, false, true, _), _) =>
+        drag.copy(draggingEnd = false)
       case (drag, _) =>
         drag
-    }
+    }.filter(drag => drag.dragging || drag.draggingEnd).map(_.event.get)
 
     drags.toList() must contain theSameElementsInOrderAs List(
-      Drag(inside = false, dragging = false), // MouseMove
-      Drag(inside = true,  dragging = false), // MouseEnter
-      Drag(inside = true,  dragging = false), // MouseMove
-      Drag(inside = true,  dragging = false), // MouseMove
-      Drag(inside = true,  dragging = true),  // MouseDown
-      Drag(inside = true,  dragging = true),  // MouseMove
-      Drag(inside = false, dragging = true),  // MouseLeave
-      Drag(inside = false, dragging = true),  // MouseMove
-      Drag(inside = false, dragging = true),  // MouseMove
-      Drag(inside = false, dragging = false)  // MouseUp
+      MouseDown,
+      MouseMove,
+      MouseLeave,
+      MouseMove,
+      MouseMove,
+      MouseUp
     )
   }
 

@@ -6,7 +6,6 @@ import cats.data.{Ior, NonEmptyList}
 import cats.free.Free
 import com.github.unisay.dancher.interpreter.ActionInterpreter
 import com.github.unisay.dancher.widget.EffectAction
-import com.github.unisay.dancher.widget.HandlerResult.HandlerResult
 import monix.reactive.Observable
 
 import scala.language.implicitConversions
@@ -23,15 +22,12 @@ object dom {
 
   case class DomId(value: String) extends AnyVal
 
-/*    def getParent = dom.getParentNode(this)
-    def getFirstChild = dom.getFirstChild(this)
-    def removeChild(child: DomNode) = dom.removeChild(this, child)
-    def replaceChild(newChild: DomNode, oldChild: DomNode) = dom.replaceChild(this, newChild, oldChild)*/
-
   trait DomNode[+N]
   trait DomElem[+E] extends DomNode[E]
-
-  trait DomEvent
+  trait DomEvent[+V] {
+    val eventType: DomEventType
+    val instance: V
+  }
 
   sealed trait DomEventType
   case object Click extends DomEventType
@@ -41,33 +37,29 @@ object dom {
   case object MouseEnter extends DomEventType
   case object MouseLeave extends DomEventType
 
-  trait DomMouseEvent extends DomEvent
   trait DomNodeList
 
-  type DomEventHandler[M] = (M, DomEvent) => Observable[HandlerResult[M]]
-  type DomEventHandlers[M] = Map[DomEventType, DomEventHandler[M]]
-
-  object DomEventHandlers {
-    def NoHandlers[M] = Map.empty[DomEventType, (M, DomEvent) => Observable[(M, EffectAction Ior DomainEvent)]]
-    def On[M](eventType: DomEventType)(handler: DomEventHandler[M]): DomEventHandlers[M] = Map(eventType -> handler)
-  }
-
   trait DomBinding {
-    type M
-    type E
+    type M // Model
+    type E // DOM Element
+    type V // DOM Event
     implicit val elementEvidence: DomElem[E]
     val element: E
     val nested: Vector[DomBinding]
-    val events: Observable[(M, DomainEvent)]
+    val highEvents: Observable[(M, DomainEvent)]
+    val lowEvents: Observable[(M, DomEvent[V])]
 
     def flatMapElement(f: E => ActionF[E]): ActionF[DomBinding] =
       f(element).map(ee => DomBinding(ee, nested, events))
   }
 
+  type Item[M] = (M, Option[DomainEvent],  Option[EffectAction], Option[])
+
   object DomBinding {
     def apply[M0, E0: DomElem](element0: E0,
                                nested0: Vector[DomBinding] = Vector.empty,
-                               events0: Observable[(M0, DomainEvent)] = Observable.empty): DomBinding = new DomBinding {
+                               events0: Observable[Item[M0]] = Observable.empty): DomBinding =
+    new DomBinding {
       type M = M0
       type E = E0
 
@@ -140,10 +132,10 @@ object dom {
   case class SetAttribute[E: DomElem](element: E, name: String, value: String) extends Action[E]
   def setAttribute[E: DomElem](name: String, value: String)(elem: E): ActionF[E] = SetAttribute(elem, name, value)
 
-  case class HandleEvents[M, E: DomElem](element: E, handler: DomEventHandlers[M])
-    extends Action[Observable[(M, DomainEvent)]]
-  def handleEvents[M, E: DomElem](element: E, handler: DomEventHandlers[M]): ActionF[Observable[(M, DomainEvent)]] =
-    HandleEvents(element, handler)
+  case class HandleEvents[M, E: DomElem, V: DomEvent](element: E, eventTypes: Iterable[DomEventType])
+    extends Action[Observable[(M, DomEventType, V)]]
+  def handleEvents[M, E: DomElem, V: DomEvent](element: E, eventTypes: Iterable[DomEventType]): ActionF[Observable[(M, DomEventType, V)]] =
+    HandleEvents[M, E, V](element, eventTypes)
 
   def getId[E: DomElem](element: E) =
     getAttribute("id")(element) /* TODO: get element id directly */

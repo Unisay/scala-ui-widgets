@@ -1,11 +1,8 @@
 package com.github.unisay.dancher.interpreter
 
-import cats.data.Ior
 import cats.{Id, ~>}
-import com.github.unisay.dancher.DomainEvent
 import com.github.unisay.dancher.dom._
 import monix.execution.Cancelable
-import monix.execution.Scheduler.Implicits.global
 import monix.reactive.{Observable, OverflowStrategy}
 import org.scalajs.dom._
 
@@ -20,12 +17,10 @@ class DomInterpreter extends ActionInterpreter {
   implicit val domElemEvidence: DomElem[DomElemT] = new DomElem[DomElemT] {}
 
   def interpret[R, M](model: M, action: ActionF[R]): R = {
-    var lastModel = model
 
     val interpreter = new (Action ~> Id) {
 
       case class RawNodeList(nodeList: NodeList) extends DomNodeList
-      case class RawEvent(element: Element, event: Event) extends DomMouseEvent
 
       def apply[A](action: Action[A]): Id[A] = {
         implicit def unitToA(unit: Unit): A = unit.asInstanceOf[A]
@@ -113,27 +108,11 @@ class DomInterpreter extends ActionInterpreter {
             element.setAttribute(name, value)
             element
 
-          case HandleEvents(element: Element, eventHandlers) =>
+          case HandleEvents(element: Element, eventTypes) =>
             debug(s"HandleEvents($element)")
-            Observable.create[(M, DomainEvent)](OverflowStrategy.Unbounded) { subscriber =>
-              val listeners = eventHandlers.asInstanceOf[DomEventHandlers[M]].map {
-                case (eventType, handler) =>
-                  val listener = (event: Event) => handler(lastModel, RawEvent(element, event))
-                    .foreach {
-                      case (handledModel, Ior.Right(domainEvent)) =>
-                        lastModel = handledModel
-                        subscriber.onNext((lastModel, domainEvent))
-                        ()
-                      case (handledModel, Ior.Left(actionF)) =>
-                        lastModel = handledModel
-                        interpret(lastModel, actionF)
-                      case (handledModel, Ior.Both(actionF, domainEvent)) =>
-                        lastModel = handledModel
-                        interpret(lastModel, actionF)
-                        subscriber.onNext((handledModel, domainEvent))
-                        ()
-                    }
-                  (eventType.toString.toLowerCase, listener)
+            Observable.create[(M, DomEventType, Event)](OverflowStrategy.Unbounded) { subscriber =>
+              val listeners = eventTypes.map { eventType =>
+                eventType.toString.toLowerCase -> ((event: Event) => subscriber.onNext((model, eventType, event)))
               }
               listeners.foreach { case (e, l) => element.addEventListener(e, l) }
               Cancelable(() => listeners.foreach{ case (e, l) => element.removeEventListener(e, l) })

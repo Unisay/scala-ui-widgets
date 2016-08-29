@@ -1,7 +1,6 @@
 package com.github.unisay.dancher.widget
 
 import cats.implicits._
-import com.github.unisay.dancher.dom.DomEventHandlers._
 import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.ActionInterpreter
 import com.github.unisay.dancher.widget.RenderAction._
@@ -10,35 +9,24 @@ import monix.reactive.Observable
 
 trait LayoutWidgets {
 
-  def Horizontal[M](children: List[Widget[M]],
-                    cssClasses: List[String] = Nil,
-                    eventHandlers: DomEventHandlers[M] = NoHandlers[M])
+  def Horizontal[M](children: Iterable[Widget[M]],
+                    cssClasses: Iterable[String] = Nil,
+                    eventTypes: Iterable[DomEventType] = Nil)
                    (implicit interpreter: ActionInterpreter): Widget[M] =
-    Div(children, "d-horizontal" :: cssClasses, eventHandlers)
+    Div(children, "d-horizontal" :: cssClasses.toList, eventTypes)
 
-  def Vertical[M](children: List[Widget[M]],
-                  cssClasses: List[String] = Nil,
-                  eventHandlers: DomEventHandlers[M] = NoHandlers[M])
+  def Vertical[M](children: Iterable[Widget[M]],
+                  cssClasses: Iterable[String] = Nil,
+                  eventTypes: Iterable[DomEventType] = Nil)
                  (implicit interpreter: ActionInterpreter): Widget[M] =
-    Div(children, "d-vertical" :: cssClasses, eventHandlers)
+    Div(children, "d-vertical" :: cssClasses.toList, eventTypes)
 
   def HorizontalSplit[M](left: Widget[M], right: Widget[M])
                         (implicit interpreter: ActionInterpreter): Widget[M] = {
-    val splitterEventHandlers = On(MouseDown) { (eventModel: M, _) =>
-      Observable(HandlerResult(eventModel, log("MouseDown")))
-    } ++ On(MouseUp) { (eventModel: M, _) =>
-      Observable(HandlerResult(eventModel, log("MouseUp")))
-    } ++ On(MouseEnter) { (eventModel: M, _) =>
 
-      Observable(HandlerResult(eventModel, log("MouseEnter")))
-    } ++ On(MouseLeave) { (eventModel: M, _) =>
-      Observable(HandlerResult(eventModel, log("MouseLeave")))
-    } ++ On(MouseMove) { (eventModel: M, _) =>
-      Observable(HandlerResult(eventModel, log("MouseMove")))
-    }
-
+    val domEventTypes = List(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)
     val leftDiv = Div(List(left), cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-left" :: Nil)
-    val splitter = Div[M](Nil, cssClasses = "d-horizontal-split-splitter" :: Nil, eventHandlers = splitterEventHandlers)
+    val splitter = Div[M](Nil, cssClasses = "d-horizontal-split-splitter" :: Nil, domEventTypes)
     val rightDiv = Div(List(right), cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-right" :: Nil)
     Widget { model: M =>
       Horizontal[M](leftDiv > splitter > rightDiv, cssClasses = "d-horizontal-split" :: Nil).apply(model)
@@ -46,15 +34,18 @@ trait LayoutWidgets {
   }
 
 
-  private def Div[M](children: List[Widget[M]],
+  private def Div[M](children: Iterable[Widget[M]],
                      cssClasses: List[String] = Nil,
-                     eventHandlers: DomEventHandlers[M] = NoHandlers[M])
+                     eventTypes: Iterable[DomEventType] = Nil)
                     (implicit interpreter: ActionInterpreter): Widget[M] = {
     import interpreter._
     Widget { model: M =>
       val divAction: RenderAction = for {
         element <- createElement("div")
-        events <- if (eventHandlers.isEmpty) value(Observable.empty) else handleEvents(element, eventHandlers)
+        events <- if (eventTypes.isEmpty)
+                    value(Observable.empty[(M, DomEventType, DomEventT)])
+                  else
+                    handleEvents(element, eventTypes)
         _ <- cssClasses.toNel.map(setClasses(element, _)).getOrElse(noAction).void
       } yield DomBinding(element, events0 = events)
 
