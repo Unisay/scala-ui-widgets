@@ -46,14 +46,23 @@ object dom {
   trait DomBinding {
     type M // Model
     type E // DOM Element
+    type DomStream = Observable[DomEvent Ior EffectAction]
+    type DomainStream = Observable[(M, DomainEvent)]
     implicit val elementEvidence: DomElem[E]
     val element: E
     val nested: Vector[DomBinding]
-    val events: Observable[(M, DomainEvent)]
-    val actions: Observable[DomEvent Ior EffectAction]
+    val domainStream: DomainStream
+    val domStream: DomStream
+
+    def mapDomStream(f: DomStream => DomStream): DomBinding =
+      DomBinding(
+        element = element,
+        nested = nested,
+        domStream = f(domStream),
+        domainStream = domainStream)
 
     def flatMapElement(f: E => ActionF[E]): ActionF[DomBinding] =
-    f(element).map(ee => DomBinding(ee, nested, events))
+      f(element).map(ee => DomBinding(ee, nested, domainStream))
   }
 
   object DomBinding {
@@ -64,16 +73,16 @@ object dom {
                      (implicit elementEv: DomElem[E0]): DomBinding = {
       val _element = element
       val _nested = nested
-      val _events = domainStream
-      val _actions = domStream
+      val _domainStream = domainStream
+      val _domStream = domStream
       new DomBinding {
         type M = M0
         type E = E0
         val elementEvidence = elementEv
         val element = _element
-        val events = _events
         val nested = _nested
-        val actions = _actions
+        val domainStream = _domainStream
+        val domStream = _domStream
       }
     }
   }

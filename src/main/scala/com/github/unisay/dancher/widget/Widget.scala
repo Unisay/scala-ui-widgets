@@ -29,7 +29,7 @@ object RenderAction {
     } yield DomBinding(
        parentElement,
        pb.nested :+ cb,
-       Observable.merge(pb.events, cb.events)
+       Observable.merge(pb.domainStream, cb.domainStream)
     )(cb.elementEvidence)
 }
 
@@ -51,7 +51,7 @@ final class WidgetOps[M](val widget: Widget[M]) extends AnyVal {
   def flatMapElement(f: (DomBinding#E, DomElem[DomBinding#E]) => ActionF[DomBinding#E]): Widget[M] =
     flatMapBinding { (binding: DomBinding) =>
       f(binding.element, binding.elementEvidence).map { (e: DomBinding#E) =>
-        DomBinding(e, binding.nested, binding.events)(binding.elementEvidence)
+        DomBinding(e, binding.nested, binding.domainStream)(binding.elementEvidence)
       }
     }
 

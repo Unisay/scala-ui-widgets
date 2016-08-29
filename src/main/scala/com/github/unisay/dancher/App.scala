@@ -36,7 +36,7 @@ object App extends JSApp {
   override def main(): Unit = {
     println("App started")
 
-    DemoPage(Body).render(demoModel).events.subscribe(nextFn = {
+    DemoPage(Body).render(demoModel).domainStream.subscribe(nextFn = {
       case (_, TabActivated(index)) =>
         println(s"Tab $index activated!")
         Ack.Continue

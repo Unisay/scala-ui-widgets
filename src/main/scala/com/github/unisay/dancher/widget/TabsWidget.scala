@@ -2,6 +2,7 @@ package com.github.unisay.dancher.widget
 
 import java.lang.Math.{max, min}
 
+import cats.data.Ior
 import cats.implicits._
 import com.github.unisay.dancher._
 import com.github.unisay.dancher.dom._
@@ -55,7 +56,7 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets {
         Vertical(childrenWidgets)
       )
 
-      def buttonEventsHandler[E: DomElem](index: Int, buttonElements: Iterable[E], childElements: Iterable[E]) =
+/*      def buttonEventsHandler[E: DomElem](index: Int, buttonElements: Iterable[E], childElements: Iterable[E]) =
         DomEventHandlers.On[M](switchOn) { (eventModel: M, event: DomEvent) =>
           val oldIndex = activeTabIndexLens.get(eventModel)
           if (index =!= oldIndex) {
@@ -67,17 +68,26 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets {
             val result = HandlerResult(updatedModel, TabActivated(index), clickAction)
             Observable(result)
           } else Observable.empty
-        }
+        }*/
 
       for {
         verticalBinding <- verticalWidget(model)
         buttonBindings = verticalBinding.nested.head.nested
+        buttonElements = buttonBindings.map(_.element)
         childElements = verticalBinding.nested(1).nested.map(_.element)
-        buttonsEvents <- buttonBindings.zipWithIndex.map { case (binding, index) =>
-          import binding.elementEvidence
-          handleEvents(binding.element, buttonEventsHandler(index, buttonBindings.map(_.element), childElements))
-        }.sequence
-        mergedEvents = buttonsEvents.reduce(Observable.merge(_, _))
+        buttonsActions <- buttonBindings.zipWithIndex.map { case (binding, index) =>
+          binding.mapDomStream { _
+            .flatMap { case Ior.Left(ClickEvent) => Observable(index); case _ => Observable.empty }
+            .scan(initial = (activeTabIndex, activeTabIndex)) { case ((prev, curr), next) => (curr, next) }
+            .map { case (prev, curr) =>
+              val updateButtons = activate(prev, curr, buttonElements, addClass("d-tab-active"), removeClass("d-tab-active"))
+              val updateChildren = activate(prev, curr, childElements, show, hide)
+              val clickAction = updateButtons followedBy updateChildren
+              Ior.Right(clickAction)
+            }
+          }
+        }
+        // TODO !!!
       } yield DomBinding(verticalBinding.element, Vector.empty, mergedEvents)(verticalBinding.elementEvidence)
     }
   }

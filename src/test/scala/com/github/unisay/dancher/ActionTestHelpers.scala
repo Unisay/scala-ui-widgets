@@ -27,7 +27,7 @@ object ActionTestHelpers {
                        attributes: Map[JsInterpreterElement, Map[String, String]] = Map.empty):
     (DomBinding#E, Vector[DomBinding], Observable[(DomBinding#M, DomainEvent)], String) = {
       val (domBinding, script) = interpretJs0(renderAction, model, domEvents, attributes)
-      (domBinding.element, domBinding.nested, domBinding.events, script)
+      (domBinding.element, domBinding.nested, domBinding.domainStream, script)
     }
   }
 
