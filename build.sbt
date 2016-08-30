@@ -22,7 +22,7 @@ val catsVer       = "0.7.0"
 val scalajsDomVer = "0.9.1"
 val specs2Ver     = "3.8.2"
 val monocleVer    = "1.2.2"
-val monixVer      = "2.0-RC11"
+val monixVer      = "2.0-RC13"
 
 libraryDependencies ++= Seq(
   "org.scala-js"  %%% "scalajs-dom" % scalajsDomVer,
