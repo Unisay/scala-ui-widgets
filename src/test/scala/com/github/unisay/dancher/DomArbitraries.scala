@@ -1,7 +1,6 @@
 package com.github.unisay.dancher
 
 import cats.Eq
-import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.JsInterpreter.JsInterpreterElement
 import org.scalacheck._
 
@@ -23,11 +22,8 @@ object DomArbitraries {
     Gen.numChar.map(index => JsInterpreterElement(s"element$index"))
   }
 
-  implicit val arbDomEvent: Arbitrary[DomEvent] = Arbitrary {
-    for {
-      index <- Gen.numChar
-      domElement <- Arbitrary.arbitrary[JsInterpreterElement]
-    } yield new DomEvent() { val element = domElement; override def toString = s"domEvent$index" }
-  }
+/*  implicit val arbDomEvent: Arbitrary[DomEvent] = Arbitrary {
+
+  }*/
 
 }

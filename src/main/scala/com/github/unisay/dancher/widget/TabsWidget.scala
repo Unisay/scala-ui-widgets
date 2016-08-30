@@ -22,8 +22,8 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets {
              (children: (String, Widget[M])*)
              (implicit interpreter: ActionInterpreter): Widget[M] = {
 
-    def activate[E: DomElem](oldIndex: Int, newIndex: Int, domElements: Iterable[E],
-                             activate: E => ActionF[_], deactivate: E => ActionF[_]): EffectAction =
+    def update(oldIndex: Int, newIndex: Int, domElements: Vector[DomBinding#E],
+                 activate: DomBinding#E => ActionF[_], deactivate: DomBinding#E => ActionF[_]): EffectAction =
       domElements.zipWithIndex.map {
         case (domElement, index) if oldIndex == index => deactivate(domElement).void
         case (domElement, index) if newIndex == index => activate(domElement).void
@@ -56,39 +56,25 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets {
         Vertical(childrenWidgets)
       )
 
-/*      def buttonEventsHandler[E: DomElem](index: Int, buttonElements: Iterable[E], childElements: Iterable[E]) =
-        DomEventHandlers.On[M](switchOn) { (eventModel: M, event: DomEvent) =>
-          val oldIndex = activeTabIndexLens.get(eventModel)
-          if (index =!= oldIndex) {
-            val updatedModel = activeTabIndexLens.set(index)(eventModel)
-            val updateButtons = activate[E](oldIndex, index, buttonElements,
-              addClass("d-tab-active"), removeClass("d-tab-active"))
-            val updateChildren = activate[E](oldIndex, index, childElements, show, hide)
-            val clickAction = updateButtons followedBy updateChildren
-            val result = HandlerResult(updatedModel, TabActivated(index), clickAction)
-            Observable(result)
-          } else Observable.empty
-        }*/
-
-      for {
-        verticalBinding <- verticalWidget(model)
-        buttonBindings = verticalBinding.nested.head.nested
-        buttonElements = buttonBindings.map(_.element)
-        childElements = verticalBinding.nested(1).nested.map(_.element)
-        buttonsActions <- buttonBindings.zipWithIndex.map { case (binding, index) =>
-          binding.mapDomStream { _
-            .flatMap { case Ior.Left(ClickEvent) => Observable(index); case _ => Observable.empty }
-            .scan(initial = (activeTabIndex, activeTabIndex)) { case ((prev, curr), next) => (curr, next) }
-            .map { case (prev, curr) =>
-              val updateButtons = activate(prev, curr, buttonElements, addClass("d-tab-active"), removeClass("d-tab-active"))
-              val updateChildren = activate(prev, curr, childElements, show, hide)
-              val clickAction = updateButtons followedBy updateChildren
-              Ior.Right(clickAction)
-            }
-          }
+      verticalWidget(model).map { verticalBinding ⇒
+        verticalBinding.mapDomStream { _ =>
+          val buttonBindings = verticalBinding.nested.head.nested
+          val buttonElements = buttonBindings.map(_.element)
+          val childElements = verticalBinding.nested(1).nested.map(_.element)
+          buttonBindings.zipWithIndex.map { case (buttonBinding, index) =>
+            import buttonBinding._
+            buttonBinding.domStream
+              .flatMap { case Ior.Left(_) => Observable(index); case _ => Observable.empty }
+              .scan(initial = (activeTabIndex, activeTabIndex)) { case ((prev, curr), next) => (curr, next) }
+              .map { case (prev, curr) =>
+                Ior.Right {
+                  update(prev, curr, buttonElements, addClass("d-tab-active"), removeClass("d-tab-active")) followedBy
+                    update(prev, curr, childElements, show, hide)
+                }
+              }
+          }.reduce(Observable.merge(_, _))
         }
-        // TODO !!!
-      } yield DomBinding(verticalBinding.element, Vector.empty, mergedEvents)(verticalBinding.elementEvidence)
+      }
     }
   }
 }

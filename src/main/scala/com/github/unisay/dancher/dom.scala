@@ -43,15 +43,16 @@ object dom {
 
   trait DomNodeList
 
+  type DomStream = Observable[DomEvent Ior EffectAction]
+  type DomainStream[M] = Observable[(M, DomainEvent)]
+
   trait DomBinding {
     type M // Model
     type E // DOM Element
-    type DomStream = Observable[DomEvent Ior EffectAction]
-    type DomainStream = Observable[(M, DomainEvent)]
     implicit val elementEvidence: DomElem[E]
     val element: E
     val nested: Vector[DomBinding]
-    val domainStream: DomainStream
+    val domainStream: DomainStream[M]
     val domStream: DomStream
 
     def mapDomStream(f: DomStream => DomStream): DomBinding =

@@ -1,12 +1,11 @@
 package com.github.unisay.dancher
 
 import com.github.unisay.dancher.ObservableMatchers._
-import com.github.unisay.dancher.dom.{DomEvent, MouseDown, MouseEnter, MouseLeave, MouseMove, MouseUp}
+import com.github.unisay.dancher.dom._
 import monix.execution.schedulers.TestScheduler
 import monix.reactive.OverflowStrategy
 import monix.reactive.subjects.ConcurrentSubject
 import org.scalatest.{FlatSpec, MustMatchers}
-
 import scala.concurrent.duration._
 
 class ObservableStateMachineSpec extends FlatSpec with MustMatchers {
@@ -14,7 +13,7 @@ class ObservableStateMachineSpec extends FlatSpec with MustMatchers {
   "state machine" must "work" in {
     implicit val scheduler = TestScheduler()
 
-    val events = ConcurrentSubject.publish[DomEvent](OverflowStrategy.Unbounded)
+    val events = ConcurrentSubject.publish[DomEventType](OverflowStrategy.Unbounded)
 
     scheduler.scheduleOnce(100.millis) { events.onNext(MouseMove);  () }
     scheduler.scheduleOnce(105.millis) { events.onNext(MouseEnter); () }
@@ -28,7 +27,7 @@ class ObservableStateMachineSpec extends FlatSpec with MustMatchers {
     scheduler.scheduleOnce(180.millis) { events.onNext(MouseUp);    () }
     scheduler.scheduleOnce(900.millis) { events.onComplete()           }
 
-    case class Drag(inside: Boolean, dragging: Boolean, draggingEnd: Boolean, event: Option[DomEvent])
+    case class Drag(inside: Boolean, dragging: Boolean, draggingEnd: Boolean, event: Option[DomEventType])
     val initial = Drag(inside = false, dragging = false, draggingEnd = false, event = None)
 
     val drags = events.scan(initial) {
