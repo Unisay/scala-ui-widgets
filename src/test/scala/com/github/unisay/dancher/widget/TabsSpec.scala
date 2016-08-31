@@ -2,17 +2,16 @@ package com.github.unisay.dancher.widget
 
 import com.github.unisay.dancher.ActionTestHelpers._
 import com.github.unisay.dancher.DomArbitraries._
+import com.github.unisay.dancher.DomainEvent
 import com.github.unisay.dancher.ObservableMatchers._
 import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.JsInterpreter
 import com.github.unisay.dancher.widget.Widget._
-import com.github.unisay.dancher.{ClickEvent, DomainEvent}
 import monix.execution.schedulers.TestScheduler
+import monix.reactive.OverflowStrategy
 import monix.reactive.subjects.ConcurrentSubject
-import monix.reactive.{Observable, OverflowStrategy}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{MustMatchers, PropSpec}
-
 import scala.concurrent.duration._
 
 class TabsSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatchers {
@@ -22,8 +21,7 @@ class TabsSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatc
 
   val tabs: Widget[TabsModel] = Tabs(const(TabsModel(1)))(
     "Tab 1" -> Label(const("Label")),
-    "Tab 2" -> Button(const("Button"), eventHandlers =
-      DomEventHandlers.On(Click)((model, domEvent) => Observable(HandlerResult(model, ClickEvent(domEvent)))))
+    "Tab 2" -> Button(const("Button"), eventTypes = List(Click))
   )
 
   val model = TabsModel(0)
@@ -31,7 +29,7 @@ class TabsSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatc
   property("Tabs widget renders correctly") {
     forAll { (domEvent: DomEvent) ⇒
       implicit val scheduler = TestScheduler()
-      val domEvents = ConcurrentSubject.publish[(String, (DomEvent, DomEvent))](OverflowStrategy.Unbounded)
+      val domEvents = ConcurrentSubject.publish[(String, DomEvent)](OverflowStrategy.Unbounded)
 
       val renderAction = tabs(model)
 
@@ -78,8 +76,11 @@ class TabsSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatc
           |/* HandleEvents(button1) */;
         """.stripMargin.trim
 
-      scheduler.scheduleOnce(100.millis) { domEvents.onNext(("button0", Click -> domEvent)); () }
-      scheduler.scheduleOnce(200.millis) { domEvents.onNext(("button1", Click -> domEvent)); () }
+      def click(element: String): (String, DomEvent) = element → new ClickEvent {
+        override def toString: String = s"Click($element)"
+      }
+      scheduler.scheduleOnce(100.millis) { domEvents.onNext(click("button0")); () }
+      scheduler.scheduleOnce(200.millis) { domEvents.onNext(click("button1")); () }
       scheduler.scheduleOnce(300.millis) { domEvents.onComplete() }
 
       events.toList() must contain theSameElementsInOrderAs List[(TabsModel, DomainEvent)](

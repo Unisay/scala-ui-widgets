@@ -34,12 +34,13 @@ object dom {
   case object MouseLeave extends DomEventType
 
   sealed trait DomEvent { val eventType: DomEventType }
-  trait ClickEvent extends DomEvent { final val eventType = Click }
-  trait MouseUpEvent extends DomEvent { final val eventType = MouseUp }
-  trait MouseDownEvent extends DomEvent { final val eventType = MouseDown }
-  trait MouseMoveEvent extends DomEvent { final val eventType = MouseMove }
-  trait MouseEnterEvent extends DomEvent { final val eventType = MouseEnter }
-  trait MouseLeaveEvent extends DomEvent { final val eventType = MouseLeave }
+  sealed trait MouseEvent extends DomEvent
+  trait ClickEvent extends MouseEvent { final val eventType = Click }
+  trait MouseUpEvent extends MouseEvent { final val eventType = MouseUp }
+  trait MouseDownEvent extends MouseEvent { final val eventType = MouseDown }
+  trait MouseMoveEvent extends MouseEvent { final val eventType = MouseMove }
+  trait MouseEnterEvent extends MouseEvent { final val eventType = MouseEnter }
+  trait MouseLeaveEvent extends MouseEvent { final val eventType = MouseLeave }
 
   trait DomNodeList
 
@@ -69,8 +70,8 @@ object dom {
   object DomBinding {
     def apply[M0, E0](element: E0,
                       nested: Vector[DomBinding] = Vector.empty,
-                      domainStream: Observable[(M0, DomainEvent)] = Observable.empty,
-                      domStream: Observable[DomEvent Ior EffectAction] = Observable.empty)
+                      domainStream: DomainStream[M0] = Observable.empty,
+                      domStream: DomStream = Observable.empty)
                      (implicit elementEv: DomElem[E0]): DomBinding = {
       val _element = element
       val _nested = nested

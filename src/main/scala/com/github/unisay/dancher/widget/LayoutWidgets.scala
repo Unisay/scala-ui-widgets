@@ -1,5 +1,6 @@
 package com.github.unisay.dancher.widget
 
+import cats.data.Ior
 import cats.implicits._
 import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.ActionInterpreter
@@ -24,12 +25,43 @@ trait LayoutWidgets {
   def HorizontalSplit[M](left: Widget[M], right: Widget[M])
                         (implicit interpreter: ActionInterpreter): Widget[M] = {
 
+    case class Drag(inside: Boolean,
+                    dragStart: Option[MouseDownEvent] = None,
+                    dragEnd: Option[MouseEvent] = None,
+                    event: Option[DomEvent] = None) {
+      val isDragging: Boolean = dragStart.nonEmpty
+    }
+
     val domEventTypes = List(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)
     val leftDiv = Div(List(left), cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-left" :: Nil)
     val splitter = Div[M](Nil, cssClasses = "d-horizontal-split-splitter" :: Nil, domEventTypes)
     val rightDiv = Div(List(right), cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-right" :: Nil)
+    val internalWidget = Horizontal[M](leftDiv > splitter > rightDiv, cssClasses = "d-horizontal-split" :: Nil)
     Widget { model: M =>
-      Horizontal[M](leftDiv > splitter > rightDiv, cssClasses = "d-horizontal-split" :: Nil).apply(model)
+      internalWidget(model).map { domBinding =>
+        val splitterBinding: DomBinding = domBinding.nested(1)
+        domBinding.mapDomStream { _ =>
+          splitterBinding.domStream.scan(Drag(inside = false)) { // TODO: what if inside is true?
+            case (drag @ Drag(_, _, _, _), Ior.Left(event: MouseMoveEvent)) =>
+              drag.copy(event = Some(event))
+            case (drag @ Drag(false, _, _, _), Ior.Left(event: MouseEnterEvent)) =>
+              drag.copy(inside = true, event = Some(event))
+            case (drag @ Drag(true, _, _, _), Ior.Left(event: MouseLeaveEvent)) =>
+              drag.copy(inside = false, event = Some(event))
+            case (drag @ Drag(true, None, _, _), Ior.Left(event: MouseDownEvent)) =>
+              drag.copy(dragStart = Some(event), event = Some(event))
+            case (drag @ Drag(_, Some(_), _, _), Ior.Left(event: MouseUpEvent)) =>
+              drag.copy(dragEnd = Some(event), event = Some(event))
+            case (drag @ Drag(_, None, Some(_), _), _) =>
+              drag.copy(dragEnd = None)
+            case (drag, _) =>
+              drag
+          }
+            .filter(_.isDragging)
+            .map(_.event.get)
+
+        }
+      }
     }
   }
 
