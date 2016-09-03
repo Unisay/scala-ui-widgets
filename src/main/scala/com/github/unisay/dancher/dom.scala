@@ -34,7 +34,17 @@ object dom {
   case object MouseLeave extends DomEventType
 
   sealed trait DomEvent { val eventType: DomEventType }
-  sealed trait MouseEvent extends DomEvent
+
+  case class Vector2d(x: Double, y: Double) {
+    def -(v: Vector2d): Vector2d = Vector2d(x - v.x, y - v.y)
+    def +(v: Vector2d): Vector2d = Vector2d(x + v.x, y + v.y)
+  }
+
+  sealed trait MouseEvent extends DomEvent {
+    val screen: Vector2d
+    val client: Vector2d
+    val page: Vector2d
+  }
   trait ClickEvent extends MouseEvent { final val eventType = Click }
   trait MouseUpEvent extends MouseEvent { final val eventType = MouseUp }
   trait MouseDownEvent extends MouseEvent { final val eventType = MouseDown }

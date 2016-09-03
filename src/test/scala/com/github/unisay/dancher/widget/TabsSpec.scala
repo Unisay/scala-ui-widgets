@@ -27,7 +27,7 @@ class TabsSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatc
   val model = TabsModel(0)
 
   property("Tabs widget renders correctly") {
-    forAll { (domEvent: DomEvent) ⇒
+    forAll { (domEvent: DomEvent) =>
       implicit val scheduler = TestScheduler()
       val domEvents = ConcurrentSubject.publish[(String, DomEvent)](OverflowStrategy.Unbounded)
 
@@ -76,9 +76,7 @@ class TabsSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatc
           |/* HandleEvents(button1) */;
         """.stripMargin.trim
 
-      def click(element: String): (String, DomEvent) = element → new ClickEvent {
-        override def toString: String = s"Click($element)"
-      }
+      def click(element: String) = element -> domEvent
       scheduler.scheduleOnce(100.millis) { domEvents.onNext(click("button0")); () }
       scheduler.scheduleOnce(200.millis) { domEvents.onNext(click("button1")); () }
       scheduler.scheduleOnce(300.millis) { domEvents.onComplete() }

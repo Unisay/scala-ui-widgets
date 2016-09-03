@@ -41,8 +41,9 @@ libraryDependencies ++= Seq(
   "com.github.julien-truffaut" %%% "monocle-generic" % monocleVer,
   "com.github.julien-truffaut" %%% "monocle-macro"   % monocleVer,
 
-  "org.scalatest"  %%% "scalatest"  % "3.0.0"  % "test",
-  "org.scalacheck" %%% "scalacheck" % "1.13.2" % "test"
+  "org.scalatest"       %%% "scalatest"       % "3.0.0"  % "test",
+  "org.scalacheck"      %%% "scalacheck"      % "1.13.2" % "test",
+  "io.github.amrhassan" %%  "scalacheck-cats" % "0.1.1"  % "test"
 )
 
 resolvers += Resolver.sonatypeRepo("releases")

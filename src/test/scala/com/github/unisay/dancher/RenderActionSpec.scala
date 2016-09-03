@@ -11,6 +11,7 @@ import com.github.unisay.dancher.widget.RenderAction._
 import monix.execution.schedulers.TestScheduler
 import monix.reactive.Observable
 import org.scalatest.{FlatSpec, MustMatchers}
+import DomArbitraries.arbitraryDomEvent
 
 class RenderActionSpec extends FlatSpec with MustMatchers {
 
@@ -18,9 +19,7 @@ class RenderActionSpec extends FlatSpec with MustMatchers {
   implicit val interpreter = JsInterpreter
   import interpreter._
 
-  def event(index: Int): DomEvent Ior EffectAction = Ior.Left(new MouseDownEvent {
-    override def toString: String = s"MouseDown($index)"
-  })
+  def event(index: Int): DomEvent Ior EffectAction = Ior.Left(arbitraryDomEvent.arbitrary.sample.get)
 
   val parentElement: DomElemT = JsInterpreterElement("parent")
   val childElement0: DomElemT = JsInterpreterElement("child0")

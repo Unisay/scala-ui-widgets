@@ -28,8 +28,14 @@ trait LayoutWidgets {
     case class Drag(inside: Boolean,
                     dragStart: Option[MouseDownEvent] = None,
                     dragEnd: Option[MouseEvent] = None,
-                    event: Option[DomEvent] = None) {
-      val isDragging: Boolean = dragStart.nonEmpty
+                    event: Option[MouseEvent] = None) {
+      def dragDelta: Observable[Vector2d] = dragStart match {
+        case Some(startEvent) => event match {
+          case Some(currEvent) => Observable(startEvent.screen - currEvent.screen)
+          case None => Observable.empty
+        }
+        case None => Observable.empty
+      }
     }
 
     val domEventTypes = List(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)
@@ -37,6 +43,9 @@ trait LayoutWidgets {
     val splitter = Div[M](Nil, cssClasses = "d-horizontal-split-splitter" :: Nil, domEventTypes)
     val rightDiv = Div(List(right), cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-right" :: Nil)
     val internalWidget = Horizontal[M](leftDiv > splitter > rightDiv, cssClasses = "d-horizontal-split" :: Nil)
+
+    def moveSplitter(delta: Vector2d): EffectAction = ???
+
     Widget { model: M =>
       internalWidget(model).map { domBinding =>
         val splitterBinding: DomBinding = domBinding.nested(1)
@@ -57,9 +66,8 @@ trait LayoutWidgets {
             case (drag, _) =>
               drag
           }
-            .filter(_.isDragging)
-            .map(_.event.get)
-
+          .flatMap(_.dragDelta)
+          .map(delta => Ior.Right(moveSplitter(delta)))
         }
       }
     }

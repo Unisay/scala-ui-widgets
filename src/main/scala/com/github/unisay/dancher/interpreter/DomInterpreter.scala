@@ -21,12 +21,42 @@ class DomInterpreter extends ActionInterpreter {
   def makeEvent(eventType: DomEventType, event: Event): DomEvent Ior EffectAction =
     Ior.Left {
       eventType match {
-        case Click      => new ClickEvent      {}
-        case MouseEnter => new MouseEnterEvent {}
-        case MouseLeave => new MouseLeaveEvent {}
-        case MouseUp    => new MouseUpEvent    {}
-        case MouseDown  => new MouseDownEvent  {}
-        case MouseMove  => new MouseMoveEvent  {}
+        case Click => new ClickEvent {
+          val mouseEvent = event.asInstanceOf[org.scalajs.dom.MouseEvent]
+          val page   = Vector2d(mouseEvent.pageX,   mouseEvent.pageY)
+          val screen = Vector2d(mouseEvent.screenX, mouseEvent.screenY)
+          val client = Vector2d(mouseEvent.clientX, mouseEvent.clientY)
+        }
+        case MouseEnter => new MouseEnterEvent {
+          val mouseEvent = event.asInstanceOf[org.scalajs.dom.MouseEvent]
+          val page   = Vector2d(mouseEvent.pageX,   mouseEvent.pageY)
+          val screen = Vector2d(mouseEvent.screenX, mouseEvent.screenY)
+          val client = Vector2d(mouseEvent.clientX, mouseEvent.clientY)
+        }
+        case MouseLeave => new MouseLeaveEvent {
+          val mouseEvent = event.asInstanceOf[org.scalajs.dom.MouseEvent]
+          val page   = Vector2d(mouseEvent.pageX,   mouseEvent.pageY)
+          val screen = Vector2d(mouseEvent.screenX, mouseEvent.screenY)
+          val client = Vector2d(mouseEvent.clientX, mouseEvent.clientY)
+        }
+        case MouseUp    => new MouseUpEvent    {
+          val mouseEvent = event.asInstanceOf[org.scalajs.dom.MouseEvent]
+          val page   = Vector2d(mouseEvent.pageX,   mouseEvent.pageY)
+          val screen = Vector2d(mouseEvent.screenX, mouseEvent.screenY)
+          val client = Vector2d(mouseEvent.clientX, mouseEvent.clientY)
+        }
+        case MouseDown  => new MouseDownEvent  {
+          val mouseEvent = event.asInstanceOf[org.scalajs.dom.MouseEvent]
+          val page   = Vector2d(mouseEvent.pageX,   mouseEvent.pageY)
+          val screen = Vector2d(mouseEvent.screenX, mouseEvent.screenY)
+          val client = Vector2d(mouseEvent.clientX, mouseEvent.clientY)
+        }
+        case MouseMove  => new MouseMoveEvent  {
+          val mouseEvent = event.asInstanceOf[org.scalajs.dom.MouseEvent]
+          val page   = Vector2d(mouseEvent.pageX,   mouseEvent.pageY)
+          val screen = Vector2d(mouseEvent.screenX, mouseEvent.screenY)
+          val client = Vector2d(mouseEvent.clientX, mouseEvent.clientY)
+        }
       }
     }
 
