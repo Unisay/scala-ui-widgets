@@ -25,16 +25,16 @@ trait LayoutWidgets {
   def HorizontalSplit[M](left: Widget[M], right: Widget[M])
                         (implicit interpreter: ActionInterpreter): Widget[M] = {
 
+    // TODO: hold Vectors, not events
     case class Drag(inside: Boolean,
                     dragStart: Option[MouseDownEvent] = None,
                     dragEnd: Option[MouseEvent] = None,
                     event: Option[MouseEvent] = None) {
-      def dragDelta: Observable[Vector2d] = dragStart match {
-        case Some(startEvent) => event match {
-          case Some(currEvent) => Observable(startEvent.screen - currEvent.screen)
-          case None => Observable.empty
-        }
-        case None => Observable.empty
+      def dragDelta: Observable[Vector2d] = {
+        for {
+          start <- Observable.fromIterable(dragStart)
+          curr  <- Observable.fromIterable(event)
+        } yield start.screen - curr.screen
       }
     }
 
@@ -44,11 +44,12 @@ trait LayoutWidgets {
     val rightDiv = Div(List(right), cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-right" :: Nil)
     val internalWidget = Horizontal[M](leftDiv > splitter > rightDiv, cssClasses = "d-horizontal-split" :: Nil)
 
-    def moveSplitter(delta: Vector2d): EffectAction = ???
+    def moveSplitter[E: DomElem](splitterElement: E)(delta: Vector2d): EffectAction = ???
 
     Widget { model: M =>
       internalWidget(model).map { domBinding =>
         val splitterBinding: DomBinding = domBinding.nested(1)
+        import splitterBinding._
         domBinding.mapDomStream { _ =>
           splitterBinding.domStream.scan(Drag(inside = false)) { // TODO: what if inside is true?
             case (drag @ Drag(_, _, _, _), Ior.Left(event: MouseMoveEvent)) =>
@@ -67,7 +68,8 @@ trait LayoutWidgets {
               drag
           }
           .flatMap(_.dragDelta)
-          .map(delta => Ior.Right(moveSplitter(delta)))
+          .map(moveSplitter[E](element))
+          .map(Ior.Right.apply)
         }
       }
     }
