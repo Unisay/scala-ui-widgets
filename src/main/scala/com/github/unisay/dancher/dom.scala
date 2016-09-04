@@ -22,8 +22,11 @@ object dom {
 
   case class DomId(value: String) extends AnyVal
 
-  trait DomNode[+N]
-  trait DomElem[+E] extends DomNode[E]
+  trait DomNode[N]
+  trait DomElem[E] extends DomNode[E] {
+    def clientWidth(e: E): Int
+    def clientHeight(e: E): Int
+  }
 
   sealed trait DomEventType
   case object Click extends DomEventType
@@ -57,46 +60,14 @@ object dom {
   type DomStream = Observable[DomEvent Ior EffectAction]
   type DomainStream[M] = Observable[(M, DomainEvent)]
 
-  trait DomBinding {
-    type M // Model
-    type E // DOM Element
-    implicit val elementEvidence: DomElem[E]
-    val element: E
-    val nested: Vector[DomBinding]
-    val domainStream: DomainStream[M]
-    val domStream: DomStream
+  case class DomBinding[E, M](element: E,
+                              nested: Vector[DomBinding[E, M]] = Vector.empty,
+                              domainStream: DomainStream[M] = Observable.empty,
+                              domStream: DomStream = Observable.empty) {
+    def mapDomStream(f: DomStream => DomStream): DomBinding[E, M] = copy(domStream = f(domStream))
 
-    def mapDomStream(f: DomStream => DomStream): DomBinding =
-      DomBinding(
-        element = element,
-        nested = nested,
-        domStream = f(domStream),
-        domainStream = domainStream)
-
-    def flatMapElement(f: E => ActionF[E]): ActionF[DomBinding] =
-      f(element).map(ee => DomBinding(ee, nested, domainStream))
-  }
-
-  object DomBinding {
-    def apply[M0, E0](element: E0,
-                      nested: Vector[DomBinding] = Vector.empty,
-                      domainStream: DomainStream[M0] = Observable.empty,
-                      domStream: DomStream = Observable.empty)
-                     (implicit elementEv: DomElem[E0]): DomBinding = {
-      val _element = element
-      val _nested = nested
-      val _domainStream = domainStream
-      val _domStream = domStream
-      new DomBinding {
-        type M = M0
-        type E = E0
-        val elementEvidence = elementEv
-        val element = _element
-        val nested = _nested
-        val domainStream = _domainStream
-        val domStream = _domStream
-      }
-    }
+    def flatMapElement(f: E => ActionF[E]): ActionF[DomBinding[E, M]] =
+      f(element).map(e => copy(element = e))
   }
 
   type ActionF[A] = Free[Action, A]

@@ -3,86 +3,88 @@ package com.github.unisay.dancher.widget
 import cats.data.Ior
 import cats.implicits._
 import com.github.unisay.dancher.dom._
-import com.github.unisay.dancher.interpreter.ActionInterpreter
 import com.github.unisay.dancher.widget.RenderAction._
 import com.github.unisay.dancher.widget.Widget._
 import monix.reactive.Observable
 
 trait LayoutWidgets {
 
-  def Horizontal[M](children: Iterable[Widget[M]],
+  def Horizontal[E: DomElem, M](children: Iterable[Widget[E, M]],
                     cssClasses: Iterable[String] = Nil,
-                    eventTypes: Iterable[DomEventType] = Nil)
-                   (implicit interpreter: ActionInterpreter): Widget[M] =
+                    eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] =
     Div(children, "d-horizontal" :: cssClasses.toList, eventTypes)
 
-  def Vertical[M](children: Iterable[Widget[M]],
+  def Vertical[E: DomElem, M](children: Iterable[Widget[E, M]],
                   cssClasses: Iterable[String] = Nil,
-                  eventTypes: Iterable[DomEventType] = Nil)
-                 (implicit interpreter: ActionInterpreter): Widget[M] =
+                  eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] =
     Div(children, "d-vertical" :: cssClasses.toList, eventTypes)
 
-  def HorizontalSplit[M](left: Widget[M], right: Widget[M])
-                        (implicit interpreter: ActionInterpreter): Widget[M] = {
+  def HorizontalSplit[E: DomElem, M](left: Widget[E, M], right: Widget[E, M]): Widget[E, M] = {
 
-    // TODO: hold Vectors, not events
     case class Drag(inside: Boolean,
-                    dragStart: Option[MouseDownEvent] = None,
-                    dragEnd: Option[MouseEvent] = None,
-                    event: Option[MouseEvent] = None) {
-      def dragDelta: Observable[Vector2d] = {
-        for {
-          start <- Observable.fromIterable(dragStart)
-          curr  <- Observable.fromIterable(event)
-        } yield start.screen - curr.screen
-      }
+                    dragStart: Option[Vector2d] = None,
+                    dragPos:   Option[Vector2d] = None,
+                    dragEnd:   Option[Vector2d] = None) {
+      def dragDelta = for {
+        start <- Observable.fromIterable(dragStart)
+        pos   <- Observable.fromIterable(dragPos)
+      } yield start - pos
     }
 
     val domEventTypes = List(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)
     val leftDiv = Div(List(left), cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-left" :: Nil)
-    val splitter = Div[M](Nil, cssClasses = "d-horizontal-split-splitter" :: Nil, domEventTypes)
+    val splitter = Div[E, M](Nil, cssClasses = "d-horizontal-split-splitter" :: Nil, domEventTypes)
     val rightDiv = Div(List(right), cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-right" :: Nil)
-    val internalWidget = Horizontal[M](leftDiv > splitter > rightDiv, cssClasses = "d-horizontal-split" :: Nil)
+    val internalWidget = Horizontal[E, M](leftDiv > splitter > rightDiv, cssClasses = "d-horizontal-split" :: Nil)
 
-    def moveSplitter[E: DomElem](splitterElement: E)(delta: Vector2d): EffectAction = ???
+    def moveSplitter(leftDivElement: E)(delta: Vector2d)(implicit elementEvidence: DomElem[E]): EffectAction = {
+      val width = elementEvidence.clientWidth(leftDivElement)
+      log(s"$width")
+    }
 
-    Widget { model: M =>
-      internalWidget(model).map { domBinding =>
-        val splitterBinding: DomBinding = domBinding.nested(1)
-        import splitterBinding._
-        domBinding.mapDomStream { _ =>
-          splitterBinding.domStream.scan(Drag(inside = false)) { // TODO: what if inside is true?
-            case (drag @ Drag(_, _, _, _), Ior.Left(event: MouseMoveEvent)) =>
-              drag.copy(event = Some(event))
-            case (drag @ Drag(false, _, _, _), Ior.Left(event: MouseEnterEvent)) =>
-              drag.copy(inside = true, event = Some(event))
-            case (drag @ Drag(true, _, _, _), Ior.Left(event: MouseLeaveEvent)) =>
-              drag.copy(inside = false, event = Some(event))
-            case (drag @ Drag(true, None, _, _), Ior.Left(event: MouseDownEvent)) =>
-              drag.copy(dragStart = Some(event), event = Some(event))
-            case (drag @ Drag(_, Some(_), _, _), Ior.Left(event: MouseUpEvent)) =>
-              drag.copy(dragEnd = Some(event), event = Some(event))
-            case (drag @ Drag(_, None, Some(_), _), _) =>
-              drag.copy(dragEnd = None)
-            case (drag, _) =>
-              drag
-          }
-          .flatMap(_.dragDelta)
-          .map(moveSplitter[E](element))
-          .map(Ior.Right.apply)
+    def splitterDomStream(domStream: DomStream, element: E) =
+      domStream.scan(Drag(inside = false)) {
+        // TODO: what if inside is true?
+        case (drag@Drag(_, _, _, _), Ior.Left(event: MouseMoveEvent)) =>
+          println(drag)
+          drag.copy(dragPos = Some(event.screen))
+        case (drag@Drag(false, _, _, _), Ior.Left(event: MouseEnterEvent)) =>
+          println(drag)
+          drag.copy(inside = true, dragPos = Some(event.screen))
+        case (drag@Drag(true, _, _, _), Ior.Left(event: MouseLeaveEvent)) =>
+          println(drag)
+          drag.copy(inside = false, dragPos = Some(event.screen))
+        case (drag@Drag(true, None, _, _), Ior.Left(event: MouseDownEvent)) =>
+          println(drag)
+          drag.copy(dragStart = Some(event.screen), dragPos = Some(event.screen))
+        case (drag@Drag(_, Some(_), _, _), Ior.Left(event: MouseUpEvent)) =>
+          drag.copy(dragEnd = Some(event.screen), dragPos = Some(event.screen))
+        case (drag@Drag(_, None, Some(_), _), _) =>
+          drag.copy(dragEnd = None)
+        case (drag, _) =>
+          drag
+      }
+      .flatMap(_.dragDelta)
+      .map(moveSplitter(element))
+      .map(Ior.Right.apply)
+
+    Widget {
+      internalWidget(_).map { binding =>
+        binding.mapDomStream { _ =>
+          val leftDivBinding = binding.nested(0)
+          val splitterBinding = binding.nested(1)
+          splitterDomStream(splitterBinding.domStream, leftDivBinding.element)
         }
       }
     }
   }
 
 
-  private def Div[M](children: Iterable[Widget[M]],
+  private def Div[E: DomElem, M](children: Iterable[Widget[E, M]],
                      cssClasses: List[String] = Nil,
-                     eventTypes: Iterable[DomEventType] = Nil)
-                    (implicit interpreter: ActionInterpreter): Widget[M] = {
-    import interpreter._
+                     eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] = {
     Widget { model: M =>
-      val divAction: RenderAction = for {
+      val divAction: RenderAction[E, M] = for {
         element <- createElement("div")
         events <- if (eventTypes.isEmpty) value(Observable.empty) else handleEvents(element, eventTypes)
         _ <- cssClasses.toNel.map(setClasses(element, _)).getOrElse(noAction).void

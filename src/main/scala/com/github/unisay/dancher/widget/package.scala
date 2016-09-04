@@ -5,6 +5,6 @@ import com.github.unisay.dancher.dom.{ActionF, DomBinding}
 
 package object widget {
   type EffectAction = ActionF[Unit]
-  type RenderAction = ActionF[DomBinding]
-  type Widget[M] = M Reader RenderAction
+  type RenderAction[E, M] = ActionF[DomBinding[E, M]]
+  type Widget[E, M] = M Reader RenderAction[E, M]
 }

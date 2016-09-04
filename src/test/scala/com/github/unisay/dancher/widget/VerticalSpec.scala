@@ -3,7 +3,6 @@ package com.github.unisay.dancher.widget
 import com.github.unisay.dancher.ActionTestHelpers._
 import com.github.unisay.dancher.dom.DomBinding
 import com.github.unisay.dancher.interpreter.JsInterpreter
-import com.github.unisay.dancher.interpreter.JsInterpreter.JsInterpreterElement
 import com.github.unisay.dancher.widget.Widget._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{MustMatchers, PropSpec}
@@ -14,9 +13,9 @@ class VerticalSpec extends PropSpec with GeneratorDrivenPropertyChecks with Must
   import interpreter._
 
   val model = ()
-  val vertical: Widget[Unit] = Vertical(
-    Label[Unit](const("Label1")) >
-    Label[Unit](const("Label2"))
+  val vertical: DomWidget[Unit] = Vertical(
+    Label(const("Label1")) >
+    Label(const("Label2"))
   )
 
   property("Vertical ") {

@@ -16,10 +16,10 @@ import scala.concurrent.duration._
 
 class TabsSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatchers {
 
-  implicit val interpreter = JsInterpreter
+  val interpreter = JsInterpreter
   import interpreter._
 
-  val tabs: Widget[TabsModel] = Tabs(const(TabsModel(1)))(
+  val tabs: Widget[DomElemT, TabsModel] = Tabs(const(TabsModel(1)))(
     "Tab 1" -> Label(const("Label")),
     "Tab 2" -> Button(const("Button"), eventTypes = List(Click))
   )

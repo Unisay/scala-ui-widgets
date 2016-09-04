@@ -21,11 +21,11 @@ object ActionTestHelpers {
     def interpretJsString[M](model: M): String = interpretScript(model, action)._2
   }
 
-  implicit class RenderActionTestOps(val renderAction: RenderAction) extends AnyVal {
-    def interpretJs[M](model: M,
+  implicit class RenderActionTestOps[E: DomElem, M](val renderAction: RenderAction[E, M]) {
+    def interpretJs(model: M,
                        domEvents: Observable[(String, DomEvent)] = Observable.empty,
                        attributes: Map[JsInterpreterElement, Map[String, String]] = Map.empty):
-    (DomBinding#E, Vector[DomBinding], Observable[(DomBinding#M, DomainEvent)], String) = {
+      (E, Vector[DomBinding[E, M]], DomainStream[M], String) = {
       val (domBinding, script) = interpretJs0(renderAction, model, domEvents, attributes)
       (domBinding.element, domBinding.nested, domBinding.domainStream, script)
     }

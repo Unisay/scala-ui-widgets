@@ -3,19 +3,18 @@ package com.github.unisay.dancher.widget
 import cats.data.{Ior, Reader}
 import cats.syntax.all._
 import com.github.unisay.dancher.dom._
-import com.github.unisay.dancher.interpreter.ActionInterpreter
 import com.github.unisay.dancher.widget.Widget._
 import monix.reactive.Observable
 import monocle.Lens
 
 trait BasicWidgets {
 
-  def Body[M, E: DomElem]: Widget[M] = Reader(_ => getDocumentBody.map(e => DomBinding(e)))
+  def Body[E: DomElem, M]: Widget[E, M] =
+    Reader(_ => getDocumentBody.map(element => DomBinding(element)))
 
-  def Button[M](text: Lens[M, String],
+  def Button[E: DomElem, M](text: Lens[M, String],
                 cssClasses: List[String] = Nil,
-                eventTypes: Iterable[DomEventType] = Nil)
-               (implicit interpreter: ActionInterpreter): Widget[M] =
+                eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] =
     TextContainer(
       text = text,
       tag = "button",
@@ -23,24 +22,19 @@ trait BasicWidgets {
       eventTypes = eventTypes
     )
 
-  def Text[M](text: Lens[M, String], cssClasses: List[String] = Nil)
-             (implicit interpreter: ActionInterpreter): Widget[M] =
+  def Text[E: DomElem, M](text: Lens[M, String], cssClasses: List[String] = Nil): Widget[E, M] =
     TextContainer(text, tag = "p", cssClasses =  "d-text" :: cssClasses)
 
-  def Label[M](text: Lens[M, String], cssClasses: List[String] = Nil)
-              (implicit interpreter: ActionInterpreter): Widget[M] =
+  def Label[E: DomElem, M](text: Lens[M, String], cssClasses: List[String] = Nil): Widget[E, M] =
     TextContainer(text, tag = "span", cssClasses =  "d-label" :: cssClasses)
 
-  def Header[M](text: String, size: Int = 1)
-               (implicit interpreter: ActionInterpreter): Widget[M] =
+  def Header[E: DomElem, M](text: String, size: Int = 1): Widget[E, M] =
     TextContainer(const(text), tag = "h" + size)
 
-  private def TextContainer[M](text: Lens[M, String],
-                               tag: String,
-                               cssClasses: List[String] = Nil,
-                               eventTypes: Iterable[DomEventType] = Nil)
-                              (implicit interpreter: ActionInterpreter): Widget[M] = {
-    import interpreter._
+  private def TextContainer[E: DomElem, M](text: Lens[M, String],
+                                           tag: String,
+                                           cssClasses: List[String] = Nil,
+                                           eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] = {
     Widget {
       (model: M) => for {
         element ← createElement(tag)

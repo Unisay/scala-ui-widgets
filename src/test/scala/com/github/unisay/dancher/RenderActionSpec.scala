@@ -16,7 +16,7 @@ import DomArbitraries.arbitraryDomEvent
 class RenderActionSpec extends FlatSpec with MustMatchers {
 
   implicit val scheduler = TestScheduler()
-  implicit val interpreter = JsInterpreter
+  val interpreter = JsInterpreter
   import interpreter._
 
   def event(index: Int): DomEvent Ior EffectAction = Ior.Left(arbitraryDomEvent.arbitrary.sample.get)
@@ -26,11 +26,11 @@ class RenderActionSpec extends FlatSpec with MustMatchers {
   val childElement1: DomElemT = JsInterpreterElement("child1")
   val parentEvents: DomStream = Observable(event(1), event(2))
   val childEvents: DomStream = Observable(event(3))
-  val childBinding0 = DomBinding(childElement0)
-  val childBinding1 = DomBinding(childElement1, domStream = childEvents)
-  val parentBinding = DomBinding(parentElement, nested = Vector(childBinding0), domStream = parentEvents)
-  val parentAction: RenderAction = dom.value(parentBinding)
-  val childAction: RenderAction = dom.value(childBinding1)
+  val childBinding0 = DomBinding[DomElemT, Unit](childElement0)
+  val childBinding1 = DomBinding[DomElemT, Unit](childElement1, domStream = childEvents)
+  val parentBinding = DomBinding[DomElemT, Unit](parentElement, nested = Vector(childBinding0), domStream = parentEvents)
+  val parentAction: RenderAction[DomElemT, Unit] = dom.value(parentBinding)
+  val childAction: RenderAction[DomElemT, Unit] = dom.value(childBinding1)
 
   behavior of "RenderAction"
 

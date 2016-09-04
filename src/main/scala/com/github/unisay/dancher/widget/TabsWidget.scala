@@ -6,7 +6,6 @@ import cats.data.Ior
 import cats.implicits._
 import com.github.unisay.dancher._
 import com.github.unisay.dancher.dom._
-import com.github.unisay.dancher.interpreter.ActionInterpreter
 import com.github.unisay.dancher.widget.Widget._
 import monix.reactive.Observable
 import monocle._
@@ -18,12 +17,11 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets {
 
   case class TabActivated[M](index: Int) extends DomainEvent
 
-  def Tabs[M](tabsLens: Lens[M, TabsModel], switchOn: DomEventType = Click)
-             (children: (String, Widget[M])*)
-             (implicit interpreter: ActionInterpreter): Widget[M] = {
+  def Tabs[E: DomElem, M](tabsLens: Lens[M, TabsModel], switchOn: DomEventType = Click)
+             (children: (String, Widget[E, M])*): Widget[E, M] = {
 
-    def update(oldIndex: Int, newIndex: Int, domElements: Vector[DomBinding#E],
-                 activate: DomBinding#E => ActionF[_], deactivate: DomBinding#E => ActionF[_]): EffectAction =
+    def update(oldIndex: Int, newIndex: Int, domElements: Vector[E],
+                 activate: E => ActionF[_], deactivate: E => ActionF[_]): EffectAction =
       domElements.zipWithIndex.map {
         case (domElement, index) if oldIndex == index => deactivate(domElement).void
         case (domElement, index) if newIndex == index => activate(domElement).void
@@ -39,14 +37,14 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets {
     Widget { (model: M) =>
       val activeTabIndex = max(min(activeTabIndexLens.get(model), children.length), 0)
 
-      val childrenWidgets: List[Widget[M]] = widgets.zipWithIndex.map {
+      val childrenWidgets: List[Widget[E, M]] = widgets.zipWithIndex.map {
         case (widget, index) if index != activeTabIndex =>
-          widget.flatMapElement((e, ev) => hide(e)(ev))
+          widget.flatMapElement(element => hide(element))
         case (widget, _) => widget
       }
 
-      val buttonWidgets: List[Widget[M]] = labels.zipWithIndex.map { case (label, index) =>
-        Button[M](const(label),
+      val buttonWidgets: List[Widget[E, M]] = labels.zipWithIndex.map { case (label, index) =>
+        Button[E, M](const(label),
           eventTypes = List(Click),
           cssClasses = "d-tab" :: (if (index == activeTabIndex) List("d-tab-active") else Nil))
       }
@@ -62,7 +60,6 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets {
           val buttonElements = buttonBindings.map(_.element)
           val childElements = verticalBinding.nested(1).nested.map(_.element)
           buttonBindings.zipWithIndex.map { case (buttonBinding, index) =>
-            import buttonBinding._
             buttonBinding.domStream
               .flatMap { case Ior.Left(_) => Observable(index); case _ => Observable.empty }
               .scan(initial = (activeTabIndex, activeTabIndex)) { case ((prev, curr), next) => (curr, next) }

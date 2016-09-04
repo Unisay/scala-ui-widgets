@@ -16,7 +16,10 @@ class DomInterpreter extends ActionInterpreter {
   type DomElemT = Element
 
   implicit val domNodeEvidence: DomNode[DomNodeT] = new DomNode[DomNodeT] {}
-  implicit val domElemEvidence: DomElem[DomElemT] = new DomElem[DomElemT] {}
+  implicit val domElemEvidence: DomElem[DomElemT] = new DomElem[DomElemT] {
+    def clientWidth(element: Element) = element.clientWidth
+    def clientHeight(element: Element) = element.clientHeight
+  }
 
   def makeEvent(eventType: DomEventType, event: Event): DomEvent Ior EffectAction =
     Ior.Left {

@@ -14,7 +14,11 @@ object JsInterpreter extends ActionInterpreter {
 
   type DomNodeT = JsInterpreterNode
   type DomElemT = JsInterpreterElement
-  implicit val domElemEvidence: DomElem[DomElemT] = new DomElem[DomElemT] {}
+
+  implicit val domElemEvidence: DomElem[DomElemT] = new DomElem[DomElemT] {
+    def clientWidth(e: JsInterpreterElement) = 0
+    def clientHeight(e: JsInterpreterElement) = 0
+  }
 
   case class EffectActionEvent(effect: String) extends DomainEvent
   case class JsInterpreterNode(name: String)
