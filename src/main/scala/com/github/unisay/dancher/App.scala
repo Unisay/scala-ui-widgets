@@ -1,5 +1,6 @@
 package com.github.unisay.dancher
 
+import cats.data.Ior
 import com.github.unisay.dancher.DemoPage.Model
 import com.github.unisay.dancher.interpreter.{DomInterpreter, JsInterpreter}
 import com.github.unisay.dancher.widget.EffectAction
@@ -36,7 +37,20 @@ object App extends JSApp {
   override def main(): Unit = {
     println("App started")
 
-    DemoPage(Body).render(demoModel).domainStream.subscribe(nextFn = {
+    val domBinding = DemoPage(Body).render(demoModel)
+
+    domBinding.domStream.subscribe(nextFn = {
+      case Ior.Right(effectAction) =>
+        interpret(demoModel, effectAction)
+        Ack.Continue
+      case Ior.Both(_, effectAction) =>
+        interpret(demoModel, effectAction)
+        Ack.Continue
+      case Ior.Left(_) =>
+        Ack.Continue
+    })
+
+    domBinding.domainStream.subscribe(nextFn = {
       case (_, TabActivated(index)) =>
         println(s"Tab $index activated!")
         Ack.Continue

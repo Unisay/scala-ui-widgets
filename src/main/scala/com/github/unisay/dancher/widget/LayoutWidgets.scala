@@ -42,7 +42,7 @@ trait LayoutWidgets {
       log(s"$width")
     }
 
-    def splitterDomStream(domStream: DomStream, element: E) =
+    def splitterDomStream(domStream: DomStream, element: E): DomStream =
       domStream.scan(Drag(inside = false)) {
         // TODO: what if inside is true?
         case (drag@Drag(_, _, _, _), Ior.Left(event: MouseMoveEvent)) =>

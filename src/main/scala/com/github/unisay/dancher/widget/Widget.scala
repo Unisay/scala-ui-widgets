@@ -21,15 +21,16 @@ object HandlerResult {
 }
 
 object RenderAction {
-  def append[E: DomElem, M](parent: RenderAction[E, M], child: RenderAction[E, M]): RenderAction[E, M] =
+  def append[E: DomElem, M](parentAction: RenderAction[E, M], childAction: RenderAction[E, M]): RenderAction[E, M] =
     for {
-      pb <- parent
-      cb  <- child
-      parentElement <- appendChild(pb.element, cb.element)
+      parentBinding <- parentAction
+      childBinding  <- childAction
+      parentElement <- appendChild(parentBinding.element, childBinding.element)
     } yield DomBinding(
-       parentElement,
-       pb.nested :+ cb,
-       Observable.merge(pb.domainStream, cb.domainStream)
+       element = parentElement,
+       nested = parentBinding.nested :+ childBinding,
+       domStream = Observable.merge(parentBinding.domStream, childBinding.domStream),
+       domainStream = Observable.merge(parentBinding.domainStream, childBinding.domainStream)
     )
 }
 
