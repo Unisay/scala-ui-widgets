@@ -13,12 +13,20 @@ trait LayoutWidgets {
   def Horizontal[E: DomElem, M](children: Iterable[Widget[E, M]],
                     cssClasses: Iterable[String] = Nil,
                     eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] =
-    Div(children, "d-horizontal" :: cssClasses.toList, eventTypes)
+    Div (
+      children = children,
+      cssClasses = "d-horizontal" :: cssClasses.toList,
+      eventTypes = eventTypes
+    )
 
   def Vertical[E: DomElem, M](children: Iterable[Widget[E, M]],
                   cssClasses: Iterable[String] = Nil,
                   eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] =
-    Div(children, "d-vertical" :: cssClasses.toList, eventTypes)
+    Div (
+      children = children,
+      cssClasses = "d-vertical" :: cssClasses.toList,
+      eventTypes = eventTypes
+    )
 
   def HorizontalSplit[E: DomElem, M](left: Widget[E, M], right: Widget[E, M]): Widget[E, M] = {
 
@@ -32,16 +40,23 @@ trait LayoutWidgets {
       } yield start - pos
     }
 
-    val leftDiv = Div(List(left),
-      cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-left" :: Nil,
-      eventTypes = List(MouseMove, MouseUp, MouseDown))
-    val splitter = Div[E, M](Nil,
+    val leftDiv = Div(
+      children = List(left),
+      attributes = List("draggable" -> false.toString),
+      cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-left" :: Nil)
+    val splitter = Div[E, M](
+      children = Nil,
+      attributes = List("draggable" -> false.toString),
       cssClasses = "d-horizontal-split-splitter" :: Nil,
       eventTypes = List(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown))
-    val rightDiv = Div(List(right),
-      cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-right" :: Nil,
+    val rightDiv = Div(
+      children = List(right),
+      attributes = List("draggable" -> false.toString),
+      cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-right" :: Nil)
+    val internalWidget = Horizontal[E, M](
+      children = leftDiv > splitter > rightDiv,
+      cssClasses = "d-horizontal-split" :: Nil,
       eventTypes = List(MouseMove, MouseUp, MouseDown))
-    val internalWidget = Horizontal[E, M](leftDiv > splitter > rightDiv, cssClasses = "d-horizontal-split" :: Nil)
 
     def moveSplitter(leftDivElement: E)(delta: Vector2d)(implicit elementEvidence: DomElem[E]): EffectAction = {
       val width = elementEvidence.clientWidth(leftDivElement)
@@ -60,12 +75,12 @@ trait LayoutWidgets {
           drag.copy(dragStart = Some(event.screen), dragPos = Some(event.screen))
         case (drag@Drag(_, Some(_), _, _), Ior.Left(event: MouseUpEvent)) =>
           drag.copy(dragEnd = Some(event.screen), dragPos = Some(event.screen))
-        case (drag@Drag(_, None, Some(_), _), _) =>
-          drag.copy(dragEnd = None)
+        case (drag@Drag(_, Some(_), Some(_), _), _) =>
+          drag.copy(dragStart = None, dragEnd = None)
         case (drag, _) =>
           drag
       }
-      .map(drag => {println(drag); drag})
+//      .map(drag => {println(drag); drag})
       .flatMap(_.dragDelta)
       .map(moveSplitter(element))
       .map(Ior.Right.apply)
@@ -75,9 +90,8 @@ trait LayoutWidgets {
         binding.mapDomStream { _ =>
           val leftDivBinding = binding.nested(0)
           val splitterBinding = binding.nested(1)
-          val rightDivBinding = binding.nested(2)
-          val merged = merge(splitterBinding.domStream, leftDivBinding.domStream, rightDivBinding.domStream)
-          splitterDomStream(, leftDivBinding.element)
+          val merged = merge(splitterBinding.domStream, binding.domStream)
+          splitterDomStream(merged, leftDivBinding.element)
         }
       }
     }
@@ -85,13 +99,16 @@ trait LayoutWidgets {
 
 
   private def Div[E: DomElem, M](children: Iterable[Widget[E, M]],
-                     cssClasses: List[String] = Nil,
-                     eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] = {
+                                 attributes: List[(String, String)] = Nil,
+                                 cssClasses: List[String] = Nil,
+                                 eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] = {
     Widget { model: M =>
+      val ie = implicitly[DomElem[E]]
       val divAction: RenderAction[E, M] = for {
         element <- createElement("div")
         events <- if (eventTypes.isEmpty) value(Observable.empty) else handleEvents(element, eventTypes)
         _ <- cssClasses.toNel.map(setClasses(element, _)).getOrElse(noAction).void
+        _ <- attributes.toNel.map(_.traverse(t => setAttribute(t._1, t._2)(element))).getOrElse(noAction).void
       } yield DomBinding(element, domStream = events)
 
       val renderActions = children.map(_(model))
