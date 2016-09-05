@@ -32,11 +32,15 @@ trait LayoutWidgets {
       } yield start - pos
     }
 
-    val leftDiv = Div(List(left), cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-left" :: Nil,
+    val leftDiv = Div(List(left),
+      cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-left" :: Nil,
       eventTypes = List(MouseMove, MouseUp, MouseDown))
-    val splitter = Div[E, M](Nil, cssClasses = "d-horizontal-split-splitter" :: Nil,
+    val splitter = Div[E, M](Nil,
+      cssClasses = "d-horizontal-split-splitter" :: Nil,
       eventTypes = List(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown))
-    val rightDiv = Div(List(right), cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-right" :: Nil)
+    val rightDiv = Div(List(right),
+      cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-right" :: Nil,
+      eventTypes = List(MouseMove, MouseUp, MouseDown))
     val internalWidget = Horizontal[E, M](leftDiv > splitter > rightDiv, cssClasses = "d-horizontal-split" :: Nil)
 
     def moveSplitter(leftDivElement: E)(delta: Vector2d)(implicit elementEvidence: DomElem[E]): EffectAction = {
@@ -45,9 +49,8 @@ trait LayoutWidgets {
     }
 
     def splitterDomStream(domStream: DomStream, element: E): DomStream =
-      domStream.scan(Drag(inside = false)) {
-        // TODO: what if inside is true?
-        case (drag@Drag(_, _, _, _), Ior.Left(event: MouseMoveEvent)) =>
+      domStream.scan(Drag(inside = false)) { // TODO: what if inside is true?
+        case (drag@Drag(_, Some(_), _, _), Ior.Left(event: MouseMoveEvent)) =>
           drag.copy(dragPos = Some(event.screen))
         case (drag@Drag(false, _, _, _), Ior.Left(event: MouseEnterEvent)) =>
           drag.copy(inside = true, dragPos = Some(event.screen))
@@ -72,7 +75,9 @@ trait LayoutWidgets {
         binding.mapDomStream { _ =>
           val leftDivBinding = binding.nested(0)
           val splitterBinding = binding.nested(1)
-          splitterDomStream(merge(splitterBinding.domStream, leftDivBinding.domStream), leftDivBinding.element)
+          val rightDivBinding = binding.nested(2)
+          val merged = merge(splitterBinding.domStream, leftDivBinding.domStream, rightDivBinding.domStream)
+          splitterDomStream(, leftDivBinding.element)
         }
       }
     }
