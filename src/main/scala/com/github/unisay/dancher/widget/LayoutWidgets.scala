@@ -7,28 +7,29 @@ import com.github.unisay.dancher.widget.RenderAction._
 import com.github.unisay.dancher.widget.Widget._
 import monix.reactive.Observable
 import monix.reactive.Observable.merge
+import org.scalajs.dom.Element
 
 trait LayoutWidgets {
 
-  def Horizontal[E: DomElem, M](children: Iterable[Widget[E, M]],
+  def Horizontal[M](children: Iterable[Widget[M]],
                     cssClasses: Iterable[String] = Nil,
-                    eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] =
+                    eventTypes: Iterable[DomEventType] = Nil): Widget[M] =
     Div (
       children = children,
       cssClasses = "d-horizontal" :: cssClasses.toList,
       eventTypes = eventTypes
     )
 
-  def Vertical[E: DomElem, M](children: Iterable[Widget[E, M]],
+  def Vertical[M](children: Iterable[Widget[M]],
                   cssClasses: Iterable[String] = Nil,
-                  eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] =
+                  eventTypes: Iterable[DomEventType] = Nil): Widget[M] =
     Div (
       children = children,
       cssClasses = "d-vertical" :: cssClasses.toList,
       eventTypes = eventTypes
     )
 
-  def HorizontalSplit[E: DomElem, M](left: Widget[E, M], right: Widget[E, M]): Widget[E, M] = {
+  def HorizontalSplit[M](left: Widget[M], right: Widget[M]): Widget[M] = {
 
     case class Drag(inside: Boolean,
                     dragStart: Option[Vector2d] = None,
@@ -44,7 +45,7 @@ trait LayoutWidgets {
       children = List(left),
       attributes = List("draggable" -> false.toString),
       cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-left" :: Nil)
-    val splitter = Div[E, M](
+    val splitter = Div[M](
       children = Nil,
       attributes = List("draggable" -> false.toString),
       cssClasses = "d-horizontal-split-splitter" :: Nil,
@@ -53,17 +54,17 @@ trait LayoutWidgets {
       children = List(right),
       attributes = List("draggable" -> false.toString),
       cssClasses = "d-horizontal-split-side" :: "d-horizontal-split-side-right" :: Nil)
-    val internalWidget = Horizontal[E, M](
+    val internalWidget = Horizontal[M](
       children = leftDiv > splitter > rightDiv,
       cssClasses = "d-horizontal-split" :: Nil,
       eventTypes = List(MouseMove, MouseUp, MouseDown))
 
-    def moveSplitter(leftDivElement: E)(delta: Vector2d)(implicit elementEvidence: DomElem[E]): EffectAction = {
-      val width = elementEvidence.clientWidth(leftDivElement)
+    def moveSplitter(leftDivElement: Element)(delta: Vector2d): EffectAction = {
+      val width = leftDivElement.clientWidth
       log(s"$width")
     }
 
-    def splitterDomStream(domStream: DomStream, element: E): DomStream =
+    def splitterDomStream(domStream: DomStream, element: Element): DomStream =
       domStream.scan(Drag(inside = false)) { // TODO: what if inside is true?
         case (drag@Drag(_, Some(_), _, _), Ior.Left(event: MouseMoveEvent)) =>
           drag.copy(dragPos = Some(event.screen))
@@ -98,13 +99,12 @@ trait LayoutWidgets {
   }
 
 
-  private def Div[E: DomElem, M](children: Iterable[Widget[E, M]],
-                                 attributes: List[(String, String)] = Nil,
-                                 cssClasses: List[String] = Nil,
-                                 eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] = {
+  private def Div[M](children: Iterable[Widget[M]],
+                     attributes: List[(String, String)] = Nil,
+                     cssClasses: List[String] = Nil,
+                     eventTypes: Iterable[DomEventType] = Nil): Widget[M] = {
     Widget { model: M =>
-      val ie = implicitly[DomElem[E]]
-      val divAction: RenderAction[E, M] = for {
+      val divAction: RenderAction[M] = for {
         element <- createElement("div")
         events <- if (eventTypes.isEmpty) value(Observable.empty) else handleEvents(element, eventTypes)
         _ <- cssClasses.toNel.map(setClasses(element, _)).getOrElse(noAction).void

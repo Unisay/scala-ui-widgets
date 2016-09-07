@@ -2,10 +2,10 @@ package com.github.unisay.dancher
 
 import cats.Eq
 import cats.syntax.cartesian._
-import scalacheck.cats._
 import com.github.unisay.dancher.dom._
-import com.github.unisay.dancher.interpreter.JsInterpreter.JsInterpreterElement
 import org.scalacheck._
+import org.scalajs.dom.raw.{MouseEvent => _}
+import scalacheck.cats._
 
 object DomArbitraries {
 
@@ -19,10 +19,6 @@ object DomArbitraries {
 
   implicit val arbitraryCssClass: Arbitrary[CssClass] = Arbitrary {
     Gen.alphaStr.suchThat(_.nonEmpty).map(CssClass)
-  }
-
-  implicit val arbitraryJsInterpreterElement: Arbitrary[JsInterpreterElement] = Arbitrary {
-    Gen.numChar.map(index => JsInterpreterElement(s"element$index"))
   }
 
   implicit val arbitraryPoint: Arbitrary[Vector2d] = Arbitrary {

@@ -6,15 +6,20 @@ import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.widget.Widget._
 import monix.reactive.Observable
 import monocle.Lens
+import org.scalajs.dom.Element
+import scalatags.JsDom.TypedTag
 
 trait BasicWidgets {
 
-  def Body[E: DomElem, M]: Widget[E, M] =
-    Reader(_ => getDocumentBody.map(element => DomBinding(element)))
+  def TagWidget[M](tag: TypedTag[Element]): Widget[M] = {
+    Widget(model => renderScalaTag(tag).map(e => DomBinding(element = e)))
+  }
 
-  def Button[E: DomElem, M](text: Lens[M, String],
+  def Body[M]: Widget[M] = Reader(_ => value(DomBinding[M](element = org.scalajs.dom.document.body)))
+
+  def Button[M](text: Lens[M, String],
                 cssClasses: List[String] = Nil,
-                eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] =
+                eventTypes: Iterable[DomEventType] = Nil): Widget[M] =
     TextContainer(
       text = text,
       tag = "button",
@@ -22,19 +27,20 @@ trait BasicWidgets {
       eventTypes = eventTypes
     )
 
-  def Text[E: DomElem, M](text: Lens[M, String], cssClasses: List[String] = Nil): Widget[E, M] =
+  def Text[M](text: Lens[M, String], cssClasses: List[String] = Nil): Widget[M] =
     TextContainer(text, tag = "p", cssClasses =  "d-text" :: cssClasses)
 
-  def Label[E: DomElem, M](text: Lens[M, String], cssClasses: List[String] = Nil): Widget[E, M] =
+  def Label[M](text: Lens[M, String], cssClasses: List[String] = Nil): Widget[M] =
     TextContainer(text, tag = "span", cssClasses =  "d-label" :: cssClasses)
 
-  def Header[E: DomElem, M](text: String, size: Int = 1): Widget[E, M] =
+  def Header[M](text: String, size: Int = 1): Widget[M] =
     TextContainer(const(text), tag = "h" + size)
 
-  private def TextContainer[E: DomElem, M](text: Lens[M, String],
+  private def TextContainer[M](text: Lens[M, String],
                                            tag: String,
                                            cssClasses: List[String] = Nil,
-                                           eventTypes: Iterable[DomEventType] = Nil): Widget[E, M] = {
+                                           eventTypes: Iterable[DomEventType] = Nil): Widget[M] = {
+
     Widget {
       (model: M) => for {
         element ← createElement(tag)

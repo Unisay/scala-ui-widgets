@@ -10,6 +10,7 @@ import com.github.unisay.dancher.widget.Widget._
 import monix.reactive.Observable
 import monocle._
 import monocle.macros.Lenses
+import org.scalajs.dom.Element
 
 trait TabsWidget extends BasicWidgets with LayoutWidgets {
 
@@ -17,11 +18,11 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets {
 
   case class TabActivated[M](index: Int) extends DomainEvent
 
-  def Tabs[E: DomElem, M](tabsLens: Lens[M, TabsModel], switchOn: DomEventType = Click)
-             (children: (String, Widget[E, M])*): Widget[E, M] = {
+  def Tabs[M](tabsLens: Lens[M, TabsModel], switchOn: DomEventType = Click)
+             (children: (String, Widget[M])*): Widget[M] = {
 
-    def update(oldIndex: Int, newIndex: Int, domElements: Vector[E],
-                 activate: E => ActionF[_], deactivate: E => ActionF[_]): EffectAction =
+    def update(oldIndex: Int, newIndex: Int, domElements: Vector[Element],
+                 activate: Element => ActionF[_], deactivate: Element => ActionF[_]): EffectAction =
       domElements.zipWithIndex.map {
         case (domElement, index) if oldIndex == index => deactivate(domElement).void
         case (domElement, index) if newIndex == index => activate(domElement).void
@@ -37,14 +38,14 @@ trait TabsWidget extends BasicWidgets with LayoutWidgets {
     Widget { (model: M) =>
       val activeTabIndex = max(min(activeTabIndexLens.get(model), children.length), 0)
 
-      val childrenWidgets: List[Widget[E, M]] = widgets.zipWithIndex.map {
+      val childrenWidgets: List[Widget[M]] = widgets.zipWithIndex.map {
         case (widget, index) if index != activeTabIndex =>
           widget.flatMapElement(element => hide(element))
         case (widget, _) => widget
       }
 
-      val buttonWidgets: List[Widget[E, M]] = labels.zipWithIndex.map { case (label, index) =>
-        Button[E, M](const(label),
+      val buttonWidgets: List[Widget[M]] = labels.zipWithIndex.map { case (label, index) =>
+        Button[M](const(label),
           eventTypes = List(Click),
           cssClasses = "d-tab" :: (if (index == activeTabIndex) List("d-tab-active") else Nil))
       }

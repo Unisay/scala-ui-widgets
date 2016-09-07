@@ -1,7 +1,6 @@
 package com.github.unisay.dancher
 
 import com.github.unisay.dancher.ActionTestHelpers._
-import com.github.unisay.dancher.interpreter.JsInterpreter
 import com.github.unisay.dancher.widget.Widget
 import com.github.unisay.dancher.widget.Widget._
 import monix.execution.schedulers.TestScheduler
@@ -12,10 +11,6 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class FuncWidgetSpec extends FlatSpec with MustMatchers {
 
   implicit val scheduler = TestScheduler()
-  val interpreter = JsInterpreter
-  import interpreter._
-
-  type JsWidget[M] = Widget[DomElemT, M]
 
   sealed trait Gender
   case object Male extends Gender
@@ -29,7 +24,7 @@ class FuncWidgetSpec extends FlatSpec with MustMatchers {
 
   "Library widgets" must "render correctly" in {
 
-    def Header: JsWidget[User] = {
+    def Header: Widget[User] = {
       Vertical(
         Horizontal(
           Label(User.name) > Label(User.surname)
@@ -78,16 +73,16 @@ class FuncWidgetSpec extends FlatSpec with MustMatchers {
   "Domain specific widgets" must "render correctly" in {
 
     object AddressBar {
-      def apply(): JsWidget[Address] =
+      def apply(): Widget[Address] =
         Horizontal(Label(Address.street) > Label(Address.building))
 
-      def apply[U](l: Lens[U, Address]): JsWidget[U] =
+      def apply[U](l: Lens[U, Address]): Widget[U] =
         Horizontal(Label(l ^|-> Address.street) > Label(l ^|-> Address.building))
     }
 
     object Badge {
       /* Example of conditional logic */
-      def apply(): JsWidget[User] = Widget { (user: User) =>
+      def apply(): Widget[User] = Widget { (user: User) =>
         val prefix = user.gender match {
           case Male => "Sir"
           case Female => "Lady"
@@ -98,7 +93,7 @@ class FuncWidgetSpec extends FlatSpec with MustMatchers {
       }
     }
 
-    def Header: JsWidget[User] =
+    def Header: Widget[User] =
       Vertical (
         Badge() >
         AddressBar(User.address)

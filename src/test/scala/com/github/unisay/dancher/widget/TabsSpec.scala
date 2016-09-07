@@ -19,7 +19,7 @@ class TabsSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatc
   val interpreter = JsInterpreter
   import interpreter._
 
-  val tabs: Widget[DomElemT, TabsModel] = Tabs(const(TabsModel(1)))(
+  val tabs: Widget[TabsModel] = Tabs(const(TabsModel(1)))(
     "Tab 1" -> Label(const("Label")),
     "Tab 2" -> Button(const("Button"), eventTypes = List(Click))
   )
@@ -35,7 +35,6 @@ class TabsSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatc
 
       val (element, _, events, script) = renderAction.interpretJs(model, domEvents)
 
-      element mustBe JsInterpreterElement("div0")
       script mustBe
         """
           |var div0 = document.createElement('div');

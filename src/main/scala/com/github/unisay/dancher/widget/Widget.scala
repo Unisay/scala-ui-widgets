@@ -7,7 +7,7 @@ import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.interpreter.ActionInterpreter
 import monix.reactive.Observable
 import monocle.Lens
-
+import org.scalajs.dom.Element
 import scala.language.implicitConversions
 
 object HandlerResult {
@@ -21,7 +21,7 @@ object HandlerResult {
 }
 
 object RenderAction {
-  def append[E: DomElem, M](parentAction: RenderAction[E, M], childAction: RenderAction[E, M]): RenderAction[E, M] =
+  def append[M](parentAction: RenderAction[M], childAction: RenderAction[M]): RenderAction[M] =
     for {
       parentBinding <- parentAction
       childBinding  <- childAction
@@ -34,27 +34,27 @@ object RenderAction {
     )
 }
 
-final class WidgetListOps[E, M](val widgets: List[Widget[E, M]]) extends AnyVal {
-  def >(widget: Widget[E, M]): List[Widget[E, M]] = widgets :+ widget
+final class WidgetListOps[M](val widgets: List[Widget[M]]) extends AnyVal {
+  def >(widget: Widget[M]): List[Widget[M]] = widgets :+ widget
 }
 
-final class WidgetOps[E: DomElem, M](val widget: Widget[E, M]) {
+final class WidgetOps[M](val widget: Widget[M]) {
   import RenderAction._
 
-  def >(other: Widget[E, M]): List[Widget[E, M]] = widget :: other :: Nil
+  def >(other: Widget[M]): List[Widget[M]] = widget :: other :: Nil
 
   /** Append child to parent returning parent */
-  def +>(child: Widget[E, M]): Widget[E, M] = Widget(model => append(widget(model), child(model)))
+  def +>(child: Widget[M]): Widget[M] = Widget(model => append(widget(model), child(model)))
 
-  def flatMapBinding(f: DomBinding[E, M] => ActionF[DomBinding[E, M]]): Widget[E, M] =
+  def flatMapBinding(f: DomBinding[M] => ActionF[DomBinding[M]]): Widget[M] =
     widget.map(_.flatMap(f))
 
-  def flatMapElement(f: E => ActionF[E]): Widget[E, M] =
-    flatMapBinding { (binding: DomBinding[E, M]) =>
+  def flatMapElement(f: Element => ActionF[Element]): Widget[M] =
+    flatMapBinding { (binding: DomBinding[M]) =>
       f(binding.element) map (e => binding.copy(element = e))
     }
 
-  def render(model: M)(implicit interpreter: ActionInterpreter): DomBinding[E, M] =
+  def render(model: M)(implicit interpreter: ActionInterpreter): DomBinding[M] =
     interpreter.interpret(model, widget(model))
 }
 
@@ -62,10 +62,10 @@ object Widget
   extends BasicWidgets
   with LayoutWidgets
   with TabsWidget {
-  implicit def widgetOps[E: DomElem, M](widget: Widget[E, M]): WidgetOps[E, M] = new WidgetOps(widget)
-  implicit def widgetListOps[E: DomElem, M](widgets: List[Widget[E, M]]): WidgetListOps[E, M] = new WidgetListOps(widgets)
-  def apply[E, M](f: M => RenderAction[E, M]): Widget[E, M] = Reader(f)
-  def pure[E, M](renderAction: RenderAction[E, M]): Widget[E, M] = Widget(_ => renderAction)
-  def lift[E, M](binding: DomBinding[E, M]): Widget[E, M] = pure(value(binding))
+  implicit def widgetOps[M](widget: Widget[M]): WidgetOps[M] = new WidgetOps(widget)
+  implicit def widgetListOps[M](widgets: List[Widget[M]]): WidgetListOps[M] = new WidgetListOps(widgets)
+  def apply[M](f: M => RenderAction[M]): Widget[M] = Reader(f)
+  def pure[M](renderAction: RenderAction[M]): Widget[M] = Widget(_ => renderAction)
+  def lift[M](binding: DomBinding[M]): Widget[M] = pure(value(binding))
   def const[M, C](constant: C): Lens[M, C] = Lens[M, C](_ => constant)(_ => identity) // TODO: use magnet
 }

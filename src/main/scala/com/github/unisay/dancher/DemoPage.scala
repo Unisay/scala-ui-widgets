@@ -1,6 +1,6 @@
 package com.github.unisay.dancher
 
-import com.github.unisay.dancher.dom.{DomElem, MouseEnter}
+import com.github.unisay.dancher.dom.{MouseEnter}
 import com.github.unisay.dancher.widget.Widget
 import com.github.unisay.dancher.widget.Widget._
 import monocle.macros.Lenses
@@ -9,7 +9,7 @@ object DemoPage {
 
   @Lenses case class Model(tabs: TabsModel, text1: String, text2: String, text3: String)
 
-  def apply[E: DomElem](parent: Widget[E, Model]): Widget[E, Model] = {
+  def apply(parent: Widget[Model]): Widget[Model] = {
 
     val h = Horizontal {
       Vertical {

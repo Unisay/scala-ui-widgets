@@ -1,19 +1,14 @@
 package com.github.unisay.dancher.widget
 
 import com.github.unisay.dancher.ActionTestHelpers._
-import com.github.unisay.dancher.dom.DomBinding
-import com.github.unisay.dancher.interpreter.JsInterpreter
 import com.github.unisay.dancher.widget.Widget._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{MustMatchers, PropSpec}
 
 class VerticalSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatchers {
 
-  implicit val interpreter = JsInterpreter
-  import interpreter._
-
   val model = ()
-  val vertical: DomWidget[Unit] = Vertical(
+  val vertical: Widget[Unit] = Vertical(
     Label(const("Label1")) >
     Label(const("Label2"))
   )
@@ -23,11 +18,6 @@ class VerticalSpec extends PropSpec with GeneratorDrivenPropertyChecks with Must
       val renderAction = vertical(model)
       val (element, nested, events, script) = renderAction.interpretJs(model = ())
 
-      element mustBe JsInterpreterElement("div0")
-      nested must contain theSameElementsInOrderAs List(
-        DomBinding(JsInterpreterElement("span0")),
-        DomBinding(JsInterpreterElement("span1"))
-      )
       script mustBe
         s"""
            |var div0 = document.createElement('div');
