@@ -1,13 +1,19 @@
 package com.github.unisay.dancher
 
-import cats.Eq
+import cats.{Eq, Monad}
 import cats.syntax.cartesian._
 import com.github.unisay.dancher.dom._
 import org.scalacheck._
 import org.scalajs.dom.raw.{MouseEvent => _}
-import scalacheck.cats._
 
 object DomArbitraries {
+
+  // TODO: remove once scalacheck-cats supports scalajs
+  implicit val genMonad: Monad[Gen] = new Monad[Gen] {
+    def pure[A](a: A): Gen[A] = Gen.const(a)
+    def flatMap[A, B](fa: Gen[A])(f: A => Gen[B]): Gen[B] = fa flatMap f
+    def tailRecM[A, B](a: A)(f: (A) ⇒ Gen[Either[A, B]]): Gen[B] = defaultTailRecM(a)(f)
+  }
 
   case class CssClass(value: String) extends AnyVal {
     override def toString = value

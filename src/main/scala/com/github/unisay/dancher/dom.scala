@@ -116,7 +116,7 @@ object dom {
 
   case class HandleEvents[M](element: Element, eventTypes: Iterable[DomEventType])
     extends Action[Observable[DomEvent Ior EffectAction]]
-  def handleEvents[M](element: Element, eventTypes: Iterable[DomEventType]): ActionF[Observable[DomEvent Ior EffectAction]] =
+  def handleEvents[M](element: Element, eventTypes: Iterable[DomEventType]): ActionF[DomStream] =
     HandleEvents[M](element, eventTypes)
 
   def setId(element: Element, id: DomId) =

@@ -66,6 +66,6 @@ lazy val dancher = project.in(file("."))
     maxErrors := 5,
     logLevel := Level.Info,
     requiresDOM := true,
-    scalaJSUseRhino := false,
-    jsEnv := NodeJSEnv().value
+    scalaJSUseRhino := false
+//    , jsEnv := NodeJSEnv().value
   )

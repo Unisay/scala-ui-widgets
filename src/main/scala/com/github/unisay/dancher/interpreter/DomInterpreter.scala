@@ -80,7 +80,6 @@ class DomInterpreter extends ActionInterpreter {
             ()
 
           case RenderScalaTag(tag) =>
-            tag.modifiers
             debug(s"RenderScalaTag(${tag.tag})")
             tag.render
 
