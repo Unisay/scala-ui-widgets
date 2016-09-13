@@ -33,19 +33,19 @@ class DomInterpreter extends ActionInterpreter {
           val screen = Vector2d(mouseEvent.screenX, mouseEvent.screenY)
           val client = Vector2d(mouseEvent.clientX, mouseEvent.clientY)
         }
-        case MouseUp    => new MouseUpEvent    {
+        case MouseUp => new MouseUpEvent    {
           val mouseEvent = event.asInstanceOf[org.scalajs.dom.MouseEvent]
           val page   = Vector2d(mouseEvent.pageX,   mouseEvent.pageY)
           val screen = Vector2d(mouseEvent.screenX, mouseEvent.screenY)
           val client = Vector2d(mouseEvent.clientX, mouseEvent.clientY)
         }
-        case MouseDown  => new MouseDownEvent  {
+        case MouseDown => new MouseDownEvent  {
           val mouseEvent = event.asInstanceOf[org.scalajs.dom.MouseEvent]
           val page   = Vector2d(mouseEvent.pageX,   mouseEvent.pageY)
           val screen = Vector2d(mouseEvent.screenX, mouseEvent.screenY)
           val client = Vector2d(mouseEvent.clientX, mouseEvent.clientY)
         }
-        case MouseMove  => new MouseMoveEvent  {
+        case MouseMove => new MouseMoveEvent  {
           val mouseEvent = event.asInstanceOf[org.scalajs.dom.MouseEvent]
           val page   = Vector2d(mouseEvent.pageX,   mouseEvent.pageY)
           val screen = Vector2d(mouseEvent.screenX, mouseEvent.screenY)
@@ -78,10 +78,6 @@ class DomInterpreter extends ActionInterpreter {
           case Log(text) =>
             console.info(text)
             ()
-
-          case RenderScalaTag(tag) =>
-            debug(s"RenderScalaTag(${tag.tag})")
-            tag.render
 
           case CreateElement(tagName) =>
             debug(s"CreateElement($tagName)")

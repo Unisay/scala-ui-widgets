@@ -6,14 +6,8 @@ import com.github.unisay.dancher.dom._
 import com.github.unisay.dancher.widget.Widget._
 import monix.reactive.Observable
 import monocle.Lens
-import org.scalajs.dom.Element
-import scalatags.JsDom.TypedTag
 
 trait BasicWidgets {
-
-  def TagWidget[M](tag: TypedTag[Element]): Widget[M] = {
-    Widget(model => renderScalaTag(tag).map(e => DomBinding(element = e)))
-  }
 
   def Body[M]: Widget[M] = Reader(_ => value(DomBinding[M](element = org.scalajs.dom.document.body)))
 

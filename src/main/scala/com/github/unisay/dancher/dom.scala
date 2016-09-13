@@ -9,7 +9,6 @@ import com.github.unisay.dancher.widget.EffectAction
 import monix.reactive.Observable
 import org.scalajs.dom.{Element, Node}
 import scala.language.implicitConversions
-import scalatags.JsDom.TypedTag
 
 object dom {
 
@@ -85,9 +84,6 @@ object dom {
   case class Log(text: String) extends Action[Unit]
   def log(message: String): EffectAction =
     Log(message)
-
-  case class RenderScalaTag(tag: TypedTag[Element]) extends Action[Element]
-  def renderScalaTag(tag: TypedTag[Element]): ActionF[Element] = RenderScalaTag(tag)
 
   case class CreateElement(tagName: String) extends Action[Element]
   def createElement(tagName: String): ActionF[Element] = CreateElement(tagName)

@@ -20,14 +20,12 @@ scalacOptions ++= Seq(
 
 val catsVer       = "0.7.0"
 val scalajsDomVer = "0.9.1"
-val scalaTagsVer  = "0.6.0"
 val specs2Ver     = "3.8.2"
 val monocleVer    = "1.2.2"
 val monixVer      = "2.0.0"
 
 libraryDependencies ++= Seq(
   "org.scala-js"  %%% "scalajs-dom" % scalajsDomVer,
-  "com.lihaoyi"   %%% "scalatags"   % scalaTagsVer,
 
   "io.monix"      %%% "monix"       % monixVer,
   "io.monix"      %%% "monix-eval"  % monixVer,

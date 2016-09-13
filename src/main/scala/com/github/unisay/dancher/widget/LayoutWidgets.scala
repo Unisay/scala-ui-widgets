@@ -35,7 +35,8 @@ trait LayoutWidgets {
                     dragStart: Option[Vector2d] = None,
                     dragPos:   Option[Vector2d] = None,
                     dragEnd:   Option[Vector2d] = None) {
-      def dragDelta = for {
+      def dragging = dragStart.isDefined && dragEnd.isEmpty
+      def dragDelta: Observable[Vector2d] = for {
         start <- Observable.fromIterable(dragStart)
         pos   <- Observable.fromIterable(dragPos)
       } yield start - pos
@@ -60,8 +61,8 @@ trait LayoutWidgets {
       eventTypes = List(MouseMove, MouseUp, MouseDown))
 
     def moveSplitter(leftDivElement: Element)(delta: Vector2d): EffectAction = {
-      val width = leftDivElement.clientWidth
-      log(s"$width")
+      val width = leftDivElement.clientWidth - delta.x
+      setAttribute("style", s"width: ${width}px")(leftDivElement).void
     }
 
     def splitterDomStream(domStream: DomStream, element: Element): DomStream =
@@ -76,12 +77,10 @@ trait LayoutWidgets {
           drag.copy(dragStart = Some(event.screen), dragPos = Some(event.screen))
         case (drag@Drag(_, Some(_), _, _), Ior.Left(event: MouseUpEvent)) =>
           drag.copy(dragEnd = Some(event.screen), dragPos = Some(event.screen))
-        case (drag@Drag(_, Some(_), Some(_), _), _) =>
-          drag.copy(dragStart = None, dragEnd = None)
         case (drag, _) =>
           drag
       }
-//      .map(drag => {println(drag); drag})
+      .filter(_.dragging)
       .flatMap(_.dragDelta)
       .map(moveSplitter(element))
       .map(Ior.Right.apply)
@@ -97,7 +96,6 @@ trait LayoutWidgets {
       }
     }
   }
-
 
   private def Div[M](children: Iterable[Widget[M]],
                      attributes: List[(String, String)] = Nil,
