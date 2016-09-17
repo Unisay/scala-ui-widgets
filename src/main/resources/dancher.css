@@ -50,7 +50,7 @@ p {
 
 .d-horizontal-split-side {
     height: 100%;
-    overflow: auto;
+    overflow: hidden;
 }
 
 .d-horizontal-split-side-left {

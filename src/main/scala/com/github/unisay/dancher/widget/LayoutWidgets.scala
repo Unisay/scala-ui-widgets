@@ -8,6 +8,7 @@ import com.github.unisay.dancher.widget.Widget._
 import monix.reactive.Observable
 import monix.reactive.Observable.merge
 import org.scalajs.dom.Element
+import com.github.unisay.dancher.CssSyntax._
 
 trait LayoutWidgets {
 
@@ -32,15 +33,10 @@ trait LayoutWidgets {
   def HorizontalSplit[M](left: Widget[M], right: Widget[M]): Widget[M] = {
 
     case class Drag(inside: Boolean,
-                    dragStart: Option[Vector2d] = None,
-                    dragPos:   Option[Vector2d] = None,
-                    dragEnd:   Option[Vector2d] = None) {
-      def dragging = dragStart.isDefined && dragEnd.isEmpty
-      def dragDelta: Observable[Vector2d] = for {
-        start <- Observable.fromIterable(dragStart)
-        pos   <- Observable.fromIterable(dragPos)
-      } yield start - pos
-    }
+                    initWidth: Option[Int] = None,
+                    start: Option[Vector2d] = None,
+                    current: Option[Vector2d] = None,
+                    end: Option[Vector2d] = None)
 
     val leftDiv = Div(
       children = List(left),
@@ -60,30 +56,41 @@ trait LayoutWidgets {
       cssClasses = "d-horizontal-split" :: Nil,
       eventTypes = List(MouseMove, MouseUp, MouseDown))
 
-    def moveSplitter(leftDivElement: Element)(delta: Vector2d): EffectAction = {
-      val width = leftDivElement.clientWidth - delta.x
-      setAttribute("style", s"width: ${width}px")(leftDivElement).void
-    }
-
     def splitterDomStream(domStream: DomStream, element: Element): DomStream =
       domStream.scan(Drag(inside = false)) { // TODO: what if inside is true?
-        case (drag@Drag(_, Some(_), _, _), Ior.Left(event: MouseMoveEvent)) =>
-          drag.copy(dragPos = Some(event.screen))
-        case (drag@Drag(false, _, _, _), Ior.Left(event: MouseEnterEvent)) =>
-          drag.copy(inside = true, dragPos = Some(event.screen))
-        case (drag@Drag(true, _, _, _), Ior.Left(event: MouseLeaveEvent)) =>
-          drag.copy(inside = false, dragPos = Some(event.screen))
-        case (drag@Drag(true, None, _, _), Ior.Left(event: MouseDownEvent)) =>
-          drag.copy(dragStart = Some(event.screen), dragPos = Some(event.screen))
-        case (drag@Drag(_, Some(_), _, _), Ior.Left(event: MouseUpEvent)) =>
-          drag.copy(dragEnd = Some(event.screen), dragPos = Some(event.screen))
+        case (drag@Drag(_, _, Some(_), _, _), Ior.Left(event: MouseMoveEvent)) =>
+          println(drag)
+          drag.copy(current = Some(event.screen))
+        case (drag@Drag(false,_,  _, _, _), Ior.Left(event: MouseEnterEvent)) =>
+          println(drag)
+          drag.copy(inside = true, current = Some(event.screen))
+        case (drag@Drag(true,_,  _, _, _), Ior.Left(event: MouseLeaveEvent)) =>
+          println(drag)
+          drag.copy(inside = false, current = Some(event.screen))
+        case (drag@Drag(true,_,  None, _, _), Ior.Left(event: MouseDownEvent)) =>
+          println(drag)
+          drag.copy(start = Some(event.screen), current = Some(event.screen), initWidth = Some(element.clientWidth))
+        case (drag@Drag(_,_,  Some(_), _, _), Ior.Left(event: MouseUpEvent)) =>
+          println(drag)
+          drag.copy(end = Some(event.screen), current = Some(event.screen))
+        case (drag@Drag(_, _, Some(_), _, Some(_)), _) =>
+          drag.copy(start = None, end = None)
         case (drag, _) =>
           drag
       }
-      .filter(_.dragging)
-      .flatMap(_.dragDelta)
-      .map(moveSplitter(element))
-      .map(Ior.Right.apply)
+      .filter(drag => drag.start.isDefined && drag.end.isEmpty)
+      .flatMap { drag =>
+        Observable.fromIterable {
+          for {
+            start <- drag.start
+            curr  <- drag.current
+            width <- drag.initWidth
+          } yield Math.max(Math.round(width - start.x + curr.x).toInt, 1)
+        }
+      }
+      .map(width => setAttribute("style", "width: " + width.px)(element).void)
+      .map(Ior.Right(_))
+
 
     Widget {
       internalWidget(_).map { binding =>

@@ -1,6 +1,11 @@
 package com.github.unisay.dancher
 
-/*
+import cats.data.NonEmptyList
+import com.github.unisay.dancher.DomArbitraries._
+import com.github.unisay.dancher.dom._
+import org.scalajs.dom.Element
+import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatest.{MustMatchers, PropSpec}
 
 class DomElementSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatchers {
 
@@ -100,4 +105,3 @@ class DomElementSpec extends PropSpec with GeneratorDrivenPropertyChecks with Mu
     }
   }
 }
-*/

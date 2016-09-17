@@ -2,12 +2,15 @@ package com.github.unisay.dancher
 
 import java.util.UUID
 
+import cats.{Eval, Now}
 import cats.data.{Ior, NonEmptyList}
 import cats.free.Free
 import com.github.unisay.dancher.interpreter.ActionInterpreter
 import com.github.unisay.dancher.widget.EffectAction
+import monix.eval.Coeval
 import monix.reactive.Observable
 import org.scalajs.dom.{Element, Node}
+
 import scala.language.implicitConversions
 
 object dom {
@@ -78,8 +81,9 @@ object dom {
   object NoAction extends Action[Nothing]
   def noAction[R]: ActionF[R] = NoAction
 
-  case class Value[A](a: A) extends Action[A]
-  def value[A](a: A): ActionF[A] = Value(a)
+  case class Value[V](value: Eval[V]) extends Action[V]
+  def value[V](value: Eval[V]): ActionF[V] = Value(value)
+  def value[V](value: V): ActionF[V] = Value(Now(value))
 
   case class Log(text: String) extends Action[Unit]
   def log(message: String): EffectAction =
