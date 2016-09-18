@@ -18,31 +18,32 @@ scalacOptions ++= Seq(
   "-encoding", "UTF-8"
 )
 
-val catsVer       = "0.7.0"
+val catsVer       = "0.7.2"
 val scalajsDomVer = "0.9.1"
-val specs2Ver     = "3.8.2"
 val monocleVer    = "1.2.2"
-val monixVer      = "2.0-RC11"
+val fs2Ver        = "0.9.1"
+val fs2CatsVer    = "0.1.0"
+val refinedVer    = "0.5.0"
+val scalatestVer  = "3.0.0"
+val scalacheckVer = "1.13.2"
 
 libraryDependencies ++= Seq(
   "org.scala-js"  %%% "scalajs-dom" % scalajsDomVer,
-
-  "io.monix"      %%% "monix"       % monixVer,
-  "io.monix"      %%% "monix-eval"  % monixVer,
-
-  //  "io.monix"      %%% "monix-cats"  % monixVer,
-
+  "co.fs2"        %%% "fs2-core"    % fs2Ver,
+  "co.fs2"        %%% "fs2-cats"    % fs2CatsVer,
   "org.typelevel" %%% "cats-kernel" % catsVer,
   "org.typelevel" %%% "cats-macros" % catsVer,
   "org.typelevel" %%% "cats-core"   % catsVer,
   "org.typelevel" %%% "cats-free"   % catsVer,
+  "eu.timepit"    %%% "refined"     % refinedVer,
 
   "com.github.julien-truffaut" %%% "monocle-core"    % monocleVer,
   "com.github.julien-truffaut" %%% "monocle-generic" % monocleVer,
   "com.github.julien-truffaut" %%% "monocle-macro"   % monocleVer,
 
-  "org.scalatest"  %%% "scalatest"  % "3.0.0"  % "test",
-  "org.scalacheck" %%% "scalacheck" % "1.13.2" % "test"
+  "org.scalatest"  %%% "scalatest"          % scalatestVer  % "test",
+  "org.scalacheck" %%% "scalacheck"         % scalacheckVer % "test",
+  "eu.timepit"     %%% "refined-scalacheck" % refinedVer    % "test"
 )
 
 resolvers += Resolver.sonatypeRepo("releases")

@@ -1,35 +1,48 @@
 package com.github.unisay.dancher
 
-import com.github.unisay.dancher.DemoPage.Model
-import com.github.unisay.dancher.widget.all._
-import com.github.unisay.dancher.interpreter.{DomInterpreter, JsInterpreter}
-import com.github.unisay.dancher.widget.EffectAction
-import monix.execution.Ack
-import monix.execution.Scheduler.Implicits.global
+import com.github.unisay.dancher.Dsl._
+import com.github.unisay.dancher.Widget._
+import fs2.Task.delay
+import fs2.{Sink, Stream, Task}
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
 
 object App extends JSApp {
 
-  val demoModel = Model(tabs = TabsModel(activeTab = 1))
-
-  implicit val interpreter = new DomInterpreter()
-  import interpreter._
-
-  @JSExport
-  def debug(action: EffectAction): String = JsInterpreter.interpretScript(demoModel, action)._2
-
   @JSExport
   override def main(): Unit = {
     println("App started")
 
-    DemoPage(Body).render(demoModel).events.subscribe(nextFn = {
-      case (_, TabActivated(index)) =>
-        println(s"Tab $index activated!")
-        Ack.Continue
-    })
+    val handleEvents: Sink[Task, DomainEvent] =
+      _.evalMap {
+        case Answer(name) =>
+          delay(println(s"Got Name: $name!"))
+        case event =>
+          delay(println(s"Unhandled domain event: $event"))
+      }
 
+    val root =
+      body {
+        verticalSplit(
+          left = ask(
+            title = "What is your name?",
+            inputPlaceholder = "Name",
+            buttonCaption = "Send Name"
+          ),
+          right = ask(
+            title = "What is your Nickname?",
+            inputPlaceholder = "Nickname",
+            buttonCaption = "Send Nickname"
+          )
+        )
+      }
+
+    Stream
+      .eval(root)
+      .flatMap(_.events)
+      .through(handleEvents)
+      .run.unsafeRunAsyncFuture()
     ()
   }
 

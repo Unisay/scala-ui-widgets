@@ -1,24 +1,57 @@
 @import 'https://fonts.googleapis.com/css?family=Open+Sans:600';
 
-* {
+/* --- General styles --- */
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    min-height: 100%;
     font-family: 'Open Sans', sans-serif;
+}
+
+p {
+    margin: 0;
+    padding: 0;
 }
 
 .d-hidden {
     display: none;
 }
 
-div.d-vertical-layout {
-    /* border: 1px dotted orange; */
+/* --- Vertical split styles --- */
+
+.d-split-vertical {
+    overflow: auto;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+    -webkit-align-items: stretch;
+    align-items: stretch;
+    -webkit-flex-wrap: nowrap;
+    flex-wrap: nowrap;
 }
 
-div.d-vertical-layout > * {
-    display: block;
+.d-split-vertical-handle {
+    background-color: darkgray;
+    width: 3px;
+    cursor: col-resize;
 }
 
-div.d-horizontal-layout {
-    /* border: 1px dotted blue; */
+.d-split-vertical-side {
+    height: 100%;
+    overflow: auto;
 }
+
+.d-split-vertical-side-left {
+    width: 50%;
+}
+
+.d-split-vertical-side-right {
+}
+
+/* --- Tabs layout styles --- */
 
 .d-tab {
     font-size: 14px;
