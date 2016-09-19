@@ -23,6 +23,9 @@ object DomSyntax {
 
     def setClass(cssClass: String): Element = setClasses(cssClass)
 
+    def appendAll(children: Seq[Element]) =
+      children.foldLeft(element) { (parent, child) => parent.appendChild(child); parent }
+
     private def makeQueue(eventType: String)(implicit S: Strategy) = {
 
       def clickEventListener(queue: Queue[Task, Event]): js.Function1[Event, Unit] = { evt: Event =>

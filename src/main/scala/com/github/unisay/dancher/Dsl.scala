@@ -1,9 +1,9 @@
 package com.github.unisay.dancher
 
 import cats.data.NonEmptyVector
-import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher.DomSyntax._
-import eu.timepit.refined.auto._
+import com.github.unisay.dancher.Widget._
+import com.github.unisay.dancher.Fragment._
 import fs2.Task.{delay => widget}
 import org.scalajs.dom._
 import org.scalajs.dom.raw.HTMLInputElement
@@ -14,17 +14,7 @@ object Dsl {
   def body(fragment: Fragment): Widget = body append fragment
 
   val div = widget(Binding(document.createElement("div")))
-  def div(fragment: Fragment): Widget =
-    for {
-      bindings <- fragment
-      divGrip <- div
-    } yield {
-      val el = bindings.elements.foldLeft(divGrip.element) { (div: Element, child: Element) =>
-        div.appendChild(child)
-        div
-      }
-      Binding(element = el, events = bindings.events)
-    }
+  def div(fragment: Fragment): Widget = div append fragment
 
   def span(text: String) =
     widget {
@@ -56,7 +46,7 @@ object Dsl {
       div(span(title)) *> div {
         inputText(inputPlaceholder) *> button(buttonCaption, event = Click) map {
           case bindings @ Bindings(NonEmptyVector(input: HTMLInputElement, _), _) =>
-            bindings.mapEvents(_.map(_ => Answer(input.value)))
+            bindings.pipeEvents(_.map(_ => Answer(input.value)))
         }
       }
     }
