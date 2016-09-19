@@ -21,6 +21,9 @@ object Widget {
     def pipeEvents(pipe: Pipe[Task, DomainEvent, DomainEvent]): Widget =
       widget.map(_.pipeEvents(pipe))
 
+    def mapEvent(pf: PartialFunction[DomainEvent, DomainEvent]): Widget =
+      pipeEvents(_.map(pf.applyOrElse(_, identity[DomainEvent])))
+
     def append(fragment: Fragment)(implicit ec: EventsComposer = EventsComposer.both): Widget =
       for {
         binding <- widget

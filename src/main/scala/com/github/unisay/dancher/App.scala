@@ -14,10 +14,15 @@ object App extends JSApp {
   override def main(): Unit = {
     println("App started")
 
+    case class Name(value: String) extends DomainEvent
+    case class Nick(value: String) extends DomainEvent
+
     val handleEvents: Sink[Task, DomainEvent] =
-      _.evalMap {
-        case Answer(name) =>
+    _.evalMap {
+        case Name(name) =>
           delay(println(s"Got Name: $name!"))
+        case Nick(name) =>
+          delay(println(s"Got Nick: $name!"))
         case event =>
           delay(println(s"Unhandled domain event: $event"))
       }
@@ -29,12 +34,12 @@ object App extends JSApp {
             title = "What is your name?",
             inputPlaceholder = "Name",
             buttonCaption = "Send Name"
-          ),
+          ).mapEvent { case Answer(name) => Name(name) },
           right = ask(
             title = "What is your Nickname?",
             inputPlaceholder = "Nickname",
             buttonCaption = "Send Nickname"
-          )
+          ).mapEvent { case Answer(nick) => Nick(nick) }
         )
       }
 
