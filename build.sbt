@@ -24,18 +24,20 @@ val monocleVer    = "1.2.2"
 val fs2Ver        = "0.9.1"
 val fs2CatsVer    = "0.1.0"
 val refinedVer    = "0.5.0"
+val scribeVer     = "1.2.3"
 val scalatestVer  = "3.0.0"
 val scalacheckVer = "1.13.2"
 
 libraryDependencies ++= Seq(
-  "org.scala-js"  %%% "scalajs-dom" % scalajsDomVer,
-  "co.fs2"        %%% "fs2-core"    % fs2Ver,
-  "co.fs2"        %%% "fs2-cats"    % fs2CatsVer,
-  "org.typelevel" %%% "cats-kernel" % catsVer,
-  "org.typelevel" %%% "cats-macros" % catsVer,
-  "org.typelevel" %%% "cats-core"   % catsVer,
-  "org.typelevel" %%% "cats-free"   % catsVer,
-  "eu.timepit"    %%% "refined"     % refinedVer,
+  "org.scala-js"    %%% "scalajs-dom" % scalajsDomVer,
+  "co.fs2"          %%% "fs2-core"    % fs2Ver,
+  "co.fs2"          %%% "fs2-cats"    % fs2CatsVer,
+  "org.typelevel"   %%% "cats-kernel" % catsVer,
+  "org.typelevel"   %%% "cats-macros" % catsVer,
+  "org.typelevel"   %%% "cats-core"   % catsVer,
+  "org.typelevel"   %%% "cats-free"   % catsVer,
+  "eu.timepit"      %%% "refined"     % refinedVer,
+  "com.outr.scribe" %%% "scribe"      % scribeVer,
 
   "com.github.julien-truffaut" %%% "monocle-core"    % monocleVer,
   "com.github.julien-truffaut" %%% "monocle-generic" % monocleVer,
