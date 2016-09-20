@@ -28,9 +28,9 @@ object App extends JSApp with Logging {
       object Click extends DomainEvent
       div {
         div(span(title)) *> div {
-          inputText(inputPlaceholder) *> button(buttonCaption, event = Click) map {
+          inputText(inputPlaceholder) *> button(buttonCaption) map {
             case bindings @ Bindings(NonEmptyVector(input: HTMLInputElement, _), _) =>
-              bindings.pipeEvents(_.map(_ => Answer(input.value)))
+              bindings.mapDomainEvent(PartialFunction((_: DomainEvent) => Answer(input.value)))
           }
         }
       }
@@ -43,12 +43,12 @@ object App extends JSApp with Logging {
             title = "What is your name?",
             inputPlaceholder = initialModel.name,
             buttonCaption = "Send Name"
-          ).mapEvent { case Answer(name) => Name(name) },
+          ).mapDomainEvent { case Answer(name) => Name(name) },
           right = ask(
             title = "What is your Nickname?",
             inputPlaceholder = initialModel.nick,
             buttonCaption = "Send Nickname"
-          ).mapEvent { case Answer(nick) => Nick(nick) }
+          ).mapDomainEvent { case Answer(nick) => Nick(nick) }
         )
       }
 

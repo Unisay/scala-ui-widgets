@@ -1,16 +1,16 @@
 package com.github.unisay.dancher.widget
 
 import cats.Eval
+import cats.instances.string._
+import cats.syntax.eq._
 import com.github.unisay.dancher.Dom.Event._
 import com.github.unisay.dancher.Fragment._
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher._
 import com.github.unisay.dancher.widget.BasicWidgets._
-import fs2.{Stream, Pipe, Task}
-import org.scalajs.dom.{Event, MouseEvent}
-import cats.instances.string._
-import cats.syntax.eq._
 import com.outr.scribe.Logging
+import fs2.{Pipe, Task}
+import org.scalajs.dom.{Event, MouseEvent}
 
 object LayoutWidgets extends Logging {
 
@@ -22,8 +22,16 @@ object LayoutWidgets extends Logging {
     case class Drag[S](inside: Boolean, state: Eval[S],
                        start: Option[Point] = None, current: Option[Point] = None, end: Option[Point] = None)
     def screen(mouseEvent: MouseEvent): Some[Point] = Some(Point(mouseEvent.screenX, mouseEvent.screenY))
-    def splitterPipe[S](initialDrag: Drag[S]): Pipe[Task, Event, DomainEvent] =
-      _.scan(initialDrag) {
+
+    val widgetPipe: Pipe[Task, Event, DomainEvent] = ???
+
+    val sideClass = baseClass + "-side"
+
+    val leftHolder = div(left).setClass(sideClass, sideClass + "-left")
+    val rightHolder = div(right).setClass(sideClass, sideClass + "-right")
+    val initialState = Eval.always(element.clientWidth)
+    val splitterPipe: Pipe[Task, Event, DomainEvent] = _
+      .scan(Drag(inside = false, state = initialState)) {
         case (drag@Drag(_, _, Some(_), _, _), event: MouseEvent) if event.`type` === MouseMove.name =>
           logger.debug(drag)
           drag.copy(current = screen(event))
@@ -54,17 +62,12 @@ object LayoutWidgets extends Logging {
       }
       .filter(_.isDefined)
       .map(width => setAttribute("style", "width: " + width.px)(element).void)
+      .drain
 
-    val widgetPipe: Pipe[Task, Event, DomainEvent] = ???
-
-    val sideClass = baseClass + "-side"
-
-    val leftHolder = div(left).setClass(sideClass, sideClass + "-left")
-    val rightHolder = div(right).setClass(sideClass, sideClass + "-right")
-    val initialDrag = Drag(inside = false, state = Eval.True) // TODO: what if inside is true?
+    // TODO: what if inside = true?
     val splitter = div
       .setClass(baseClass + "-handle")
-      .pipeDomEvents(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)(splitterPipe(initialDrag))
+      .pipeDomEvents(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)(splitterPipe)
 
     div(leftHolder <*> splitter <*> rightHolder)
       .setClass(baseClass)

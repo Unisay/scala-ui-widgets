@@ -3,16 +3,16 @@ package com.github.unisay.dancher
 import fs2.Strategy
 
 trait EventsComposer {
-  def compose(left: DomainEvents, right: DomainEvents): DomainEvents
+  def compose(left: WidgetEvents, right: WidgetEvents): WidgetEvents
 }
 
 object EventsComposer {
 
   implicit val strategy = Strategy.default
 
-  def apply(f: (DomainEvents, DomainEvents) => DomainEvents): EventsComposer =
+  def apply(f: (WidgetEvents, WidgetEvents) => WidgetEvents): EventsComposer =
     new EventsComposer {
-      def compose(left: DomainEvents, right: DomainEvents) = f(left, right)
+      def compose(left: WidgetEvents, right: WidgetEvents) = f(left, right)
     }
 
   val left = EventsComposer((left, _) => left)
