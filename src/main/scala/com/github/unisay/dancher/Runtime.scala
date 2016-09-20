@@ -15,10 +15,10 @@ object Runtime extends Logging {
     Stream
       .eval(widget)
       .flatMap(_.events)
-      .zipWithScan1((EmptyEffect, initialModel)) { case ((_, model), event) =>
+      .scan((EmptyEffect, initialModel)) { case ((_, model), event) =>
         handleEvent.applyOrElse((model, event), unknownEventHandler)
       }
-      .evalMap { case (_, (task, _)) => task }
+      .evalMap { case (task, _) => task }
       .run.unsafeRunAsyncFuture()
     ()
   }

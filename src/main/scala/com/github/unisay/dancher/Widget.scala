@@ -3,8 +3,8 @@ package com.github.unisay.dancher
 import cats.syntax.cartesian._
 import com.github.unisay.dancher.DomSyntax._
 import fs2.interop.cats._
-import fs2.{Pipe, Strategy, Task}
-import org.scalajs.dom.Element
+import fs2.{Pipe, Strategy, Stream, Task}
+import org.scalajs.dom.{Element, Event}
 
 import scala.language.implicitConversions
 
@@ -20,6 +20,9 @@ object Widget {
 
     def pipeEvents(pipe: Pipe[Task, DomainEvent, DomainEvent]): Widget =
       widget.map(_.pipeEvents(pipe))
+
+    def pipeDomEvents(eventTypes: Dom.Event.Type*)(pipe: Pipe[Task, Event, DomainEvent]): Widget =
+      widget.map { binding => binding.copy(events = binding.element.stream(eventTypes: _*).through(pipe)) }
 
     def mapEvent(pf: PartialFunction[DomainEvent, DomainEvent]): Widget =
       pipeEvents(_.map(pf.applyOrElse(_, identity[DomainEvent])))
@@ -41,6 +44,8 @@ object Widget {
 
     def *>(right: Widget): Fragment =
       <*>(right)(EventsComposer.right)
+
+    def setClass(classes: String*): Widget = widget.mapElement(_.setClass(classes: _*))
   }
 
 }

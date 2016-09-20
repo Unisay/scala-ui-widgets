@@ -1,8 +1,11 @@
 package com.github.unisay.dancher
 
-import com.github.unisay.dancher.Dsl._
+import cats.data.NonEmptyVector
 import com.github.unisay.dancher.Widget._
+import com.github.unisay.dancher.widget.BasicWidgets._
+import com.github.unisay.dancher.widget.LayoutWidgets._
 import com.outr.scribe.Logging
+import org.scalajs.dom.raw.HTMLInputElement
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
@@ -19,6 +22,19 @@ object App extends JSApp with Logging {
 
     case class Name(value: String) extends DomainEvent
     case class Nick(value: String) extends DomainEvent
+    case class Answer(name: String) extends DomainEvent
+
+    def ask(title: String, inputPlaceholder: String = "", buttonCaption: String): Widget = {
+      object Click extends DomainEvent
+      div {
+        div(span(title)) *> div {
+          inputText(inputPlaceholder) *> button(buttonCaption, event = Click) map {
+            case bindings @ Bindings(NonEmptyVector(input: HTMLInputElement, _), _) =>
+              bindings.pipeEvents(_.map(_ => Answer(input.value)))
+          }
+        }
+      }
+    }
 
     val root =
       body {

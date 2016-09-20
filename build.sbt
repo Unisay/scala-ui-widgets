@@ -43,6 +43,10 @@ libraryDependencies ++= Seq(
   "com.github.julien-truffaut" %%% "monocle-generic" % monocleVer,
   "com.github.julien-truffaut" %%% "monocle-macro"   % monocleVer,
 
+  "org.scalatest"   %% "scalatest"          % scalatestVer  % "test",
+  "org.scalacheck"  %% "scalacheck"         % scalacheckVer % "test",
+  "eu.timepit"      %% "refined-scalacheck" % refinedVer    % "test",
+
   "org.scalatest"  %%% "scalatest"          % scalatestVer  % "test",
   "org.scalacheck" %%% "scalacheck"         % scalacheckVer % "test",
   "eu.timepit"     %%% "refined-scalacheck" % refinedVer    % "test"

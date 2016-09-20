@@ -1,6 +1,7 @@
 package com.github.unisay.dancher
 
 import cats.data.NonEmptyList
+import com.github.unisay.dancher.Dom.Event.Type
 import fs2.async.mutable.Queue
 import fs2.{Strategy, Stream, Task, async}
 import org.scalajs.dom._
@@ -11,7 +12,7 @@ object DomSyntax {
 
   implicit class ElementSyntax(val element: Element) extends AnyVal {
 
-    def setClasses(classes: String*): Element = {
+    def setClass(classes: String*): Element = {
       NonEmptyList
         .fromList(classes.toList)
         .foreach { nel =>
@@ -21,12 +22,10 @@ object DomSyntax {
       element
     }
 
-    def setClass(cssClass: String): Element = setClasses(cssClass)
-
     def appendAll(children: Seq[Element]) =
       children.foldLeft(element) { (parent, child) => parent.appendChild(child); parent }
 
-    private def makeQueue(eventType: String)(implicit S: Strategy) = {
+    private def makeQueue(eventTypes: String*)(implicit S: Strategy) = {
 
       def clickEventListener(queue: Queue[Task, Event]): js.Function1[Event, Unit] = { evt: Event =>
         queue.enqueue1(evt).unsafeRunAsync(_ => ())
@@ -36,7 +35,7 @@ object DomSyntax {
         for {
           queue <- async.unboundedQueue[Task, Event]
           listenerFn = clickEventListener(queue)
-          _ <- Task.delay(element.addEventListener(eventType, listenerFn))
+          _ <- Task.delay(eventTypes.foreach(element.addEventListener(_, listenerFn)))
         } yield (queue, listenerFn)
       }
 
@@ -44,12 +43,12 @@ object DomSyntax {
         Stream.emit(queue)
 
       def cleanupQueue(queue: Queue[Task, Event], listenerFn: js.Function1[Event, Unit]) =
-        Task.delay(element.removeEventListener(eventType, listenerFn))
+        Task.delay(eventTypes.foreach(element.removeEventListener(_, listenerFn)))
 
       Stream.bracket(createQueue)((emitQueue _).tupled, (cleanupQueue _).tupled)
     }
 
-    def stream(eventType: String)(implicit S: Strategy): Stream[Task, Event] =
-      makeQueue(eventType).flatMap(_.dequeueAvailable)
+    def stream(eventTypes: Type*)(implicit S: Strategy): Stream[Task, Event] =
+      makeQueue(eventTypes.map(_.name): _*).flatMap(_.dequeueAvailable)
   }
 }

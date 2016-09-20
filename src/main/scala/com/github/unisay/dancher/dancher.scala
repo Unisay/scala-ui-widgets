@@ -38,7 +38,6 @@ object Bindings extends BindingsInstances {
 }
 
 trait BindingsInstances {
-
   implicit def bindingsSemigroup(implicit ec: EventsComposer): Semigroup[Bindings] =
     new Semigroup[Bindings] {
       def combine(x: Bindings, y: Bindings) = Bindings(
@@ -46,5 +45,6 @@ trait BindingsInstances {
         events = ec.compose(x.events, y.events)
       )
     }
-
 }
+
+case class Point(x: Double, y: Double)
