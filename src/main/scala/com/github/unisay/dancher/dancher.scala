@@ -9,7 +9,7 @@ import org.scalajs.dom.{Element, Event}
 
 trait DomainEvent
 
-case class Binding(element: Element, events: WidgetEvents = Stream.empty) {
+case class Binding(element: Element, children: Vector[Binding], events: WidgetEvents = Stream.empty) {
   def map(f: Element => Element): Binding = copy(element = f(element))
 }
 

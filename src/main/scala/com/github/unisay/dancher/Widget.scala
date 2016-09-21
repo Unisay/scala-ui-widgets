@@ -20,13 +20,10 @@ object Widget extends WidgetInstances {
     def mapElement(f: Element => Element): Widget =
       instance.map(_.map(f))
 
-    def pipeDomEvents[O](eventTypes: Dom.Event.Type*)
-                        (pipe: Pipe[Task, Event, O])
-                        (implicit eventsComposer: EventsComposer): Widget =
-      instance.map { (binding: Binding) =>
-        binding.mapEvents { (widgetEvents: WidgetEvents) =>
-          eventsComposer.compose(widgetEvents, binding.element.stream(eventTypes: _*).map(_.left))
-        }
+    def emitDomEvents(eventTypes: Dom.Event.Type*)(implicit eventsComposer: EventsComposer): Widget =
+      instance.map { binding =>
+        val domEvents = binding.element.stream(eventTypes: _*).map(_.left)
+        eventsComposer.compose(binding.events, domEvents)
       }
 
     def append(fragment: Fragment)(implicit ec: EventsComposer = EventsComposer.both): Widget =

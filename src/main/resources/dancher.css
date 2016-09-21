@@ -33,7 +33,7 @@ p {
     flex-wrap: nowrap;
 }
 
-.d-split-vertical-handle {
+.d-split-vertical-edge {
     background-color: darkgray;
     width: 3px;
     cursor: col-resize;

@@ -1,6 +1,7 @@
 package com.github.unisay.dancher.widget
 
 import cats.Eval
+import cats.data.Xor
 import cats.instances.string._
 import cats.syntax.eq._
 import com.github.unisay.dancher.Dom.Event._
@@ -19,35 +20,38 @@ object LayoutWidgets extends Logging {
   def horizontalSplit(left: Widget, right: Widget) = split("d-split-horizontal", left, right)
 
   private def split(baseClass: String, left: Fragment, right: Fragment): Widget = {
-    case class Drag[S](inside: Boolean, state: Eval[S],
-                       start: Option[Point] = None, current: Option[Point] = None, end: Option[Point] = None)
-    def screen(mouseEvent: MouseEvent): Some[Point] = Some(Point(mouseEvent.screenX, mouseEvent.screenY))
-
-    val widgetPipe: Pipe[Task, Event, DomainEvent] = ???
-
     val sideClass = baseClass + "-side"
-
     val leftHolder = div(left).setClass(sideClass, sideClass + "-left")
     val rightHolder = div(right).setClass(sideClass, sideClass + "-right")
-    val initialState = Eval.always(element.clientWidth)
-    val splitterPipe: Pipe[Task, Event, DomainEvent] = _
-      .scan(Drag(inside = false, state = initialState)) {
-        case (drag@Drag(_, _, Some(_), _, _), event: MouseEvent) if event.`type` === MouseMove.name =>
+    val edge = div.setClass(baseClass + "-edge").emitDomEvents(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)
+
+    def screen(mouseEvent: MouseEvent): Some[Point] = Some(Point(mouseEvent.screenX, mouseEvent.screenY))
+    case class Drag(inside: Boolean,
+                    initWidth: Option[Int] = None,
+                    start: Option[Point] = None,
+                    current: Option[Point] = None,
+                    end: Option[Point] = None)
+
+    div(leftHolder <*> edge <*> rightHolder)
+      .setClass(baseClass)
+      .emitDomEvents(MouseMove, MouseUp, MouseDown)
+      .mapEvents { _.scan(Drag(inside = false)) {
+        case (drag, Left(event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseMove.name =>
           logger.debug(drag)
           drag.copy(current = screen(event))
-        case (drag@Drag(false,_,  _, _, _), event: MouseEvent) if event.`type` === MouseEnter.name =>
+        case (drag, Left(event: MouseEvent)) if !drag.inside && event.`type` === MouseEnter.name =>
           logger.debug(drag)
           drag.copy(inside = true, current = screen(event))
-        case (drag@Drag(true,_,  _, _, _), event: MouseEvent) if event.`type` === MouseLeave.name =>
+        case (drag, Left(event: MouseEvent)) if drag.inside && event.`type` === MouseLeave.name =>
           logger.debug(drag)
           drag.copy(inside = false, current = screen(event))
-        case (drag@Drag(true,_,  None, _, _), event: MouseEvent) if event.`type` === MouseDown.name =>
+        case (drag, Left(event: MouseEvent)) if drag.inside && drag.start.isEmpty && event.`type` === MouseDown.name =>
           logger.debug(drag)
-          drag.copy(start = screen(event), current = screen(event))
-        case (drag@Drag(_,_,  Some(_), _, _), event: MouseEvent) if event.`type` === MouseUp.name =>
+          drag.copy(initWidth = ???, start = screen(event), current = screen(event))
+        case (drag, Left(event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseUp.name =>
           logger.debug(drag)
           drag.copy(end = screen(event), current = screen(event))
-        case (drag@Drag(_, _, Some(_), _, Some(_)), _) =>
+        case (drag, _) if drag.start.isDefined && drag.end.isDefined =>
           drag.copy(start = None, end = None)
         case (drag, _) =>
           drag
@@ -63,15 +67,8 @@ object LayoutWidgets extends Logging {
       .filter(_.isDefined)
       .map(width => setAttribute("style", "width: " + width.px)(element).void)
       .drain
+    }
 
-    // TODO: what if inside = true?
-    val splitter = div
-      .setClass(baseClass + "-handle")
-      .pipeDomEvents(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)(splitterPipe)
-
-    div(leftHolder <*> splitter <*> rightHolder)
-      .setClass(baseClass)
-      .pipeDomEvents(MouseMove, MouseUp, MouseDown)(widgetPipe)
   }
 
 }
