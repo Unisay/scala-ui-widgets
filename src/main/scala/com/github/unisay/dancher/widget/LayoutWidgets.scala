@@ -5,7 +5,6 @@ import cats.data.Xor
 import cats.instances.string._
 import cats.syntax.eq._
 import com.github.unisay.dancher.Dom.Event._
-import com.github.unisay.dancher.Fragment._
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher._
 import com.github.unisay.dancher.widget.BasicWidgets._
@@ -19,7 +18,7 @@ object LayoutWidgets extends Logging {
 
   def horizontalSplit(left: Widget, right: Widget) = split("d-split-horizontal", left, right)
 
-  private def split(baseClass: String, left: Fragment, right: Fragment): Widget = {
+  private def split(baseClass: String, left: Widget, right: Widget): Widget = {
     val sideClass = baseClass + "-side"
     val leftHolder = div(left).setClass(sideClass, sideClass + "-left")
     val rightHolder = div(right).setClass(sideClass, sideClass + "-right")

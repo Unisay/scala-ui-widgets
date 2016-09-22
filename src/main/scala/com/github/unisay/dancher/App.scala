@@ -1,6 +1,5 @@
 package com.github.unisay.dancher
 
-import cats.data.NonEmptyVector
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher.widget.BasicWidgets._
 import com.github.unisay.dancher.widget.LayoutWidgets._
@@ -25,12 +24,12 @@ object App extends JSApp with Logging {
     case class Answer(name: String) extends DomainEvent
 
     def ask(title: String, inputPlaceholder: String = "", buttonCaption: String): Widget = {
-      object Click extends DomainEvent
       div {
-        div(span(title)) *> div {
-          inputText(inputPlaceholder) *> button(buttonCaption) map {
-            case bindings @ Bindings(NonEmptyVector(input: HTMLInputElement, _), _) =>
-              bindings.mapDomainEvent(PartialFunction((_: DomainEvent) => Answer(input.value)))
+        div(span(title)) :: div {
+          inputText(inputPlaceholder) :: button(buttonCaption) mapAll {
+            case (ib @ Binding(input: HTMLInputElement, _, _)) :: buttonBinding :: t =>
+              val answerOnClick = PartialFunction((_: DomainEvent) => Answer(input.value))
+              ib :: buttonBinding.mapDomainEvent(answerOnClick) :: t
           }
         }
       }

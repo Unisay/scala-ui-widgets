@@ -4,6 +4,7 @@ import fs2.Strategy
 
 trait EventsComposer {
   def compose(left: WidgetEvents, right: WidgetEvents): WidgetEvents
+  def composeAll(flows: WidgetEvents*): WidgetEvents = flows.reduce(compose)
 }
 
 object EventsComposer {

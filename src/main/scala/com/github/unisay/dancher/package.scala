@@ -9,7 +9,6 @@ package object dancher {
 
   type Effect = Task[Unit]
   type Widget = Task[Binding]
-  type Fragment = Task[Bindings]
   type Flow[T] = Stream[Task, T]
   type WidgetEvent = Event Xor DomainEvent
   type WidgetEvents = Flow[WidgetEvent]

@@ -1,29 +1,37 @@
 package com.github.unisay.dancher
 
-import cats.Semigroup
 import cats.syntax.xor._
 import Syntax._
-import cats.data.{NonEmptyVector, Xor}
+import cats.data.{NonEmptyList, Xor}
 import fs2._
 import org.scalajs.dom.{Element, Event}
 
 trait DomainEvent
 
-case class Binding(element: Element, children: Vector[Binding], events: WidgetEvents = Stream.empty) {
-  def map(f: Element => Element): Binding = copy(element = f(element))
+case class Binding(element: Element, events: WidgetEvents, nested: Vector[Binding]) {
+  def deepElements: NonEmptyList[Element] = elements ++ nested.toList.flatMap(_.elements.toList)
+  def deepEvents: WidgetEvents = EventsComposer.both.composeAll(events, nested.map(_.events): _*)
+  def mapElements(f: Element => Element): Binding = copy(elements = elements.map(f))
 }
 
-object Binding extends BindingInstances
+object Binding extends BindingInstances {
+  def apply(element: Element): Binding = apply(element, Stream.empty)
+  def apply(element: Element, events: WidgetEvents): Binding = Binding(element, events = events, nested = Vector.empty)
+}
 
 trait BindingInstances {
   implicit val widgetEventMapper: WidgetEventMapper[Binding] = new WidgetEventMapper[Binding] {
-    def mapEvents(b: Binding, f: Flow[WidgetEvent] => Flow[WidgetEvent]): Binding = b.copy(events = f(b.events))
+    def pipeEvents(b: Binding, pipe: WidgetEvents => WidgetEvents): Binding =
+      new Binding(elements = b.elements, events = b.events, nested = b.nested) {
+        override def deepEvents: WidgetEvents = super.deepEvents.through(pipe)
+      }
   }
   implicit class BindingOps(override val instance: Binding) extends WidgetEventMapperOps[Binding]
 }
 
+// TODO - consider inlining this TC?
 trait WidgetEventMapper[T] {
-  def mapEvents(t: T)(f: Flow[WidgetEvent] => Flow[WidgetEvent]): T
+  def mapEvents(t: T)(f: WidgetEvents => WidgetEvents): T
   def mapWidgetEvent(t: T)(f: WidgetEvent => WidgetEvent): T = mapEvents(t)(_.map(f))
   def mapDomainEvent(t: T)(f: DomainEvent => DomainEvent): T = mapWidgetEvent(t)(_.map(f))
   def mapDomEvent(t: T)(f: Event => Event): T = mapWidgetEvent(t) {
@@ -45,40 +53,6 @@ trait WidgetEventMapperOps[S] {
   def mapDomainEventPf(pf: PartialFunction[DomainEvent, DomainEvent]): S = mapper.mapDomainEventPf(instance)(pf)
   def mapDomEvent(f: Event => Event): S = mapper.mapDomEvent(instance)(f)
   def mapDomEventPf(pf: PartialFunction[Event, Event]): S = mapper.mapDomEventPf(instance)(pf)
-}
-
-case class Bindings(elements: NonEmptyVector[Element], events: Stream[Task, WidgetEvent] = Stream.empty)
-
-object Bindings extends BindingsInstances {
-
-  def create(binding: Binding): Bindings =
-    Bindings(elements = NonEmptyVector.of(binding.element), events = binding.events)
-
-  def create2(left: Binding, right: Binding)(implicit ec: EventsComposer): Bindings =
-    bindingsSemigroup.combine(create(left), create(right))
-
-  def append(left: Bindings, right: Binding)(implicit ec: EventsComposer) =
-    bindingsSemigroup.combine(left, create(right))
-
-  def mapElements(bindings: Bindings)(f: NonEmptyVector[Element] => NonEmptyVector[Element]): Bindings =
-    bindings.copy(elements = f(bindings.elements))
-
-  implicit class BindingsOps(override val instance: Bindings)
-    extends WidgetEventMapperOps[Bindings]
-
-}
-
-trait BindingsInstances {
-  implicit val widgetEventMapper: WidgetEventMapper[Bindings] = new WidgetEventMapper[Bindings] {
-    def mapEvents(b: Bindings, f: Flow[WidgetEvent] => Flow[WidgetEvent]): Bindings = b.copy(events = f(b.events))
-  }
-  implicit def bindingsSemigroup(implicit ec: EventsComposer): Semigroup[Bindings] =
-    new Semigroup[Bindings] {
-      def combine(x: Bindings, y: Bindings) = Bindings(
-        elements = x.elements concatNev y.elements,
-        events = ec.compose(x.events, y.events)
-      )
-    }
 }
 
 case class Point(x: Double, y: Double)

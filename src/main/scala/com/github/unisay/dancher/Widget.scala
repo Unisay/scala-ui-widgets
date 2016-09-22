@@ -1,50 +1,46 @@
 package com.github.unisay.dancher
 
 import cats.syntax.all._
+import cats.instances.list._
 import com.github.unisay.dancher.DomSyntax._
+import fs2.Strategy
 import fs2.interop.cats._
-import fs2.{Pipe, Strategy, Task}
-import org.scalajs.dom.{Element, Event}
-
-import scala.language.implicitConversions
+import org.scalajs.dom.Element
 
 object Widget extends WidgetInstances {
 
   implicit val strategy = Strategy.default
-  implicit def widgetAsFragment(widget: Widget): Fragment = widget.map(Bindings.create)
+
+  implicit class WidgetsOps(val widgets: List[Widget]) extends AnyVal {
+    def mapAll(f: List[Binding] => List[Binding]): List[Widget] = widgets.sequence.map(f)
+  }
 
   implicit class WidgetOps(override val instance: Widget) extends WidgetEventMapperOps[Widget] {
 
     def element = instance.map(_.element)
 
-    def mapElement(f: Element => Element): Widget =
-      instance.map(_.map(f))
+    def mapElements(f: Element => Element): Widget =
+      instance.map(_.mapElements(f))
 
-    def emitDomEvents(eventTypes: Dom.Event.Type*)(implicit eventsComposer: EventsComposer): Widget =
+    def emitDomEvents(eventTypes: Dom.Event.Type*)(implicit ec: EventsComposer): Widget =
       instance.map { binding =>
         val domEvents = binding.element.stream(eventTypes: _*).map(_.left)
-        eventsComposer.compose(binding.events, domEvents)
+        binding.copy(events = ec.compose(binding.events, domEvents))
       }
 
-    def append(fragment: Fragment)(implicit ec: EventsComposer = EventsComposer.both): Widget =
-      for {
-        binding <- instance
-        bindings <- fragment
-      } yield Binding(
-        element = binding.element.appendAll(bindings.elements.toVector),
-        events = ec.compose(binding.events, bindings.events)
-      )
+    def append(widget: Widget): Widget =
+      instance.flatMap { parent =>
+        widget.map { child =>
+          parent.copy(nested = parent.nested :+ child)
+        }
+      }
 
-    def <*>(right: Widget)(implicit ec: EventsComposer = EventsComposer.both) =
-      (instance |@| right) map Bindings.create2
+    def append(widgets: List[Widget]): Widget =
+      widgets.foldLeft(instance)(append)
 
-    def <*(right: Widget): Fragment =
-      <*>(right)(EventsComposer.left)
+    def ::(right: Widget) = instance :: right :: Nil
 
-    def *>(right: Widget): Fragment =
-      <*>(right)(EventsComposer.right)
-
-    def setClass(classes: String*): Widget = instance.mapElement(_.setClass(classes: _*))
+    def setClass(classes: String*): Widget = instance.mapElements(_.setClass(classes: _*))
   }
 
 }
