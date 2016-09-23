@@ -1,17 +1,18 @@
 package com.github.unisay.dancher
 
+import cats.data.{NonEmptyVector, Xor}
 import cats.syntax.xor._
-import Syntax._
-import cats.data.{NonEmptyList, Xor}
+import com.github.unisay.dancher.Syntax._
 import fs2._
 import org.scalajs.dom.{Element, Event}
 
 trait DomainEvent
 
 case class Binding(element: Element, events: WidgetEvents, nested: Vector[Binding]) {
-  def deepElements: NonEmptyList[Element] = elements ++ nested.toList.flatMap(_.elements.toList)
+  def deepElements: NonEmptyVector[Element] = NonEmptyVector.of(element, nested.flatMap(_.deepElements.toVector): _*)
   def deepEvents: WidgetEvents = EventsComposer.both.composeAll(events, nested.map(_.events): _*)
-  def mapElements(f: Element => Element): Binding = copy(elements = elements.map(f))
+  def mapElement(f: Element => Element): Binding = copy(element = f(element))
+  def append(child: Binding): Binding = copy(nested = nested :+ child)
 }
 
 object Binding extends BindingInstances {
@@ -21,10 +22,7 @@ object Binding extends BindingInstances {
 
 trait BindingInstances {
   implicit val widgetEventMapper: WidgetEventMapper[Binding] = new WidgetEventMapper[Binding] {
-    def pipeEvents(b: Binding, pipe: WidgetEvents => WidgetEvents): Binding =
-      new Binding(elements = b.elements, events = b.events, nested = b.nested) {
-        override def deepEvents: WidgetEvents = super.deepEvents.through(pipe)
-      }
+    def pipeEvents(b: Binding, pipe: WidgetEvents => WidgetEvents): Binding = b.copy(events = b.events.through(pipe))
   }
   implicit class BindingOps(override val instance: Binding) extends WidgetEventMapperOps[Binding]
 }

@@ -27,7 +27,7 @@ object App extends JSApp with Logging {
       div {
         div(span(title)) :: div {
           inputText(inputPlaceholder) :: button(buttonCaption) mapAll {
-            case (ib @ Binding(input: HTMLInputElement, _, _)) :: buttonBinding :: t =>
+            case (ib@Binding(input: HTMLInputElement, _, _)) :: buttonBinding :: t =>
               val answerOnClick = PartialFunction((_: DomainEvent) => Answer(input.value))
               ib :: buttonBinding.mapDomainEvent(answerOnClick) :: t
           }

@@ -1,7 +1,6 @@
 package com.github.unisay.dancher.widget
 
-import cats.Eval
-import cats.data.Xor
+import cats.data.Xor._
 import cats.instances.string._
 import cats.syntax.eq._
 import com.github.unisay.dancher.Dom.Event._
@@ -9,8 +8,7 @@ import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher._
 import com.github.unisay.dancher.widget.BasicWidgets._
 import com.outr.scribe.Logging
-import fs2.{Pipe, Task}
-import org.scalajs.dom.{Event, MouseEvent}
+import org.scalajs.dom.MouseEvent
 
 object LayoutWidgets extends Logging {
 
@@ -31,7 +29,7 @@ object LayoutWidgets extends Logging {
                     current: Option[Point] = None,
                     end: Option[Point] = None)
 
-    div(leftHolder <*> edge <*> rightHolder)
+    div(leftHolder :: edge :: rightHolder)
       .setClass(baseClass)
       .emitDomEvents(MouseMove, MouseUp, MouseDown)
       .mapEvents { _.scan(Drag(inside = false)) {
@@ -64,7 +62,7 @@ object LayoutWidgets extends Logging {
         } yield Math.max(Math.round(width - start.x + curr.x), 1)
       }
       .filter(_.isDefined)
-      .map(width => setAttribute("style", "width: " + width.px)(element).void)
+      .evalMap(width => ??? /*setAttribute("style", "width: " + width.px)(element)*/)
       .drain
     }
 

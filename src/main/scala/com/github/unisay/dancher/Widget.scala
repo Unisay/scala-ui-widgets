@@ -1,9 +1,9 @@
 package com.github.unisay.dancher
 
-import cats.syntax.all._
-import cats.instances.list._
 import com.github.unisay.dancher.DomSyntax._
-import fs2.Strategy
+import fs2.{Strategy, Task}
+import Syntax._
+import cats.implicits._
 import fs2.interop.cats._
 import org.scalajs.dom.Element
 
@@ -12,35 +12,35 @@ object Widget extends WidgetInstances {
   implicit val strategy = Strategy.default
 
   implicit class WidgetsOps(val widgets: List[Widget]) extends AnyVal {
-    def mapAll(f: List[Binding] => List[Binding]): List[Widget] = widgets.sequence.map(f)
+    def mapAll(pf: PartialFunction[List[Binding], List[Binding]]): Task[List[Binding]] = widgets.sequence.map(pf.total)
   }
 
   implicit class WidgetOps(override val instance: Widget) extends WidgetEventMapperOps[Widget] {
 
     def element = instance.map(_.element)
 
-    def mapElements(f: Element => Element): Widget =
-      instance.map(_.mapElements(f))
+    def mapElement(f: Element => Element): Widget = instance.map(_.mapElement(f))
 
-    def emitDomEvents(eventTypes: Dom.Event.Type*)(implicit ec: EventsComposer): Widget =
+    def emitDomEvents(eventTypes: Dom.Event.Type*): Widget =
       instance.map { binding =>
         val domEvents = binding.element.stream(eventTypes: _*).map(_.left)
-        binding.copy(events = ec.compose(binding.events, domEvents))
+        binding.copy(events = EventsComposer.both.compose(binding.events, domEvents))
       }
 
-    def append(widget: Widget): Widget =
-      instance.flatMap { parent =>
-        widget.map { child =>
-          parent.copy(nested = parent.nested :+ child)
-        }
-      }
+    def append(child: Binding): Widget = instance.map(_ append child)
+    def append(widget: Widget): Widget = instance.flatMap(append)
+    def append(widgets: Task[List[Binding]]): Widget =
+      for {
+        bs <- widgets
+        binding <- instance
+      } yield bs.foldLeft(binding)(_ append _)
 
     def append(widgets: List[Widget]): Widget =
-      widgets.foldLeft(instance)(append)
+      widgets.foldLeft(instance)(_ append _)
 
     def ::(right: Widget) = instance :: right :: Nil
 
-    def setClass(classes: String*): Widget = instance.mapElements(_.setClass(classes: _*))
+    def setClass(classes: String*): Widget = instance.mapElement(_.setClass(classes: _*))
   }
 
 }
