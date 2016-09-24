@@ -1,21 +1,26 @@
 package com.github.unisay.dancher
 
-import com.github.unisay.dancher.DomSyntax._
-import fs2.{Strategy, Task}
-import Syntax._
 import cats.implicits._
+import com.github.unisay.dancher.DomSyntax._
+import com.github.unisay.dancher.Syntax._
+import fs2.Strategy
 import fs2.interop.cats._
 import org.scalajs.dom.Element
 
-object Widget extends WidgetInstances {
+object Widget {
 
   implicit val strategy = Strategy.default
 
-  implicit class WidgetsOps(val widgets: List[Widget]) extends AnyVal {
-    def mapAll(pf: PartialFunction[List[Binding], List[Binding]]): Task[List[Binding]] = widgets.sequence.map(pf.total)
+  implicit def widgetAsList(widget: Widget): Fragment = widget.map(List(_))
+
+  implicit val widgetEventMapper: WidgetEventMapper[Widget] = new WidgetEventMapper[Widget] {
+    def mapEvents(widget: Widget)(f: (WidgetEvents) => WidgetEvents): Widget =
+      widget.map(implicitly[WidgetEventMapper[Binding]].mapEvents(_)(f))
   }
 
   implicit class WidgetOps(override val instance: Widget) extends WidgetEventMapperOps[Widget] {
+
+    val mapper: WidgetEventMapper[Widget] = widgetEventMapper
 
     def element = instance.map(_.element)
 
@@ -29,25 +34,23 @@ object Widget extends WidgetInstances {
 
     def append(child: Binding): Widget = instance.map(_ append child)
     def append(widget: Widget): Widget = instance.flatMap(append)
-    def append(widgets: Task[List[Binding]]): Widget =
+    def appendAll(fragment: Fragment): Widget =
       for {
-        bs <- widgets
+        bs <- fragment
         binding <- instance
       } yield bs.foldLeft(binding)(_ append _)
 
     def append(widgets: List[Widget]): Widget =
       widgets.foldLeft(instance)(_ append _)
 
-    def ::(right: Widget) = instance :: right :: Nil
+    def ::(right: Widget): Fragment = (instance :: right :: Nil).sequence
 
     def setClass(classes: String*): Widget = instance.mapElement(_.setClass(classes: _*))
   }
 
-}
-
-trait WidgetInstances {
-  implicit val widgetEventMapper: WidgetEventMapper[Widget] = new WidgetEventMapper[Widget] {
-    def mapEvents(w: Widget, f: (Flow[WidgetEvent]) => Flow[WidgetEvent]): Widget =
-      w.map(implicitly[WidgetEventMapper[Binding]].mapEvents(_)(f))
+  implicit class FragmentOps(val fragment: Fragment) extends AnyVal {
+    def ::(widget: Widget): Fragment = for { b <- widget; bs <- fragment } yield b :: bs
+    def mapAll(pf: PartialFunction[List[Binding], List[Binding]]): Fragment = fragment.map(pf.total)
   }
+
 }

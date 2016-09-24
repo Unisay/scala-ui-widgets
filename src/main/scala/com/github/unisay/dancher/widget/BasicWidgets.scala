@@ -13,15 +13,12 @@ import org.scalajs.dom.raw.HTMLInputElement
 object BasicWidgets {
 
   val body = widget(Binding(document.body))
-  def body(widget: Widget): Widget = body append widget
-  def body(widgets: List[Widget]): Widget = body append widgets
+  def body(widgets: Task[List[Binding]]): Widget = body appendAll widgets
 
   val div = widget(Binding(document.createElement("div")))
-  def div(widget: Widget): Widget = div append widget
-  def div(widgets: List[Widget]): Widget = div append widgets
-  def div(widgets: Task[List[Binding]]): Widget = div append widgets
+  def div(widgets: Task[List[Binding]]): Widget = div appendAll widgets
 
-  def span(text: String) =
+  def span(text: String): Widget =
     widget {
       val element = document.createElement("span")
       element.appendChild(document.createTextNode(text))

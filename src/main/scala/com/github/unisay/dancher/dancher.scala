@@ -10,7 +10,7 @@ trait DomainEvent
 
 case class Binding(element: Element, events: WidgetEvents, nested: Vector[Binding]) {
   def deepElements: NonEmptyVector[Element] = NonEmptyVector.of(element, nested.flatMap(_.deepElements.toVector): _*)
-  def deepEvents: WidgetEvents = EventsComposer.both.composeAll(events, nested.map(_.events): _*)
+  def deepEvents: WidgetEvents = EventsComposer.both.composeAll(events +: nested.map(_.events): _*)
   def mapElement(f: Element => Element): Binding = copy(element = f(element))
   def append(child: Binding): Binding = copy(nested = nested :+ child)
 }
@@ -22,9 +22,11 @@ object Binding extends BindingInstances {
 
 trait BindingInstances {
   implicit val widgetEventMapper: WidgetEventMapper[Binding] = new WidgetEventMapper[Binding] {
-    def pipeEvents(b: Binding, pipe: WidgetEvents => WidgetEvents): Binding = b.copy(events = b.events.through(pipe))
+    def mapEvents(b: Binding)(pipe: WidgetEvents => WidgetEvents): Binding = b.copy(events = b.events.through(pipe))
   }
-  implicit class BindingOps(override val instance: Binding) extends WidgetEventMapperOps[Binding]
+  implicit class BindingOps(override val instance: Binding) extends WidgetEventMapperOps[Binding] {
+    val mapper: WidgetEventMapper[Binding] = widgetEventMapper
+  }
 }
 
 // TODO - consider inlining this TC?
