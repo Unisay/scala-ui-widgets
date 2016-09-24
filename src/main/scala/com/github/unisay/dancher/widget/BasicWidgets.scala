@@ -5,7 +5,6 @@ import com.github.unisay.dancher.Dom.Event.Click
 import com.github.unisay.dancher.DomSyntax._
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher._
-import fs2.Task
 import fs2.Task.{delay => widget}
 import org.scalajs.dom._
 import org.scalajs.dom.raw.HTMLInputElement
@@ -13,10 +12,10 @@ import org.scalajs.dom.raw.HTMLInputElement
 object BasicWidgets {
 
   val body = widget(Binding(document.body))
-  def body(widgets: Task[List[Binding]]): Widget = body appendAll widgets
+  def body(fragment: Fragment): Widget = body appendFragment fragment
 
   val div = widget(Binding(document.createElement("div")))
-  def div(widgets: Task[List[Binding]]): Widget = div appendAll widgets
+  def div(fragment: Fragment): Widget = div appendFragment fragment
 
   def span(text: String): Widget =
     widget {

@@ -14,7 +14,7 @@ object Widget {
   implicit def widgetAsList(widget: Widget): Fragment = widget.map(List(_))
 
   implicit val widgetEventMapper: WidgetEventMapper[Widget] = new WidgetEventMapper[Widget] {
-    def mapEvents(widget: Widget)(f: (WidgetEvents) => WidgetEvents): Widget =
+    def mapEvents(widget: Widget)(f: WidgetEvents => WidgetEvents): Widget =
       widget.map(implicitly[WidgetEventMapper[Binding]].mapEvents(_)(f))
   }
 
@@ -32,18 +32,15 @@ object Widget {
         binding.copy(events = EventsComposer.both.compose(binding.events, domEvents))
       }
 
-    def append(child: Binding): Widget = instance.map(_ append child)
+    def append(child: Binding): Widget = instance.map(_ unsafeAppend child)
     def append(widget: Widget): Widget = instance.flatMap(append)
-    def appendAll(fragment: Fragment): Widget =
+    def appendFragment(fragment: Fragment): Widget =
       for {
-        bs <- fragment
         binding <- instance
-      } yield bs.foldLeft(binding)(_ append _)
+        bindings <- fragment
+      } yield bindings.foldLeft(binding)(_ unsafeAppend _)
 
-    def append(widgets: List[Widget]): Widget =
-      widgets.foldLeft(instance)(_ append _)
-
-    def ::(right: Widget): Fragment = (instance :: right :: Nil).sequence
+    def ::(left: Widget): Fragment = (left :: instance :: Nil).sequence
 
     def setClass(classes: String*): Widget = instance.mapElement(_.setClass(classes: _*))
   }
