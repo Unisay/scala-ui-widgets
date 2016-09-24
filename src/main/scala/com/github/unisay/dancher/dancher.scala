@@ -3,6 +3,7 @@ package com.github.unisay.dancher
 import cats.data.{NonEmptyVector, Xor}
 import cats.syntax.xor._
 import com.github.unisay.dancher.Syntax._
+import com.github.unisay.dancher.Widget._
 import fs2._
 import org.scalajs.dom.{Element, Event}
 
@@ -10,12 +11,11 @@ trait DomainEvent
 
 case class Binding(element: Element, events: WidgetEvents, nested: Vector[Binding]) {
   def deepElements: NonEmptyVector[Element] = NonEmptyVector.of(element, nested.flatMap(_.deepElements.toVector): _*)
-  def deepEvents: WidgetEvents = EventsComposer.both.composeAll(events +: nested.map(_.events): _*)
+  def deepEvents: WidgetEvents = nested.map(_.events).foldLeft(events)(_ merge _)
   def mapElement(f: Element => Element): Binding = copy(element = f(element))
-  def unsafeAppend(child: Binding): Binding = { // TODO: make it safe?
+  def append(child: Binding): Task[Binding] = Task.delay {
     element.appendChild(child.element)
-    val composedEvents = EventsComposer.both.compose(events, child.events)
-    copy(events = composedEvents, nested = nested :+ child)
+    copy(events = events merge child.events, nested = nested :+ child)
   }
 }
 

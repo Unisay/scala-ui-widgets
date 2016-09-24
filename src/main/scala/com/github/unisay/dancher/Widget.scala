@@ -29,16 +29,13 @@ object Widget {
     def emitDomEvents(eventTypes: Dom.Event.Type*): Widget =
       instance.map { binding =>
         val domEvents = binding.element.stream(eventTypes: _*).map(_.left)
-        binding.copy(events = EventsComposer.both.compose(binding.events, domEvents))
+        binding.copy(events = binding.events merge domEvents)
       }
 
-    def append(child: Binding): Widget = instance.map(_ unsafeAppend child)
+    def append(child: Binding): Widget = instance.flatMap(_ append child)
     def append(widget: Widget): Widget = instance.flatMap(append)
     def appendFragment(fragment: Fragment): Widget =
-      for {
-        binding <- instance
-        bindings <- fragment
-      } yield bindings.foldLeft(binding)(_ unsafeAppend _)
+      fragment flatMap { _.foldLeft(instance)((instance, cb) => instance flatMap (_ append cb))}
 
     def ::(left: Widget): Fragment = (left :: instance :: Nil).sequence
 
@@ -49,5 +46,4 @@ object Widget {
     def ::(widget: Widget): Fragment = for { b <- widget; bs <- fragment } yield b :: bs
     def mapAll(pf: PartialFunction[List[Binding], List[Binding]]): Fragment = fragment.map(pf.total)
   }
-
 }
