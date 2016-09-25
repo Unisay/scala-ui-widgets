@@ -43,10 +43,6 @@ libraryDependencies ++= Seq(
   "com.github.julien-truffaut" %%% "monocle-generic" % monocleVer,
   "com.github.julien-truffaut" %%% "monocle-macro"   % monocleVer,
 
-  "org.scalatest"   %% "scalatest"          % scalatestVer  % "test",
-  "org.scalacheck"  %% "scalacheck"         % scalacheckVer % "test",
-  "eu.timepit"      %% "refined-scalacheck" % refinedVer    % "test",
-
   "org.scalatest"  %%% "scalatest"          % scalatestVer  % "test",
   "org.scalacheck" %%% "scalacheck"         % scalacheckVer % "test",
   "eu.timepit"     %%% "refined-scalacheck" % refinedVer    % "test"
@@ -69,6 +65,6 @@ lazy val dancher = project.in(file("."))
     scalacOptions in Test ++= Seq("-Yrangepos"),
     maxErrors := 5,
     logLevel := Level.Info,
-    requiresDOM := false,
+    requiresDOM := true,
     scalaJSUseRhino := false
   )

@@ -7,24 +7,19 @@ import fs2.Strategy
 import fs2.interop.cats._
 import org.scalajs.dom.Element
 
+import scala.language.implicitConversions
+
 object Widget {
 
   implicit val strategy = Strategy.default
 
   implicit def widgetAsList(widget: Widget): Fragment = widget.map(List(_))
 
-  implicit val widgetEventMapper: WidgetEventMapper[Widget] = new WidgetEventMapper[Widget] {
-    def mapEvents(widget: Widget)(f: WidgetEvents => WidgetEvents): Widget =
-      widget.map(implicitly[WidgetEventMapper[Binding]].mapEvents(_)(f))
-  }
-
-  implicit class WidgetOps(override val instance: Widget) extends WidgetEventMapperOps[Widget] {
-
-    val mapper: WidgetEventMapper[Widget] = widgetEventMapper
+  implicit class WidgetOps(val instance: Widget) extends WidgetEventMapper[Widget] {
 
     def element = instance.map(_.element)
-
     def mapElement(f: Element => Element): Widget = instance.map(_.mapElement(f))
+    def mapEvents(f: WidgetEvents => WidgetEvents): Widget = instance.map(_.mapEvents(f))
 
     def emitDomEvents(eventTypes: Dom.Event.Type*): Widget =
       instance.map { binding =>
@@ -32,10 +27,9 @@ object Widget {
         binding.copy(events = binding.events merge domEvents)
       }
 
-    def append(child: Binding): Widget = instance.flatMap(_ append child)
+    def append(child: Binding): Widget = instance.map(_ append child)
     def append(widget: Widget): Widget = instance.flatMap(append)
-    def appendFragment(fragment: Fragment): Widget =
-      fragment flatMap { _.foldLeft(instance)((instance, cb) => instance flatMap (_ append cb))}
+    def appendFragment(f: Fragment): Widget = f.flatMap(_.foldLeft(instance)((p, c) => p.map(_ append c)))
 
     def ::(left: Widget): Fragment = (left :: instance :: Nil).sequence
 

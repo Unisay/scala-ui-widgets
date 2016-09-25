@@ -14,7 +14,7 @@ object Runtime extends Logging {
 
     Stream
       .eval(widget)
-      .flatMap(_.events)
+      .flatMap(_.deepEvents)
       .filter(_.isRight)
       .map(_.toOption.get)
       .scan((EmptyEffect, initialModel)) { case ((_, model), event) =>

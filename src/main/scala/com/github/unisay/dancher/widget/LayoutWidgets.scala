@@ -19,9 +19,9 @@ object LayoutWidgets extends Logging {
 
   private def split(baseClass: String, left: Widget, right: Widget): Widget = {
     val sideClass = baseClass + "-side"
-    val leftHolder = div(left).setClass(sideClass, sideClass + "-left")
+    val leftHolder = div(left).setClass(sideClass, sideClass + "-left") // TODO: adopt not wrap
     val rightHolder = div(right).setClass(sideClass, sideClass + "-right")
-    val edge = div.setClass(baseClass + "-edge").emitDomEvents(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)
+    val edge = div().setClass(baseClass + "-edge").emitDomEvents(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)
 
     def screen(mouseEvent: MouseEvent): Some[Point] = Some(Point(mouseEvent.screenX, mouseEvent.screenY))
     case class Drag(inside: Boolean,
