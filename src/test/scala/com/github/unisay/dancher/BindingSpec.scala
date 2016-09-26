@@ -2,47 +2,36 @@ package com.github.unisay.dancher
 
 import com.github.unisay.dancher.Arbitraries._
 import com.github.unisay.dancher.Equalities._
-import fs2.{Strategy, Stream, Task}
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalatest.time._
-import org.scalatest.{MustMatchers, PropSpec}
+import fs2.{Stream, Task}
+import org.scalacheck.Arbitrary
+import org.scalatest.{AsyncFlatSpec, MustMatchers}
 
-class BindingSpec extends PropSpec with GeneratorDrivenPropertyChecks with MustMatchers with ScalaFutures {
+class BindingSpec extends AsyncFlatSpec with MustMatchers {
 
-  implicit val defaultPatience = PatienceConfig(timeout = Span(1, Seconds), interval = Span(50, Millis))
+  implicit override def executionContext = scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
-  property("test merge") {
-    forAll { (xs: List[Int], ys: List[Int]) =>
-      implicit val strategy = Strategy.default
-      val stream = Stream[Task, Int](xs: _*) merge Stream[Task, Int](ys: _*)
-      stream.runLog.unsafeRunAsyncFuture().futureValue must not be empty
-    }
+  val arbitrary = Arbitrary.arbitrary[Binding]
+  val widgetEvent = Arbitrary.arbitrary[WidgetEvent].sample.get
+  val parent = arbitrary.sample.get
+  val child = arbitrary.sample.get
+
+  "Append" must "return parent element" in {
+    parent.append(child).element mustEqual parent.element
   }
 
-  property("element after append") {
-    forAll { (parent: Binding, child: Binding) =>
-      parent.append(child).element mustEqual parent.element
-    }
+  it must "return deepElement" in {
+    parent.append(child).deepElement.unsafeRunAsyncFuture() map { _ mustEqual parent.element }
   }
 
-  property("deepElement after append") {
-    forAll { (parent: Binding, child: Binding) =>
-      parent.append(child).deepElement.unsafeRunAsyncFuture().futureValue mustEqual parent.element
-    }
+  it must "return deepEvents" in {
+    val testEvents = Stream[Task, WidgetEvent](widgetEvent)
+    val childWithEvent = child.copy(events = testEvents)
+    val deepEvents = parent.append(childWithEvent).deepEvents
+    deepEvents.runLog.unsafeRunAsyncFuture() map { _ must contain(widgetEvent) }
   }
 
-  property("deepEvents after append") {
-    forAll { (parent: Binding, child: Binding, widgetEvent: WidgetEvent) =>
-      val testEvents = Stream[Task, WidgetEvent](widgetEvent)
-      val childWithEvent = child.copy(events = testEvents)
-      val deepEvents = parent.append(childWithEvent).deepEvents
-      whenReady((testEvents).runLog.unsafeRunAsyncFuture()) { _ must contain(widgetEvent) }
-    }
-  }
-
-  property("append") {
-    forAll { (parent: Binding, child: Binding) => parent.append(child).nested must contain(child) }
+  it must "append" in {
+    parent.append(child).nested must contain(child)
   }
 
 }
