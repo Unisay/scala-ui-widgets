@@ -13,7 +13,7 @@ object Runtime extends Logging {
     }
 
     Stream
-      .eval(widget)
+      .eval(widget flatMap (_.render))
       .flatMap(_.deepEvents)
       .filter(_.isRight)
       .map(_.toOption.get)

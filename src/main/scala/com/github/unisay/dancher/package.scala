@@ -12,7 +12,6 @@ package object dancher {
   type Fragment = Task[List[Binding]]
   type Flow[T] = Stream[Task, T]
   type WidgetEvent = Event Xor DomainEvent
-  type WidgetEvents = Flow[WidgetEvent]
   type Is[T, P] = Refined[T, P]
 
   val EmptyEffect: Effect = Task.now(())

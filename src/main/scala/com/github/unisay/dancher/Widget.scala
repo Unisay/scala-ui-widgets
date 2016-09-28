@@ -15,13 +15,14 @@ object Widget {
 
   implicit def widgetAsList(widget: Widget): Fragment = widget.map(List(_))
 
-  implicit class WidgetOps(val instance: Widget) extends WidgetEventMapper[Widget] {
+  implicit class WidgetOps(val instance: Widget) {
 
     def element = instance.map(_.element)
-    def mapElement(f: Element => Element): Widget = instance.map(_.mapElement(f))
-    def mapEvents(f: WidgetEvents => WidgetEvents): Widget = instance.map(_.mapEvents(f))
+    def mapElement(f: Element => Element) = instance.map(_.mapElement(f))
+    def mapWidgetEvent(f: WidgetEvent => WidgetEvent) = instance.map(_.mapWidgetEvent(f))
+    def mapDomainEvent(f: DomainEvent => DomainEvent) = instance.map(_.mapDomainEvent(f))
 
-    def emitDomEvents(eventTypes: Dom.Event.Type*): Widget =
+    def emitDomEvents(eventTypes: Dom.Event.Type*) =
       instance.map { binding =>
         val domEvents = binding.element.stream(eventTypes: _*).map(_.left)
         binding.copy(events = binding.events merge domEvents)
@@ -29,15 +30,15 @@ object Widget {
 
     def append(child: Binding): Widget = instance.map(_ append child)
     def append(widget: Widget): Widget = instance.flatMap(append)
-    def appendFragment(f: Fragment): Widget = f.flatMap(_.foldLeft(instance)((p, c) => p.map(_ append c)))
+    def appendFragment(f: Fragment) = f.flatMap(_.foldLeft(instance)((p, c) => p.map(_ append c)))
 
     def ::(left: Widget): Fragment = (left :: instance :: Nil).sequence
 
-    def setClass(classes: String*): Widget = instance.mapElement(_.setClass(classes: _*))
+    def setClass(classes: String*) = instance.mapElement(_.setClass(classes: _*))
   }
 
   implicit class FragmentOps(val fragment: Fragment) extends AnyVal {
     def ::(widget: Widget): Fragment = for { b <- widget; bs <- fragment } yield b :: bs
-    def mapAll(pf: PartialFunction[List[Binding], List[Binding]]): Fragment = fragment.map(pf.total)
+    def mapAll(pf: PartialFunction[List[Binding], List[Binding]]) = fragment.map(pf.total)
   }
 }

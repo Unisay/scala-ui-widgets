@@ -35,7 +35,7 @@ object LayoutWidgets extends Logging {
       .emitDomEvents(MouseMove, MouseUp, MouseDown)
       .map { binding =>
         val element = binding.nested.head.element
-        binding.mapEvents {
+        binding.mapWidgetEvents {
           _.scan(Drag(inside = false)) {
             case (drag, Left(event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseMove.name =>
               logger.debug(drag)

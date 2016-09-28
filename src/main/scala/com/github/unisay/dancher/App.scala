@@ -1,5 +1,11 @@
 package com.github.unisay.dancher
 
+import cats.data.Xor
+import cats.instances.string._
+import cats.syntax.eq._
+import cats.syntax.xor._
+import com.github.unisay.dancher.Dom.Event.Click
+import com.github.unisay.dancher.Syntax.PartialToTotal
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher.widget.BasicWidgets._
 import com.github.unisay.dancher.widget.LayoutWidgets._
@@ -28,8 +34,11 @@ object App extends JSApp with Logging {
         div(span(title)) :: div {
           inputText(inputPlaceholder) :: button(buttonCaption) mapAll {
             case (ib@Binding(input: HTMLInputElement, _, _)) :: buttonBinding :: t =>
-              val answerOnClick = PartialFunction((_: DomainEvent) => Answer(input.value))
-              ib :: buttonBinding.mapDomainEvent(answerOnClick) :: t
+              val pf: PartialFunction[WidgetEvent, WidgetEvent] = {
+                case Xor.Left(event) if event.`type` === Click.name =>
+                  Answer(input.value).right
+              }
+              ib :: buttonBinding.mapWidgetEvent(pf.total) :: t
           }
         }
       }
