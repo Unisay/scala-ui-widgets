@@ -11,6 +11,8 @@ import fs2._
 
 object Arbitraries {
 
+  def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
+
   implicit val arbDomainEvent: Arbitrary[DomainEvent] = Arbitrary {
     arb[Int].map(i => new DomainEvent { override def toString: String = s"DomainEvent($i)" })
   }
@@ -34,5 +36,5 @@ object Arbitraries {
   def genBindings(n: Int): Gen[Vector[Binding]] = Gen.containerOfN[Vector, Binding](n/3, Gen.lzy(genBinding(n/3)))
   def genBinding(n: Int) = (arb[Element] |@| arb[Flow[WidgetEvent]] |@| genBindings(n/3)).map(Binding.apply)
   implicit val arbBinding: Arbitrary[Binding] = Arbitrary(Gen.sized(genBinding))
-
+  implicit val arbWidget: Arbitrary[Widget] = Arbitrary(Arbitrary.arbitrary[Binding].map(Task.now))
 }

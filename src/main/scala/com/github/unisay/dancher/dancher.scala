@@ -19,8 +19,10 @@ case class Binding(element: Element, events: Flow[WidgetEvent], nested: Vector[B
 
   def deepEvents: Flow[WidgetEvent] = nested.map(_.deepEvents).foldLeft(events)(_ merge _)
   def mapElement(f: Element => Element): Binding = copy(element = f(element))
-  def mapWidgetEvents(pipe: Flow[WidgetEvent] => Flow[WidgetEvent]): Binding = copy(events = events.through(pipe))
-  def mapWidgetEvent(f: WidgetEvent => WidgetEvent): Binding = copy(events = events.map(f))
+  def mapWidgetEvents(pipe: Flow[WidgetEvent] => Flow[WidgetEvent]): Binding = new Binding(element, events, nested) {
+    override def deepEvents: Flow[WidgetEvent] = super.deepEvents.through(pipe)
+  }
+  def mapWidgetEvent(f: WidgetEvent => WidgetEvent): Binding = mapWidgetEvents(_.map(f))
   def mapDomainEvent(f: DomainEvent => DomainEvent): Binding = mapWidgetEvent(_.map(f))
   def append(child: Binding): Binding = copy(nested = nested :+ child)
   def render: Widget = deepElement.map(e => copy(element = e))
