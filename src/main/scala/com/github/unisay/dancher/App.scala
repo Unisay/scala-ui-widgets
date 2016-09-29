@@ -46,15 +46,15 @@ object App extends JSApp with Logging {
       body {
         verticalSplit(
           left = ask(
-          title = "What is your name?",
-          inputPlaceholder = initialModel.name,
-          buttonCaption = "Send Name"
+            title = "What is your name?",
+            inputPlaceholder = initialModel.name,
+            buttonCaption = "Send Name"
           ).mapDomainEvent { case Answer(name) => Name(name) },
           right = ask(
-          title = "What is your Nickname?",
-          inputPlaceholder = initialModel.nick,
-          buttonCaption = "Send Nickname"
-        ).mapDomainEvent { case Answer(nick) => Nick(nick) }
+            title = "What is your Nickname?",
+            inputPlaceholder = initialModel.nick,
+            buttonCaption = "Send Nickname"
+          ).mapDomainEvent { case Answer(nick) => Nick(nick) }
         )
       }
 

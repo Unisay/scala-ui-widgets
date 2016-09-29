@@ -10,7 +10,10 @@ class BindingSpec extends AsyncFlatSpec with MustMatchers {
 
   implicit override def executionContext = scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
-  val widgetEvent = sample[WidgetEvent]
+  val widgetEvent1 = sample[WidgetEvent] // TODO generate unique events
+  val widgetEvent2 = sample[WidgetEvent]
+  val widgetEvent3 = sample[WidgetEvent]
+  val testEvents = Stream[Task, WidgetEvent](widgetEvent1, widgetEvent2)
   val parent = sample[Binding]
   val child = sample[Binding]
 
@@ -19,10 +22,19 @@ class BindingSpec extends AsyncFlatSpec with MustMatchers {
   }
 
   it must "return deepEvents" in {
-    val testEvents = Stream[Task, WidgetEvent](widgetEvent)
     val childWithEvent = child.copy(events = testEvents)
     val deepEvents = parent.append(childWithEvent).deepEvents
-    deepEvents.runLog.unsafeRunAsyncFuture() map { _ must contain(widgetEvent) }
+    deepEvents.runLog.unsafeRunAsyncFuture() map { _ must contain allOf(widgetEvent1, widgetEvent2) }
+  }
+
+  it must "map widget event" in {
+    val childWithEvent = child
+      .copy(events = testEvents)
+      .mapWidgetEvent(widgetEvent => if (widgetEvent == widgetEvent1) widgetEvent3 else widgetEvent)
+
+    childWithEvent.deepEvents.runLog.unsafeRunAsyncFuture() map { events =>
+      events must (not contain widgetEvent1 and contain(widgetEvent3))
+    }
   }
 
 }
