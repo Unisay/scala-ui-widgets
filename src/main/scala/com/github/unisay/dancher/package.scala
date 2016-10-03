@@ -1,9 +1,7 @@
 package com.github.unisay
 
-import cats.data.Xor
 import eu.timepit.refined.api.Refined
 import fs2.{Stream, Task}
-import org.scalajs.dom.Event
 
 package object dancher {
 
@@ -11,7 +9,6 @@ package object dancher {
   type Widget = Task[Binding]
   type Fragment = Task[List[Binding]]
   type Flow[T] = Stream[Task, T]
-  type WidgetEvent = Event Xor DomainEvent
   type Is[T, P] = Refined[T, P]
 
   val EmptyEffect: Effect = Task.now(())

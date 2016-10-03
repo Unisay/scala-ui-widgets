@@ -1,12 +1,17 @@
 package com.github.unisay.dancher
 
+import cats.data.Ior
 import com.github.unisay.dancher.Widget._
 import fs2._
-import org.scalajs.dom.Element
+import org.scalajs.dom.{Element, Event}
 
 trait DomainEvent
 
-case class Binding(element: Element, events: Flow[WidgetEvent], nested: Vector[Binding]) {
+case class Binding(element: Element,
+                   domEvents: Flow[Event],
+                   domainEvents: Flow[DomainEvent],
+                   nested: Vector[Binding]) {
+  def render: Widget = deepElement.map(e => copy(element = e))
   def deepElement: Task[Element] = nested.map(_.deepElement).foldLeft(Task.now(element)) { (pt, ct) =>
     for {
       p <- pt
@@ -16,23 +21,30 @@ case class Binding(element: Element, events: Flow[WidgetEvent], nested: Vector[B
       p
     }
   }
-
-  def deepEvents: Flow[WidgetEvent] = nested.map(_.deepEvents).foldLeft(events)(_ merge _)
   def mapElement(f: Element => Element): Binding = copy(element = f(element))
-  def mapWidgetEvents(pipe: Flow[WidgetEvent] => Flow[WidgetEvent]): Binding = new Binding(element, events, nested) {
-    override def deepEvents: Flow[WidgetEvent] = super.deepEvents.through(pipe)
+
+  def deepDomEvents: Flow[Event] = nested.map(_.deepDomEvents).foldLeft(domEvents)(_ merge _)
+  def deepDomainEvents: Flow[DomainEvent] = nested.map(_.deepDomainEvents).foldLeft(domainEvents)(_ merge _)
+  def pipeDomEvents(pipe: Flow[Event] => Flow[Event]) = copy(domEvents = domEvents.through(pipe))
+  def pipeDomainEvents(pipe: Flow[DomainEvent] => Flow[DomainEvent]) = copy(domainEvents = domainEvents.through(pipe))
+  def mapDomEvent(f: Event => Event) = pipeDomEvents(_.map(f))
+  def mapDomEventToDomain(f: Event => Event Ior DomainEvent) = {
+    val events = domEvents.map(f)
+    val domEvents1 = events.flatMap(_.left.fold(Stream.empty[Task, Event])(Stream(_)))
+    val domainEvents1 = events.flatMap(_.right.fold(Stream.empty[Task, DomainEvent])(Stream(_)))
+    copy(domEvents = domEvents1, domainEvents = domainEvents1)
   }
-  def mapWidgetEvent(f: WidgetEvent => WidgetEvent): Binding = mapWidgetEvents(_.map(f))
-  def mapDomainEvent(f: DomainEvent => DomainEvent): Binding = mapWidgetEvent(_.map(f))
+  def mapDomainEvent(f: DomainEvent => DomainEvent) = pipeDomainEvents(_.map(f))
   def append(child: Binding): Binding = copy(nested = nested :+ child)
-  def render: Widget = deepElement.map(e => copy(element = e))
 }
 
 object Binding {
   def apply(element: Element): Binding =
     apply(element, Stream.empty)
-  def apply(element: Element, events: Flow[WidgetEvent]): Binding =
-    Binding(element, events = events, nested = Vector.empty)
+  def apply(element: Element, domEvents: Flow[Event]): Binding =
+    Binding(element, domEvents, domainEvents = Stream.empty)
+  def apply(element: Element, domEvents: Flow[Event], domainEvents: Flow[DomainEvent]): Binding =
+    Binding(element, domEvents, domainEvents, nested = Vector.empty)
 }
 
 case class Point(x: Double, y: Double)

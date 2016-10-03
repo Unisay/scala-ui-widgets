@@ -1,6 +1,5 @@
 package com.github.unisay.dancher.widget
 
-import cats.syntax.xor._
 import com.github.unisay.dancher.Dom.Event.Click
 import com.github.unisay.dancher.DomSyntax._
 import com.github.unisay.dancher.Widget._
@@ -37,7 +36,7 @@ object BasicWidgets {
       val buttonElement = document.createElement("button")
       buttonElement.setAttribute("type", "button")
       buttonElement.appendChild(document.createTextNode(text))
-      Binding(element = buttonElement, events = buttonElement.stream(Click).map(_.left))
+      Binding(element = buttonElement, domEvents = buttonElement.stream(Click))
     }
 
   def inputText(placeholder: String = "") =

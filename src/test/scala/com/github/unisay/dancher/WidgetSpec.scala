@@ -15,7 +15,7 @@ class WidgetSpec extends AsyncFlatSpec with MustMatchers {
 
   "WidgetOps" must "appendFragment" in {
     parent.appendFragment(child.mapWidgetEvents(_ ++ Stream(widgetEvent)))
-      .flatMap(_.deepEvents.runLog).unsafeRunAsyncFuture() map {
+      .flatMap(_.deepDomEvents.runLog).unsafeRunAsyncFuture() map {
         _ must contain(widgetEvent)
       }
   }

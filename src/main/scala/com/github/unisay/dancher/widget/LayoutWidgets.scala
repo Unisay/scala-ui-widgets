@@ -1,6 +1,5 @@
 package com.github.unisay.dancher.widget
 
-import cats.data.Xor._
 import cats.instances.string._
 import cats.syntax.eq._
 import com.github.unisay.dancher.Dom.Event._
@@ -35,21 +34,21 @@ object LayoutWidgets extends Logging {
       .emitDomEvents(MouseMove, MouseUp, MouseDown)
       .map { binding =>
         val element = binding.nested.head.element
-        binding.mapWidgetEvents {
+        binding.pipeDomEvents {
           _.scan(Drag(inside = false)) {
-            case (drag, Left(event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseMove.name =>
+            case (drag, (event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseMove.name =>
               logger.debug(drag)
               drag.copy(current = screen(event))
-            case (drag, Left(event: MouseEvent)) if !drag.inside && event.`type` === MouseEnter.name =>
+            case (drag, (event: MouseEvent)) if !drag.inside && event.`type` === MouseEnter.name =>
               logger.debug(drag)
               drag.copy(inside = true, current = screen(event))
-            case (drag, Left(event: MouseEvent)) if drag.inside && event.`type` === MouseLeave.name =>
+            case (drag, (event: MouseEvent)) if drag.inside && event.`type` === MouseLeave.name =>
               logger.debug(drag)
               drag.copy(inside = false, current = screen(event))
-            case (drag, Left(event: MouseEvent)) if drag.inside && drag.start.isEmpty && event.`type` === MouseDown.name =>
+            case (drag, (event: MouseEvent)) if drag.inside && drag.start.isEmpty && event.`type` === MouseDown.name =>
               logger.debug(drag)
               drag.copy(initWidth = Some(element.clientWidth), start = screen(event), current = screen(event))
-            case (drag, Left(event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseUp.name =>
+            case (drag, (event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseUp.name =>
               logger.debug(drag)
               drag.copy(end = screen(event), current = screen(event))
             case (drag, _) if drag.start.isDefined && drag.end.isDefined =>

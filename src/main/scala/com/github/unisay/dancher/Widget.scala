@@ -19,14 +19,10 @@ object Widget {
 
     def element = instance.map(_.element)
     def mapElement(f: Element => Element) = instance.map(_.mapElement(f))
-    def mapWidgetEvent(f: WidgetEvent => WidgetEvent) = instance.map(_.mapWidgetEvent(f))
-    def mapWidgetEvents(f: Flow[WidgetEvent] => Flow[WidgetEvent]) = instance.map(_.mapWidgetEvents(f))
     def mapDomainEvent(f: DomainEvent => DomainEvent) = instance.map(_.mapDomainEvent(f))
-
     def emitDomEvents(eventTypes: Dom.Event.Type*) =
       instance.map { binding =>
-        val domEvents = binding.element.stream(eventTypes: _*).map(_.left)
-        binding.copy(events = binding.events merge domEvents)
+        binding.copy(domEvents = binding.domEvents merge binding.element.stream(eventTypes: _*))
       }
 
     def append(child: Binding): Widget = instance.map(_ append child)

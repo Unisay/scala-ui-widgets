@@ -23,7 +23,7 @@ class BindingSpec extends AsyncFlatSpec with MustMatchers {
 
   it must "return deepEvents" in {
     val childWithEvent = child.copy(events = testEvents)
-    val deepEvents = parent.append(childWithEvent).deepEvents
+    val deepEvents = parent.append(childWithEvent).deepDomEvents
     deepEvents.runLog.unsafeRunAsyncFuture() map { _ must contain allOf(widgetEvent1, widgetEvent2) }
   }
 
@@ -32,7 +32,7 @@ class BindingSpec extends AsyncFlatSpec with MustMatchers {
       .copy(events = testEvents)
       .mapWidgetEvent(widgetEvent => if (widgetEvent == widgetEvent1) widgetEvent3 else widgetEvent)
 
-    childWithEvent.deepEvents.runLog.unsafeRunAsyncFuture() map { events =>
+    childWithEvent.deepDomEvents.runLog.unsafeRunAsyncFuture() map { events =>
       events must (not contain widgetEvent1 and contain(widgetEvent3))
     }
   }

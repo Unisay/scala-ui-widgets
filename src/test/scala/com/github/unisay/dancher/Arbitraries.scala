@@ -17,24 +17,13 @@ object Arbitraries {
     arb[Int].map(i => new DomainEvent { override def toString: String = s"DomainEvent($i)" })
   }
 
-  implicit val arbDomainEventRight: Arbitrary[Xor.Right[DomainEvent]] = Arbitrary {
-    arb[DomainEvent].map(Xor.Right(_))
-  }
-
-  implicit val arbDomEventLeft: Arbitrary[Xor.Left[Event]] = Arbitrary {
-    arb[Event].map(Xor.Left(_))
-  }
-
-  implicit val arbWidgetEvent: Arbitrary[WidgetEvent] = Arbitrary {
-    Gen.oneOf(arb[Xor.Left[Event]], arb[Xor.Right[DomainEvent]])
-  }
-
-  implicit val arbWidgetEvents: Arbitrary[Flow[WidgetEvent]] = Arbitrary {
-    Gen.sized(Gen.listOfN(_, arb[WidgetEvent])).map(l => Stream(l: _*))
+  implicit val arbDomainEvents: Arbitrary[Flow[DomainEvent]] = Arbitrary {
+    Gen.sized(Gen.listOfN(_, arb[DomainEvent])).map(l => Stream(l: _*))
   }
 
   def genBindings(n: Int): Gen[Vector[Binding]] = Gen.containerOfN[Vector, Binding](n/3, Gen.lzy(genBinding(n/3)))
-  def genBinding(n: Int) = (arb[Element] |@| arb[Flow[WidgetEvent]] |@| genBindings(n/3)).map(Binding.apply)
+  def genBinding(n: Int) = (arb[Element] |@| arb[Flow[Event]] |@| arb[Flow[DomainEvent]] |@| genBindings(n/3))
+    .map(Binding.apply)
   implicit val arbBinding: Arbitrary[Binding] = Arbitrary(Gen.sized(genBinding))
   implicit val arbWidget: Arbitrary[Widget] = Arbitrary(Arbitrary.arbitrary[Binding].map(Task.now))
 }

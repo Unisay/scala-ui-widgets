@@ -1,15 +1,14 @@
 package com.github.unisay.dancher
 
-import cats.data.Xor
+import cats.data.Ior
 import cats.instances.string._
 import cats.syntax.eq._
-import cats.syntax.xor._
 import com.github.unisay.dancher.Dom.Event.Click
-import com.github.unisay.dancher.Syntax.PartialToTotal
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher.widget.BasicWidgets._
 import com.github.unisay.dancher.widget.LayoutWidgets._
 import com.outr.scribe.Logging
+import org.scalajs.dom.Event
 import org.scalajs.dom.raw.HTMLInputElement
 
 import scala.scalajs.js.JSApp
@@ -33,10 +32,11 @@ object App extends JSApp with Logging {
       div {
         div(span(title)) :: div {
           inputText(inputPlaceholder) :: button(buttonCaption) mapTotal {
-            case (ib@Binding(input: HTMLInputElement, _, _)) :: buttonBinding :: t =>
-              val pf: PartialFunction[WidgetEvent, WidgetEvent] =
-                { case Xor.Left(event) if event.`type` === Click.name => Answer(input.value).right }
-              ib :: buttonBinding.mapWidgetEvent(pf.total) :: t
+            case (ib@Binding(input: HTMLInputElement, _, _, _)) :: buttonBinding :: t =>
+              ib :: buttonBinding.mapDomEventToDomain((event: Event) => event match {
+                case e if e.`type` === Click.name =>
+                  Ior.Both(e, Answer(input.value))
+              }) :: t
           }
         }
       }
