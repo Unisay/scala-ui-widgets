@@ -6,11 +6,10 @@ import com.github.unisay.dancher.Dom.Event._
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher._
 import com.github.unisay.dancher.widget.BasicWidgets._
-import com.outr.scribe.Logging
 import fs2.Task
 import org.scalajs.dom.MouseEvent
 
-object LayoutWidgets extends Logging {
+object LayoutWidgets {
 
   def verticalSplit(left: Widget, right: Widget) = split("d-split-vertical", left, right)
 
@@ -37,23 +36,25 @@ object LayoutWidgets extends Logging {
         binding.pipeDomEvents {
           _.scan(Drag(inside = false)) {
             case (drag, (event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseMove.name =>
-              logger.debug(drag)
+              println(drag)
               drag.copy(current = screen(event))
             case (drag, (event: MouseEvent)) if !drag.inside && event.`type` === MouseEnter.name =>
-              logger.debug(drag)
+              println(drag)
               drag.copy(inside = true, current = screen(event))
             case (drag, (event: MouseEvent)) if drag.inside && event.`type` === MouseLeave.name =>
-              logger.debug(drag)
+              println(drag)
               drag.copy(inside = false, current = screen(event))
             case (drag, (event: MouseEvent)) if drag.inside && drag.start.isEmpty && event.`type` === MouseDown.name =>
-              logger.debug(drag)
+              println(drag)
               drag.copy(initWidth = Some(element.clientWidth), start = screen(event), current = screen(event))
             case (drag, (event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseUp.name =>
-              logger.debug(drag)
+              println(drag)
               drag.copy(end = screen(event), current = screen(event))
             case (drag, _) if drag.start.isDefined && drag.end.isDefined =>
+              println(drag)
               drag.copy(start = None, end = None)
             case (drag, _) =>
+              println(drag)
               drag
           }
           .filter(drag => drag.start.isDefined && drag.end.isEmpty)

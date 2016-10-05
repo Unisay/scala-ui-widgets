@@ -1,20 +1,20 @@
 package com.github.unisay.dancher
 
-import com.outr.scribe.Logging
 import fs2.Stream
 
-object Runtime extends Logging {
+object Runtime {
 
   type EventHandler[M] = PartialFunction[(M, DomainEvent), (Effect, M)]
 
   def unsafeRun[M](initialModel: M, widget: Widget)(handleEvent: EventHandler[M]): Unit = {
     val unknownEventHandler: EventHandler[M] = { case (model, event) =>
-      Effect(logger.error(s"Unknown domain event: $event")) -> model
+      Effect(println(s"Unknown domain event: $event")) -> model
     }
 
     Stream
       .eval(widget flatMap (_.render))
-      .flatMap(_.deepDomainEvents)
+      .evalMap(binding => binding.deepDomEvents.run.map(_ => binding))
+      .flatMap(binding => binding.deepDomainEvents)
       .scan((EmptyEffect, initialModel)) { case ((_, model), event) =>
         handleEvent.applyOrElse((model, event), unknownEventHandler)
       }

@@ -42,7 +42,6 @@ class BindingSpec extends AsyncFlatSpec with MustMatchers {
     events.runLog.unsafeRunAsyncFuture() map { _ must (not contain domEvent1 and contain(domEvent3)) }
   }
 
-
   it must "map domain event" in {
     val events = childWithDomainEvents.mapDomainEvent(event => if (event == domainEvent1) domainEvent3 else event)
       .deepDomainEvents

@@ -7,18 +7,17 @@ import com.github.unisay.dancher.Dom.Event.Click
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher.widget.BasicWidgets._
 import com.github.unisay.dancher.widget.LayoutWidgets._
-import com.outr.scribe.Logging
 import org.scalajs.dom.Event
 import org.scalajs.dom.raw.HTMLInputElement
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
 
-object App extends JSApp with Logging {
+object App extends JSApp {
 
   @JSExport
   override def main(): Unit = {
-    logger.info("App started")
+    println("App started")
 
     case class Model(name: String, nick: String)
 
@@ -59,8 +58,8 @@ object App extends JSApp with Logging {
       }
 
     Runtime.unsafeRun(initialModel, root) {
-      case (model, Name(newName)) => Effect(logger.info(s"name = $newName")) -> model.copy(name = newName)
-      case (model, Nick(newNick)) => Effect(logger.info(s"nick = $newNick")) -> model.copy(nick = newNick)
+      case (model, Name(newName)) => Effect(println(s"name = $newName")) -> model.copy(name = newName)
+      case (model, Nick(newNick)) => Effect(println(s"nick = $newNick")) -> model.copy(nick = newNick)
     }
 
   }

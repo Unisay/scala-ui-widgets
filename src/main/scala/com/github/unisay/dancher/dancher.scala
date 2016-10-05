@@ -25,8 +25,16 @@ case class Binding(element: Element,
 
   def deepDomEvents: Flow[Event] = nested.map(_.deepDomEvents).foldLeft(domEvents)(_ merge _)
   def deepDomainEvents: Flow[DomainEvent] = nested.map(_.deepDomainEvents).foldLeft(domainEvents)(_ merge _)
-  def pipeDomEvents(pipe: Flow[Event] => Flow[Event]) = copy(domEvents = domEvents.through(pipe))
-  def pipeDomainEvents(pipe: Flow[DomainEvent] => Flow[DomainEvent]) = copy(domainEvents = domainEvents.through(pipe))
+  def pipeDomEvents(pipe: Flow[Event] => Flow[Event]) =
+    new Binding(element, domEvents, domainEvents, nested) {
+      override def deepDomEvents: Flow[Event] = super.deepDomEvents.through(pipe)
+    }
+
+  def pipeDomainEvents(pipe: Flow[DomainEvent] => Flow[DomainEvent]) =
+    new Binding(element, domEvents, domainEvents, nested) {
+      override def deepDomainEvents: Flow[DomainEvent] = super.deepDomainEvents.through(pipe)
+    }
+
   def mapDomEvent(f: Event => Event) = pipeDomEvents(_.map(f))
   def mapDomEventToDomain(f: Event => Event Ior DomainEvent) = {
     val events = domEvents.map(f)
