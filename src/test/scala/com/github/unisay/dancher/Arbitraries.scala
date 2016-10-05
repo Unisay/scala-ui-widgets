@@ -1,21 +1,24 @@
 package com.github.unisay.dancher
 
-import cats.data.Xor
 import cats.syntax.cartesian._
 import com.github.unisay.dancher.DomArbitraries._
 import com.github.unisay.dancher.GenMonad._
-import org.scalacheck.{Arbitrary, Gen}
-import org.scalacheck.Arbitrary.{arbitrary => arb}
-import org.scalajs.dom.{Element, Event}
 import fs2._
+import org.scalacheck.Arbitrary.{arbitrary => arb}
+import org.scalacheck.{Arbitrary, Gen}
+import org.scalajs.dom.{Element, Event}
 
 object Arbitraries {
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
-  implicit val arbDomainEvent: Arbitrary[DomainEvent] = Arbitrary {
-    arb[Int].map(i => new DomainEvent { override def toString: String = s"DomainEvent($i)" })
-  }
+  def createBinding(i: Int): Binding = Binding(createElement("div"), Stream.empty, Stream.empty)
+
+  def createWidget(i: Int): Widget = Task.now(createBinding(i))
+
+  def createDomainEvent(i: Int): DomainEvent = new DomainEvent { override def toString: String = s"DomainEvent($i)" }
+
+  implicit val arbDomainEvent: Arbitrary[DomainEvent] = Arbitrary(arb[Int] map createDomainEvent)
 
   implicit val arbDomainEvents: Arbitrary[Flow[DomainEvent]] = Arbitrary {
     Gen.sized(Gen.listOfN(_, arb[DomainEvent])).map(l => Stream(l: _*))
