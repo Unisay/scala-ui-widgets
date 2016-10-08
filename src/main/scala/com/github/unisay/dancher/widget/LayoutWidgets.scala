@@ -17,47 +17,48 @@ object LayoutWidgets {
 
   private def split(baseClass: String, left: Widget, right: Widget): Widget = {
     val sideClass = baseClass + "-side"
-    val leftHolder = div(left).setClass(sideClass, sideClass + "-left") // TODO: adopt not wrap
-    val rightHolder = div(right).setClass(sideClass, sideClass + "-right")
+    val leftHolder = div(left).setClass(sideClass, sideClass + "-left", "d-no-select", "d-no-drag") // TODO: adopt not wrap
+    val rightHolder = div(right).setClass(sideClass, sideClass + "-right", "d-no-select", "d-no-drag")
     val edge = div().setClass(baseClass + "-edge").emitDomEvents(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)
 
     def screen(mouseEvent: MouseEvent): Some[Point] = Some(Point(mouseEvent.screenX, mouseEvent.screenY))
     case class Drag(inside: Boolean,
                     initWidth: Option[Int] = None,
                     start: Option[Point] = None,
-                    current: Option[Point] = None,
-                    end: Option[Point] = None)
+                    current: Option[Point] = None)
+
+    // TODO: disable selection and cursor during drag
 
     div(leftHolder :: edge :: rightHolder)
       .setClass(baseClass)
-      .emitDomEvents(MouseMove, MouseUp, MouseDown)
+      .emitDomEvents(MouseMove, MouseUp, MouseDown, MouseLeave)
       .map { binding =>
         val element = binding.nested.head.element
         binding.pipeDomEvents {
           _.scan(Drag(inside = false)) {
             case (drag, (event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseMove.name =>
-              println(drag)
+//              println("move: " + drag)
               drag.copy(current = screen(event))
             case (drag, (event: MouseEvent)) if !drag.inside && event.`type` === MouseEnter.name =>
-              println(drag)
+//              println("enter: " + drag)
               drag.copy(inside = true, current = screen(event))
             case (drag, (event: MouseEvent)) if drag.inside && event.`type` === MouseLeave.name =>
-              println(drag)
+//              println("leave edge: " + drag)
               drag.copy(inside = false, current = screen(event))
+            case (drag, (event: MouseEvent)) if !drag.inside && event.`type` === MouseLeave.name =>
+//              println("leave div: " + drag)
+              drag.copy(start = None, current = screen(event))
             case (drag, (event: MouseEvent)) if drag.inside && drag.start.isEmpty && event.`type` === MouseDown.name =>
-              println(drag)
+//              println("down: " + drag)
               drag.copy(initWidth = Some(element.clientWidth), start = screen(event), current = screen(event))
             case (drag, (event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseUp.name =>
-              println(drag)
-              drag.copy(end = screen(event), current = screen(event))
-            case (drag, _) if drag.start.isDefined && drag.end.isDefined =>
-              println(drag)
-              drag.copy(start = None, end = None)
+//              println("up: " + drag)
+              drag.copy(start = None, current = screen(event))
             case (drag, _) =>
-              println(drag)
+//              println(drag)
               drag
           }
-          .filter(drag => drag.start.isDefined && drag.end.isEmpty)
+          .filter(drag => drag.start.isDefined)
           .map { drag =>
             for {
               start <- drag.start
@@ -65,8 +66,10 @@ object LayoutWidgets {
               width <- drag.initWidth
             } yield Math.max(Math.round(width - start.x + curr.x), 1)
           }
-          .filter(_.isDefined)
-          .evalMap(width => Task.delay(element.setAttribute("style", s"width: ${width}px")))
+          .evalMap {
+            case Some(width) => Task.delay(element.setAttribute("style", s"width: ${width}px"))
+            case None => Task.now(())
+          }
           .drain
         }
       }
