@@ -22,7 +22,7 @@ object Widget {
     def mapDomainEvent(f: DomainEvent => DomainEvent) = instance.map(_.mapDomainEvent(f))
     def emitDomEvents(eventTypes: Dom.Event.Type*) =
       instance.map { binding =>
-        binding.pipeDomEvents(_ merge binding.element.stream(eventTypes: _*))
+        binding.copy(domEvents = binding.domEvents merge binding.element.stream(eventTypes: _*))
       }
 
     def append(child: Binding): Widget = instance.map(_ append child)

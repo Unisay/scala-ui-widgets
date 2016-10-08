@@ -27,7 +27,10 @@ object DomSyntax {
 
     private def makeQueue(eventTypes: String*)(implicit S: Strategy) = {
 
-      def clickEventListener(queue: Queue[Task, Event]): js.Function1[Event, Unit] = { evt: Event =>
+      type EventQueue = Queue[Task, Event]
+      type EventListener = js.Function1[Event, Unit]
+
+      def clickEventListener(queue: EventQueue): EventListener = { evt: Event =>
         queue.enqueue1(evt).unsafeRunAsync(_ => ())
       }
 
@@ -39,16 +42,17 @@ object DomSyntax {
         } yield (queue, listenerFn)
       }
 
-      def emitQueue(queue: Queue[Task, Event], listenerFn: js.Function1[Event, Unit]) =
-        Stream.emit(queue)
+      def emitQueue(queue: EventQueue, listenerFn: EventListener): Stream[Task, Event] =
+        queue.dequeueAvailable
 
-      def cleanupQueue(queue: Queue[Task, Event], listenerFn: js.Function1[Event, Unit]) =
+      def cleanupQueue(queue: EventQueue, listenerFn: EventListener) =
         Task.delay(eventTypes.foreach(element.removeEventListener(_, listenerFn)))
 
-      Stream.bracket(createQueue)((emitQueue _).tupled, (cleanupQueue _).tupled)
+      val useQ: ((EventQueue, EventListener)) => Stream[Task, Event] = (emitQueue _).tupled
+      val releaseQ: ((EventQueue, EventListener)) => Task[Unit] = (cleanupQueue _).tupled
+      Stream.bracket(createQueue)(useQ, releaseQ)
     }
 
-    def stream(eventTypes: Type*)(implicit S: Strategy): Stream[Task, Event] =
-      makeQueue(eventTypes.map(_.name): _*).flatMap(_.dequeueAvailable)
+    def stream(eventTypes: Type*)(implicit S: Strategy): Stream[Task, Event] = makeQueue(eventTypes.map(_.name): _*)
   }
 }

@@ -8,12 +8,28 @@ import org.scalajs.dom.{Element, Event, document}
 
 object DomArbitraries {
 
-  def createDomEvent(i: Int): Event = new Event() { override def toString: String = s"Event#$i" }
+  def createDomEvent(eventType: Dom.Event.Type): Event = {
+    val event = document.createEvent("MouseEvents")
+    event.initEvent(eventTypeArg = eventType.name, canBubbleArg = true, cancelableArg = true)
+    event
+  }
+
+  implicit class ElementOps(element: Element) {
+
+    def sendEvent(eventType: Dom.Event.Type): Event = {
+      val event = createDomEvent(eventType)
+      element.dispatchEvent(event)
+      event
+    }
+
+    def click() = sendEvent(Dom.Event.Click)
+  }
+
   def createElement(tag: String): Element = document.createElement(tag)
 
   implicit val arbElement: Arbitrary[Element] = Arbitrary(Gen.oneOf("div", "span", "a", "h1") map createElement)
 
-  implicit val arbEvent: Arbitrary[Event] = Arbitrary(Gen.posNum[Int] map createDomEvent)
+  implicit val arbEvent: Arbitrary[Event] = Arbitrary(arb[Dom.Event.Type] map createDomEvent)
 
   implicit val arbDomEvents: Arbitrary[Flow[Event]] = Arbitrary {
     Gen.sized(Gen.listOfN(_, arb[Event])).map(l => Stream(l: _*))

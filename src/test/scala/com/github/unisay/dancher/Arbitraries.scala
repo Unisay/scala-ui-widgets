@@ -14,7 +14,10 @@ object Arbitraries {
 
   def createBinding(i: Int): Binding = Binding(createElement("div"), Stream.empty, Stream.empty)
 
-  def createWidget(i: Int): Widget = Task.now(createBinding(i))
+  def createWidget(i: Int): (Widget, Binding) = {
+    val binding: Binding = createBinding(i)
+    (Task.delay(binding), binding)
+  }
 
   def createDomainEvent(i: Int): DomainEvent = new DomainEvent { override def toString: String = s"DomainEvent($i)" }
 

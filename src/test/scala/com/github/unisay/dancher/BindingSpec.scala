@@ -12,9 +12,9 @@ class BindingSpec extends AsyncFlatSpec with MustMatchers {
 
   implicit override def executionContext = scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
-  val domEvent1 = createDomEvent(1)
-  val domEvent2 = createDomEvent(2)
-  val domEvent3 = createDomEvent(3)
+  val domEvent1 = createDomEvent(Dom.Event.Click)
+  val domEvent2 = createDomEvent(Dom.Event.MouseDown)
+  val domEvent3 = createDomEvent(Dom.Event.MouseMove)
   val domainEvent1 = createDomainEvent(1)
   val domainEvent2 = createDomainEvent(2)
   val domainEvent3 = createDomainEvent(3)
