@@ -12,6 +12,14 @@ object DomSyntax {
 
   implicit class ElementSyntax(val element: Element) extends AnyVal {
 
+    def removeClass(classes: String*): Element = {
+      val cx = classes.toList
+      if (cx.nonEmpty) {
+        val existingClasses = Option(element.getAttribute("class")).toArray.flatMap(_.split("\\s+"))
+      }
+      element
+    }
+
     def setClass(classes: String*): Element = {
       NonEmptyList
         .fromList(classes.toList)

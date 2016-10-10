@@ -49,10 +49,12 @@ p {
     flex-wrap: nowrap;
 }
 
+.d-hor-resize { cursor: col-resize; }
+.d-ver-resize { cursor: row-resize; }
+
 .d-split-vertical-edge {
     background-color: darkgray;
     width: 3px;
-    cursor: col-resize;
 }
 
 .d-split-vertical-side {

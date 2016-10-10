@@ -1,13 +1,15 @@
 package com.github.unisay.dancher.widget
 
 import cats.instances.string._
-import cats.syntax.eq._
+import cats.syntax.all._
 import com.github.unisay.dancher.Dom.Event._
+import com.github.unisay.dancher.DomSyntax._
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher._
 import com.github.unisay.dancher.widget.BasicWidgets._
 import fs2.Task
-import org.scalajs.dom.MouseEvent
+import fs2.interop.cats._
+import org.scalajs.dom.{Element, MouseEvent}
 
 object LayoutWidgets {
 
@@ -25,9 +27,27 @@ object LayoutWidgets {
     case class Drag(inside: Boolean,
                     initWidth: Option[Int] = None,
                     start: Option[Point] = None,
-                    current: Option[Point] = None)
+                    current: Option[Point] = None,
+                    task: Option[Task[Unit]] = None)
 
     // TODO: disable selection and cursor during drag
+
+    def getWidth(drag: Drag): Option[Long] = {
+      for {
+        start <- drag.start
+        curr <- drag.current
+        width <- drag.initWidth
+      } yield Math.max(Math.round(width - start.x + curr.x), 1)
+    }
+
+    def updateWidth(element: Element)(width: Long): Task[Unit] =
+      Task.delay(element.setAttribute("style", s"width: ${width}px")).void
+
+    def setResizeCursor(element: Element): Task[Unit] =
+      Task.delay(element.setClass("d-hor-resize")).void
+
+    def unsetResizeCursor(element: Element): Task[Unit] =
+      Task.delay(element.removeClass("d-hor-resize")).void
 
     div(leftHolder :: edge :: rightHolder)
       .setClass(baseClass)
@@ -36,39 +56,52 @@ object LayoutWidgets {
         val element = binding.nested.head.element
         binding.pipeDomEvents {
           _.scan(Drag(inside = false)) {
-            case (drag, (event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseMove.name =>
-//              println("move: " + drag)
-              drag.copy(current = screen(event))
-            case (drag, (event: MouseEvent)) if !drag.inside && event.`type` === MouseEnter.name =>
-//              println("enter: " + drag)
-              drag.copy(inside = true, current = screen(event))
-            case (drag, (event: MouseEvent)) if drag.inside && event.`type` === MouseLeave.name =>
-//              println("leave edge: " + drag)
-              drag.copy(inside = false, current = screen(event))
-            case (drag, (event: MouseEvent)) if !drag.inside && event.`type` === MouseLeave.name =>
-//              println("leave div: " + drag)
-              drag.copy(start = None, current = screen(event))
-            case (drag, (event: MouseEvent)) if drag.inside && drag.start.isEmpty && event.`type` === MouseDown.name =>
-//              println("down: " + drag)
-              drag.copy(initWidth = Some(element.clientWidth), start = screen(event), current = screen(event))
-            case (drag, (event: MouseEvent)) if drag.start.isDefined && event.`type` === MouseUp.name =>
-//              println("up: " + drag)
-              drag.copy(start = None, current = screen(event))
+
+            case (drag, (event: MouseEvent))
+              if drag.start.isDefined && event.`type` === MouseMove.name =>
+              drag.copy(current = screen(event), task = None)
+
+            case (drag, (event: MouseEvent))
+              if !drag.inside && event.`type` === MouseEnter.name =>
+              drag.copy(inside = true, current = screen(event), task = None)
+
+            case (drag, (event: MouseEvent))
+              if drag.inside && event.`type` === MouseLeave.name =>
+              drag.copy(inside = false, current = screen(event), task = None)
+
+            case (drag, (event: MouseEvent))
+              if !drag.inside && event.`type` === MouseLeave.name =>
+              drag.copy(
+                start = None,
+                current = screen(event),
+                task = Some(unsetResizeCursor(binding.element)))
+
+            case (drag, (event: MouseEvent))
+              if drag.inside && drag.start.isEmpty && event.`type` === MouseDown.name =>
+              drag.copy(
+                start = screen(event),
+                current = screen(event),
+                initWidth = Some(element.clientWidth),
+                task = Some(setResizeCursor(binding.element)))
+
+            case (drag, (event: MouseEvent))
+              if drag.start.isDefined && event.`type` === MouseUp.name =>
+              drag.copy(
+                start = None,
+                current = screen(event),
+                task = Some(unsetResizeCursor(binding.element)))
+
+            case (drag, _) if drag.task.isDefined =>
+              drag.copy(task = None)
+
             case (drag, _) =>
-//              println(drag)
               drag
           }
-          .filter(drag => drag.start.isDefined)
-          .map { drag =>
-            for {
-              start <- drag.start
-              curr  <- drag.current
-              width <- drag.initWidth
-            } yield Math.max(Math.round(width - start.x + curr.x), 1)
-          }
-          .evalMap {
-            case Some(width) => Task.delay(element.setAttribute("style", s"width: ${width}px"))
-            case None => Task.now(())
+          .evalMap { drag => {
+              for { task1 <- drag.task
+                    task2 <- getWidth(drag) map updateWidth(binding.element)
+              } yield task1 >> task2
+            } orElse drag.task getOrElse Task.now(())
           }
           .drain
         }
