@@ -17,6 +17,7 @@ object Widget {
 
   implicit class WidgetOps(val instance: Widget) {
 
+    def render = instance.flatMap(_.render)
     def element = instance.map(_.element)
     def mapElement(f: Element => Element) = instance.map(_.mapElement(f))
     def mapDomainEvent(f: DomainEvent => DomainEvent) = instance.map(_.mapDomainEvent(f))

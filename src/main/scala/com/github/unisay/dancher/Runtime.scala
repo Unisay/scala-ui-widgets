@@ -1,5 +1,6 @@
 package com.github.unisay.dancher
 
+import com.github.unisay.dancher.Widget._
 import fs2.Stream
 
 object Runtime {
@@ -12,7 +13,7 @@ object Runtime {
     }
 
     Stream
-      .eval(widget flatMap (_.render))
+      .eval(widget.render)
       .evalMap(binding => binding.deepDomEvents.run.map(_ => binding))
       .flatMap(binding => binding.deepDomainEvents)
       .scan((EmptyEffect, initialModel)) { case ((_, model), event) =>
