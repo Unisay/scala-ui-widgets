@@ -18,8 +18,8 @@ class BindingSpec extends AsyncFlatSpec with MustMatchers {
   val domainEvent1 = createDomainEvent(1)
   val domainEvent2 = createDomainEvent(2)
   val domainEvent3 = createDomainEvent(3)
-  val parent = createBinding(1)
-  val child = createBinding(2)
+  val parent = createBinding("div")
+  val child = createBinding("div")
   val childWithDomEvents = child.copy(domEvents = Stream[Task, Event](domEvent1, domEvent2))
   val childWithDomainEvents = child.copy(domainEvents = Stream[Task, DomainEvent](domainEvent1, domainEvent2))
 

@@ -12,10 +12,10 @@ object Arbitraries {
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
-  def createBinding(i: Int): Binding = Binding(createElement("div"), Stream.empty, Stream.empty)
+  def createBinding(tag: String): Binding = Binding(createElement(tag), Stream.empty, Stream.empty)
 
-  def createWidget(i: Int): (Widget, Binding) = {
-    val binding: Binding = createBinding(i)
+  def createWidget(tag: String): (Widget, Binding) = {
+    val binding: Binding = createBinding(tag)
     (Task.delay(binding), binding)
   }
 

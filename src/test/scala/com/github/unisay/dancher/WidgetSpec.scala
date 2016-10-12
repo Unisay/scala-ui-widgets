@@ -14,8 +14,8 @@ class WidgetSpec extends AsyncFlatSpec with MustMatchers {
 
   implicit override def executionContext = scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
-  val (childWidget, childBinding) = createWidget(2)
-  val (parent, _) = createWidget(1)
+  val (childWidget, childBinding) = createWidget("div")
+  val (parent, _) = createWidget("div")
   val domEvent1 = createDomEvent(Click)
   val domEvent2 = createDomEvent(MouseUp)
   val childWithDomEvents = childWidget.map(_.copy(domEvents = Stream[Task, Event](domEvent1, domEvent2)))

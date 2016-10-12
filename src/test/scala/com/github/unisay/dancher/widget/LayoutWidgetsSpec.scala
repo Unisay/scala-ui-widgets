@@ -1,51 +1,64 @@
 package com.github.unisay.dancher.widget
 
 import com.github.unisay.dancher.Arbitraries._
-import com.github.unisay.dancher.Binding
 import com.github.unisay.dancher.TestUtils._
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher.widget.LayoutWidgets._
-import org.scalajs.dom.raw.HTMLDivElement
+import org.scalajs.dom.html.Div
 import org.scalatest._
 
 class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors {
 
   implicit override def executionContext = scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
-  behavior of "HorizontalSplit"
+  behavior of "HorizontalSplit.div"
 
-  it must "render dom elements" in {
-    val (leftWidget, leftBinding) = createWidget(1)
-    val (rightWidget, rightBinding) = createWidget(2)
+  it must "be rendered" in {
+    renderHorizontalSplit assert (_.element.tagName mustBe "DIV")
+  }
 
-    horizontalSplit(leftWidget, rightWidget).render.assert { (binding: Binding) =>
-      binding.element mustBe a[HTMLDivElement]
-      binding.element.childElementCount mustBe 3
-      val children = binding.element.children
+  it must "contain 3 children elements" in {
+    renderHorizontalSplit assert (_.element.childElementCount mustBe 3)
+  }
 
-      withClue ("Left Div") {
-        children.item(0) must not be null
-        children.item(0) mustBe a[HTMLDivElement]
-        val leftDiv = children.item(0).asInstanceOf[HTMLDivElement]
-        forAll(List("d-split-horizontal", "d-split-horizontal-left", "d-no-select", "d-no-drag")) {
-          _ must be((c: String) => leftDiv.classList.contains(c))
-        }
-      }
+  behavior of "HorizontalSplit.div.left"
 
-      children.item(1) mustBe a[HTMLDivElement]
-      val edgeDiv = children.item(1).asInstanceOf[HTMLDivElement]
-      forAll(List("d-split-horizontal", "d-split-horizontal-left", "d-no-select", "d-no-drag")) {
-        _ must be((c: String) => edgeDiv.classList.contains(c))
-      }
+  it must "be rendered" in {
+    renderHorizontalSplit assert (_.element.children.item(0).tagName mustBe "DIV")
+  }
 
-      children.item(2) mustBe a[HTMLDivElement]
-      val rightDiv = children.item(2).asInstanceOf[HTMLDivElement]
-      forAll(List("d-split-horizontal", "d-split-horizontal-left", "d-no-select", "d-no-drag")) {
-        _ must be((c: String) => rightDiv.classList.contains(c))
-      }
-
-      succeed
+  it must "have css classes" in {
+    renderHorizontalSplit assert { binding =>
+      val classes = binding.element.children.item(0).asInstanceOf[Div].className.split(' ')
+      classes must contain allOf("d-split-horizontal-side", "d-split-horizontal-side-left", "d-no-select", "d-no-drag")
     }
+  }
+
+  it must "contain root element of child widget" in {
+    renderHorizontalSplit assert (_.element.children.item(0).firstElementChild.tagName mustBe "P")
+  }
+
+  behavior of "HorizontalSplit.div.right"
+
+  it must "be rendered" in {
+    renderHorizontalSplit assert (_.element.children.item(2).tagName mustBe "DIV")
+  }
+
+  it must "have css classes" in {
+    renderHorizontalSplit assert { binding =>
+      val classes = binding.element.children.item(2).asInstanceOf[Div].className.split(' ')
+      classes must contain allOf("d-split-horizontal-side", "d-split-horizontal-side-right", "d-no-select", "d-no-drag")
+    }
+  }
+
+  it must "contain root element of child widget" in {
+    renderHorizontalSplit assert (_.element.children.item(2).firstElementChild.tagName mustBe "A")
+  }
+
+  private def renderHorizontalSplit = {
+    val (leftWidget, _) = createWidget("p")
+    val (rightWidget, _) = createWidget("a")
+    horizontalSplit(leftWidget, rightWidget).render
   }
 
 }
