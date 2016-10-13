@@ -3,6 +3,7 @@ package com.github.unisay.dancher.widget
 import com.github.unisay.dancher.Arbitraries._
 import com.github.unisay.dancher.TestUtils._
 import com.github.unisay.dancher.Widget._
+import com.github.unisay.dancher.widget.BasicWidgets.body
 import com.github.unisay.dancher.widget.LayoutWidgets._
 import org.scalajs.dom.html.Div
 import org.scalatest._
@@ -95,7 +96,9 @@ class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors 
   private def renderHorizontalSplit = {
     val (leftWidget, _) = createWidget("p")
     val (rightWidget, _) = createWidget("a")
-    horizontalSplit(leftWidget, rightWidget).render
+    body(horizontalSplit(leftWidget, rightWidget))
+      .render
+      .map(_.nested.head)
   }
 
 }
