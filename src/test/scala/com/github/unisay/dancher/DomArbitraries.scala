@@ -14,17 +14,6 @@ object DomArbitraries {
     event
   }
 
-  implicit class ElementOps(element: Element) {
-
-    def sendEvent(eventType: Dom.Event.Type): Event = {
-      val event = createDomEvent(eventType)
-      element.dispatchEvent(event)
-      event
-    }
-
-    def click() = sendEvent(Dom.Event.Click)
-  }
-
   def createElement(tag: String): Element = document.createElement(tag)
 
   implicit val arbElement: Arbitrary[Element] = Arbitrary(Gen.oneOf("div", "span", "a", "h1") map createElement)

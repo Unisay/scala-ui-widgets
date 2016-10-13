@@ -59,18 +59,22 @@ object LayoutWidgets {
 
             case (drag, (event: MouseEvent))
               if drag.start.isDefined && event.`type` === MouseMove.name =>
+              println(drag)
               drag.copy(current = screen(event), task = None)
 
             case (drag, (event: MouseEvent))
               if !drag.inside && event.`type` === MouseEnter.name =>
+              println(drag)
               drag.copy(inside = true, current = screen(event), task = None)
 
             case (drag, (event: MouseEvent))
               if drag.inside && event.`type` === MouseLeave.name =>
+              println(drag)
               drag.copy(inside = false, current = screen(event), task = None)
 
             case (drag, (event: MouseEvent))
               if !drag.inside && event.`type` === MouseLeave.name =>
+              println(drag)
               drag.copy(
                 start = None,
                 current = screen(event),
@@ -78,6 +82,7 @@ object LayoutWidgets {
 
             case (drag, (event: MouseEvent))
               if drag.inside && drag.start.isEmpty && event.`type` === MouseDown.name =>
+              println(drag)
               drag.copy(
                 start = screen(event),
                 current = screen(event),
@@ -86,12 +91,14 @@ object LayoutWidgets {
 
             case (drag, (event: MouseEvent))
               if drag.start.isDefined && event.`type` === MouseUp.name =>
+              println(drag)
               drag.copy(
                 start = None,
                 current = screen(event),
                 task = Some(unsetResizeCursor(binding.element)))
 
             case (drag, _) if drag.task.isDefined =>
+              println(drag)
               drag.copy(task = None)
 
             case (drag, _) =>

@@ -64,5 +64,6 @@ lazy val dancher = project.in(file("."))
     maxErrors := 5,
     logLevel := Level.Info,
     requiresDOM := true,
-    scalaJSUseRhino := false
+    scalaJSUseRhino := false,
+    jsEnv in Test := new org.scalajs.jsenv.selenium.SeleniumJSEnv(org.scalajs.jsenv.selenium.Chrome())
   )

@@ -10,6 +10,7 @@ import org.scalatest._
 class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors {
 
   implicit override def executionContext = scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
+  implicit val doc = org.scalajs.dom.document
 
   behavior of "HorizontalSplit.div"
 
@@ -38,6 +39,18 @@ class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors 
     renderHorizontalSplit assert (_.element.children.item(0).firstElementChild.tagName mustBe "P")
   }
 
+  behavior of "HorizontalSplit.div.edge"
+
+  it must "be rendered" in {
+    renderHorizontalSplit assert (_.element.children.item(1).tagName mustBe "DIV")
+  }
+
+  it must "have css classes" in {
+    renderHorizontalSplit assert {
+      _.element.children.item(1).asInstanceOf[Div].className mustEqual "d-split-horizontal-edge"
+    }
+  }
+
   behavior of "HorizontalSplit.div.right"
 
   it must "be rendered" in {
@@ -53,6 +66,30 @@ class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors 
 
   it must "contain root element of child widget" in {
     renderHorizontalSplit assert (_.element.children.item(2).firstElementChild.tagName mustBe "A")
+  }
+
+  behavior of "HorizontalSplit widget"
+
+  it must "move edge" in {
+    renderHorizontalSplit assert { binding =>
+      val mainDiv = binding.element.asInstanceOf[Div]
+      val leftDiv = mainDiv.children.item(0).asInstanceOf[Div]
+      val edgeDiv = mainDiv.children.item(1).asInstanceOf[Div]
+
+      val mainRect = mainDiv.getBoundingClientRect()
+      val leftRect = leftDiv.getBoundingClientRect()
+      val edgeRect = edgeDiv.getBoundingClientRect()
+
+      println(edgeRect.height)
+      println(edgeRect.width)
+      println(edgeRect.left)
+      println(edgeRect.top)
+
+      mouseMove(leftDiv, x = edgeRect.left - 2, y = mainRect.top + 2)
+      mouseMove(edgeDiv, x = edgeRect.left + 1, y = mainRect.top + 2)
+
+      succeed
+    }
   }
 
   private def renderHorizontalSplit = {
