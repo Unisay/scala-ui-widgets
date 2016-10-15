@@ -1,10 +1,12 @@
 package com.github.unisay.dancher.widget
 
 import com.github.unisay.dancher.Arbitraries._
+import com.github.unisay.dancher.Binding
 import com.github.unisay.dancher.TestUtils._
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher.widget.BasicWidgets.body
 import com.github.unisay.dancher.widget.LayoutWidgets._
+import org.scalajs.dom.Element
 import org.scalajs.dom.html.Div
 import org.scalatest._
 
@@ -13,66 +15,66 @@ class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors 
   implicit override def executionContext = scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
   implicit val doc = org.scalajs.dom.document
 
-  behavior of "HorizontalSplit.div"
+  behavior of "VerticalSplit.div"
 
   it must "be rendered" in {
-    renderHorizontalSplit assert (_.element.tagName mustBe "DIV")
+    renderVerticalSplit assert (_.element.tagName mustBe "DIV")
   }
 
   it must "contain 3 children elements" in {
-    renderHorizontalSplit assert (_.element.childElementCount mustBe 3)
+    renderVerticalSplit assert (_.element.childElementCount mustBe 3)
   }
 
-  behavior of "HorizontalSplit.div.left"
+  behavior of "VerticalSplit.div.left"
 
   it must "be rendered" in {
-    renderHorizontalSplit assert (_.element.children.item(0).tagName mustBe "DIV")
+    renderVerticalSplit assert (_.element.children.item(0).tagName mustBe "DIV")
   }
 
   it must "have css classes" in {
-    renderHorizontalSplit assert { binding =>
+    renderVerticalSplit assert { binding =>
       val classes = binding.element.children.item(0).asInstanceOf[Div].className.split(' ')
-      classes must contain allOf("d-split-horizontal-side", "d-split-horizontal-side-left", "d-no-select", "d-no-drag")
+      classes must contain allOf("d-split-vertical-side", "d-split-vertical-side-left", "d-no-select", "d-no-drag")
     }
   }
 
   it must "contain root element of child widget" in {
-    renderHorizontalSplit assert (_.element.children.item(0).firstElementChild.tagName mustBe "P")
+    renderVerticalSplit assert (_.element.children.item(0).firstElementChild.tagName mustBe "P")
   }
 
-  behavior of "HorizontalSplit.div.edge"
+  behavior of "VerticalSplit.div.edge"
 
   it must "be rendered" in {
-    renderHorizontalSplit assert (_.element.children.item(1).tagName mustBe "DIV")
+    renderVerticalSplit assert (_.element.children.item(1).tagName mustBe "DIV")
   }
 
   it must "have css classes" in {
-    renderHorizontalSplit assert {
-      _.element.children.item(1).asInstanceOf[Div].className mustEqual "d-split-horizontal-edge"
+    renderVerticalSplit assert {
+      _.element.children.item(1).asInstanceOf[Div].className mustEqual "d-split-vertical-edge"
     }
   }
 
-  behavior of "HorizontalSplit.div.right"
+  behavior of "VerticalSplit.div.right"
 
   it must "be rendered" in {
-    renderHorizontalSplit assert (_.element.children.item(2).tagName mustBe "DIV")
+    renderVerticalSplit assert (_.element.children.item(2).tagName mustBe "DIV")
   }
 
   it must "have css classes" in {
-    renderHorizontalSplit assert { binding =>
+    renderVerticalSplit assert { binding =>
       val classes = binding.element.children.item(2).asInstanceOf[Div].className.split(' ')
-      classes must contain allOf("d-split-horizontal-side", "d-split-horizontal-side-right", "d-no-select", "d-no-drag")
+      classes must contain allOf("d-split-vertical-side", "d-split-vertical-side-right", "d-no-select", "d-no-drag")
     }
   }
 
   it must "contain root element of child widget" in {
-    renderHorizontalSplit assert (_.element.children.item(2).firstElementChild.tagName mustBe "A")
+    renderVerticalSplit assert (_.element.children.item(2).firstElementChild.tagName mustBe "A")
   }
 
-  behavior of "HorizontalSplit widget"
+  behavior of "VerticalSplit widget"
 
   it must "move edge" in {
-    renderHorizontalSplit assert { binding =>
+    renderVerticalSplit unsafeRunAsyncFuture() flatMap { (binding: Binding) =>
       val mainDiv = binding.element.asInstanceOf[Div]
       val leftDiv = mainDiv.children.item(0).asInstanceOf[Div]
       val edgeDiv = mainDiv.children.item(1).asInstanceOf[Div]
@@ -81,24 +83,32 @@ class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors 
       val leftRect = leftDiv.getBoundingClientRect()
       val edgeRect = edgeDiv.getBoundingClientRect()
 
-      println(edgeRect.height)
-      println(edgeRect.width)
-      println(edgeRect.left)
-      println(edgeRect.top)
+      val x = edgeRect.left
+      val y = mainRect.top + 2
 
-      mouseMove(leftDiv, x = edgeRect.left - 2, y = mainRect.top + 2)
-      mouseMove(edgeDiv, x = edgeRect.left + 1, y = mainRect.top + 2)
+      mouseMove (leftDiv, x - 5, y)
+      mouseMove (edgeDiv, x + 1, y)
+      mouseDown (edgeDiv, x + 1, y)
+      mouseMove (leftDiv, x - 5, y)
+      mouseUp   (leftDiv, x - 5, y)
 
-      succeed
+      binding.deepDomEvents.take(0).run.unsafeRunAsyncFuture().map { _ =>
+        edgeDiv.getBoundingClientRect().left mustBe (x - 5)
+      }
     }
   }
 
-  private def renderHorizontalSplit = {
+  private def renderVerticalSplit = {
     val (leftWidget, _) = createWidget("p")
     val (rightWidget, _) = createWidget("a")
-    body(horizontalSplit(leftWidget, rightWidget))
-      .render
-      .map(_.nested.head)
+    body(
+      verticalSplit(
+        leftWidget.useElement{ (e: Element) => e.appendChild(doc.createTextNode("text")); () },
+        rightWidget.useElement{ (e: Element) => e.appendChild(doc.createTextNode("link")); () }
+      )
+    )
+    .render
+    .map(_.nested.head)
   }
 
 }

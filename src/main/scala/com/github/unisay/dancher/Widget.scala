@@ -20,6 +20,7 @@ object Widget {
     def render = instance.flatMap(_.render)
     def element = instance.map(_.element)
     def mapElement(f: Element => Element) = instance.map(_.mapElement(f))
+    def useElement(f: Element => Unit) = mapElement{element => f(element); element}
     def mapDomainEvent(f: DomainEvent => DomainEvent) = instance.map(_.mapDomainEvent(f))
     def emitDomEvents(eventTypes: Dom.Event.Type*) =
       instance.map { binding =>
@@ -31,8 +32,6 @@ object Widget {
     def appendFragment(f: Fragment): Widget = f.flatMap(_.foldLeft(instance)((p, c) => p.map(_ append c)))
 
     def ::(left: Widget): Fragment = (left :: instance :: Nil).sequence
-
-    def setClass(classes: String*) = instance.mapElement(_.setClass(classes: _*))
   }
 
   implicit class FragmentOps(val fragment: Fragment) extends AnyVal {

@@ -1,6 +1,5 @@
 package com.github.unisay.dancher
 
-import cats.data.NonEmptyList
 import com.github.unisay.dancher.Dom.Event.Type
 import fs2.async.mutable.Queue
 import fs2.{Strategy, Stream, Task, async}
@@ -12,23 +11,17 @@ object DomSyntax {
 
   implicit class ElementSyntax(val element: Element) extends AnyVal {
 
-    def removeClass(classes: String*): Element = {
-      val cx = classes.toList
-      if (cx.nonEmpty) {
-        val existingClasses = Option(element.getAttribute("class")).toArray.flatMap(_.split("\\s+"))
-      }
-      element
-    }
+    def setStyle(style: String): Unit = element.setAttribute("style", style)
 
-    def setClass(classes: String*): Element = {
-      NonEmptyList
-        .fromList(classes.toList)
-        .foreach { nel =>
-          val classList = nel ++ Option(element.getAttribute("class")).toList
-          element.setAttribute("class", classList.toList.mkString(" "))
-        }
-      element
-    }
+    def cssClasses: List[String] = Option(element.getAttribute("class")).toArray.flatMap(_.split("\\s+")).toList
+
+    def setClasses(classes: String*) =
+      if (classes.nonEmpty) element.setAttribute("class", classes.mkString(" "))
+      else element.removeAttribute("class")
+
+    def removeClasses(classes: String*): Unit = setClasses(cssClasses.toSet.diff(classes.toSet).toSeq: _*)
+
+    def addClasses(classes: String*): Unit = setClasses((cssClasses ++ classes).toSet.toSeq: _*)
 
     def appendAll(children: Seq[Element]) =
       children.foldLeft(element) { (parent, child) => parent.appendChild(child); parent }
@@ -57,7 +50,7 @@ object DomSyntax {
         Task.delay(eventTypes.foreach(element.removeEventListener(_, listenerFn)))
 
       val useQ: ((EventQueue, EventListener)) => Stream[Task, Event] = (emitQueue _).tupled
-      val releaseQ: ((EventQueue, EventListener)) => Task[Unit] = (cleanupQueue _).tupled
+      val releaseQ: ((EventQueue, EventListener)) => Effect = (cleanupQueue _).tupled
       Stream.bracket(createQueue)(useQ, releaseQ)
     }
 

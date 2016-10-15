@@ -29,13 +29,13 @@ object TestUtils {
     def click() = sendEvent(Dom.Event.Click)
   }
 
-  def mouseMove(element: Element, x: Number, y: Number): Unit = {
+  def mouseEvent(element: Element, x: Number, y: Number, typeArg: String): Unit = {
     val event = document.createEvent("MouseEvents")
     val ix = x.intValue()
     val iy = y.intValue()
     println(s"Simulated mouse move: $ix:$iy")
     event.asInstanceOf[MouseEvent].initMouseEvent(
-      typeArg = "mousemove",
+      typeArg = typeArg,
       canBubbleArg = true,
       cancelableArg = true,
       viewArg = window,
@@ -54,6 +54,10 @@ object TestUtils {
     element.dispatchEvent(event)
     ()
   }
+
+  def mouseMove(element: Element, x: Number, y: Number): Unit = mouseEvent(element, x, y, typeArg = "mousemove")
+  def mouseUp(element: Element, x: Number, y: Number): Unit = mouseEvent(element, x, y, typeArg = "mouseup")
+  def mouseDown(element: Element, x: Number, y: Number): Unit = mouseEvent(element, x, y, typeArg = "mousedown")
 
   def asynchronously(r: => Any): Unit = {
     dom.window.setTimeout(() => r, 100)

@@ -16,7 +16,7 @@ object Runtime {
       .eval(widget.render)
       .evalMap(binding => binding.deepDomEvents.run.map(_ => binding))
       .flatMap(binding => binding.deepDomainEvents)
-      .scan((EmptyEffect, initialModel)) { case ((_, model), event) =>
+      .scan((NoEffect, initialModel)) { case ((_, model), event) =>
         handleEvent.applyOrElse((model, event), unknownEventHandler)
       }
       .evalMap { case (task, _) => task }
