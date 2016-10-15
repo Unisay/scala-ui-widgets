@@ -51,6 +51,17 @@ resolvers += Resolver.sonatypeRepo("releases")
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.8.0")
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 
+val seleniumEnv = new org.scalajs.jsenv.selenium.SeleniumJSEnv(
+  new CustomChromeBrowser(
+    s"""
+       |var link = document.createElement("link");
+       |link.type = "text/css";
+       |link.rel = "stylesheet";
+       |link.href = "file://${(file("target") / "scala-2.11" / "classes" / "dancher.css").getAbsolutePath}";
+       |document.getElementsByTagName("head")[0].appendChild(link);
+     """.stripMargin
+  ))
+
 lazy val dancher = project.in(file("."))
   .enablePlugins(ScalaJSPlugin)
   .settings(
@@ -65,5 +76,5 @@ lazy val dancher = project.in(file("."))
     logLevel := Level.Info,
     requiresDOM := true,
     scalaJSUseRhino := false,
-    jsEnv in Test := new org.scalajs.jsenv.selenium.SeleniumJSEnv(org.scalajs.jsenv.selenium.Chrome())
+    jsEnv in Test := seleniumEnv
   )
