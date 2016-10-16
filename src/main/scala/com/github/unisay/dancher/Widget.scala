@@ -17,19 +17,19 @@ object Widget {
 
   implicit class WidgetOps(val instance: Widget) {
 
-    def render = instance.flatMap(_.render)
     def element = instance.map(_.element)
     def mapElement(f: Element => Element) = instance.map(_.mapElement(f))
     def useElement(f: Element => Unit) = mapElement{element => f(element); element}
+    def identifiedBy(id: Symbol): Widget = useElement(_.setAttribute("id", id.name))
     def mapDomainEvent(f: DomainEvent => DomainEvent) = instance.map(_.mapDomainEvent(f))
     def emitDomEvents(eventTypes: Dom.Event.Type*) =
       instance.map { binding =>
         binding.copy(domEvents = binding.domEvents merge binding.element.stream(eventTypes: _*))
       }
 
-    def append(child: Binding): Widget = instance.map(_ append child)
     def append(widget: Widget): Widget = instance.flatMap(append)
-    def appendFragment(f: Fragment): Widget = f.flatMap(_.foldLeft(instance)((p, c) => p.map(_ append c)))
+    def append(child: Binding): Widget = instance.flatMap(_ append child)
+    def appendFragment(f: Fragment): Widget = f.flatMap(_.foldLeft(instance)(_ append _))
 
     def ::(left: Widget): Fragment = (left :: instance :: Nil).sequence
   }

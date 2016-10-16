@@ -76,5 +76,5 @@ lazy val dancher = project.in(file("."))
     logLevel := Level.Info,
     requiresDOM := true,
     scalaJSUseRhino := false,
-    jsEnv in Test := seleniumEnv
+    jsEnv in Test := seleniumEnv //.withKeepAlive()
   )

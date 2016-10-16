@@ -1,19 +1,22 @@
 package com.github.unisay.dancher.widget
 
 import com.github.unisay.dancher.Arbitraries._
-import com.github.unisay.dancher.Binding
 import com.github.unisay.dancher.TestUtils._
 import com.github.unisay.dancher.Widget._
+import com.github.unisay.dancher._
 import com.github.unisay.dancher.widget.BasicWidgets.body
 import com.github.unisay.dancher.widget.LayoutWidgets._
+import fs2.Scheduler
 import org.scalajs.dom.Element
 import org.scalajs.dom.html.Div
 import org.scalatest._
 
-class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors {
+
+class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors with BeforeAndAfterEach {
 
   implicit override def executionContext = scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
   implicit val doc = org.scalajs.dom.document
+  implicit val scheduler = Scheduler.default
 
   behavior of "VerticalSplit.div"
 
@@ -49,8 +52,9 @@ class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors 
   }
 
   it must "have css classes" in {
-    renderVerticalSplit assert {
-      _.element.children.item(1).asInstanceOf[Div].className mustEqual "d-split-vertical-edge"
+    renderVerticalSplit assert { binding =>
+      val classes = binding.element.children.item(1).asInstanceOf[Div].className.split(' ')
+      classes must contain allOf ("d-split-vertical-edge", "d-split-vertical-resize")
     }
   }
 
@@ -74,40 +78,36 @@ class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors 
   behavior of "VerticalSplit widget"
 
   it must "move edge" in {
-    renderVerticalSplit unsafeRunAsyncFuture() flatMap { (binding: Binding) =>
+    (renderVerticalSplit flatMap { binding =>
       val mainDiv = binding.element.asInstanceOf[Div]
       val leftDiv = mainDiv.children.item(0).asInstanceOf[Div]
       val edgeDiv = mainDiv.children.item(1).asInstanceOf[Div]
 
-      val mainRect = mainDiv.getBoundingClientRect()
-      val leftRect = leftDiv.getBoundingClientRect()
-      val edgeRect = edgeDiv.getBoundingClientRect()
+      val x = edgeDiv.offsetLeft
+      val y = mainDiv.offsetTop + 5
 
-      val x = edgeRect.left
-      val y = mainRect.top + 2
+      mouseMove(leftDiv, x - 5, y)
+      mouseMove(edgeDiv, x + 1, y)
+      mouseDown(edgeDiv, x + 1, y)
+      mouseMove(leftDiv, x - 5, y)
+      mouseUp(leftDiv, x - 5, y)
 
-      mouseMove (leftDiv, x - 5, y)
-      mouseMove (edgeDiv, x + 1, y)
-      mouseDown (edgeDiv, x + 1, y)
-      mouseMove (leftDiv, x - 5, y)
-      mouseUp   (leftDiv, x - 5, y)
-
-      binding.deepDomEvents.take(0).run.unsafeRunAsyncFuture().map { _ =>
-        edgeDiv.getBoundingClientRect().left mustBe (x - 5)
-      }
-    }
+      binding.domainEvents.take(1).runLog
+    })
+    .assert(_ must contain(SplitResized(_: Binding, 483)))
   }
 
-  private def renderVerticalSplit = {
+  override protected def beforeEach() = doc.body.removeAllChildren()
+
+  private def renderVerticalSplit: Widget = {
     val (leftWidget, _) = createWidget("p")
     val (rightWidget, _) = createWidget("a")
     body(
       verticalSplit(
-        leftWidget.useElement{ (e: Element) => e.appendChild(doc.createTextNode("text")); () },
-        rightWidget.useElement{ (e: Element) => e.appendChild(doc.createTextNode("link")); () }
-      )
+        leftWidget.useElement { (e: Element) => e.appendChild(doc.createTextNode("text")); () },
+        rightWidget.useElement { (e: Element) => e.appendChild(doc.createTextNode("link")); () }
+      ).identifiedBy('vs1)
     )
-    .render
     .map(_.nested.head)
   }
 

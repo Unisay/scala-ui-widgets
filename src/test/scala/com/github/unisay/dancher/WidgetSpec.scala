@@ -23,8 +23,9 @@ class WidgetSpec extends AsyncFlatSpec with MustMatchers {
   behavior of "WidgetOps"
 
   it must "appendFragment" in {
-    parent.appendFragment(childWithDomEvents).flatMap(_.deepDomEvents.runLog)
-      .assert { _ must contain allOf(domEvent1, domEvent2) }
+    parent.appendFragment(childWithDomEvents)
+      .flatMap(_.domEvents.runLog)
+      .assert(_ must contain allOf(domEvent1, domEvent2))
   }
 
   it must "emitDomEvents" in {
@@ -36,7 +37,7 @@ class WidgetSpec extends AsyncFlatSpec with MustMatchers {
 
     childWidget
       .emitDomEvents(MouseUp, Click)
-      .flatMap(_.deepDomEvents.take(2).runLog)
+      .flatMap(_.domEvents.take(2).runLog)
       .assert(_.map(_.`type`) must contain theSameElementsInOrderAs List(MouseUp.name, Click.name))
   }
 

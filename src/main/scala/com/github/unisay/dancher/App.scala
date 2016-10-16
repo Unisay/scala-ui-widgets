@@ -1,13 +1,12 @@
 package com.github.unisay.dancher
 
-import cats.data.Ior
+import fs2._
 import cats.instances.string._
 import cats.syntax.eq._
 import com.github.unisay.dancher.Dom.Event.Click
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher.widget.BasicWidgets._
 import com.github.unisay.dancher.widget.LayoutWidgets._
-import org.scalajs.dom.Event
 import org.scalajs.dom.raw.HTMLInputElement
 
 import scala.scalajs.js.JSApp
@@ -32,9 +31,9 @@ object App extends JSApp {
         div(span(title)) :: div {
           inputText(inputPlaceholder) :: button(buttonCaption) mapTotal {
             case (ib@Binding(input: HTMLInputElement, _, _, _)) :: buttonBinding :: t =>
-              ib :: buttonBinding.mapDomEventToDomain((event: Event) => event match {
-                case e if e.`type` === Click.name =>
-                  Ior.Both(e, Answer(input.value))
+              ib :: buttonBinding.handleDomEvents(_.flatMap {
+                case e if e.`type` === Click.name => Stream(Answer(input.value))
+                case _ => Stream.empty
               }) :: t
           }
         }

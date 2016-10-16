@@ -7,6 +7,8 @@ import com.github.unisay.dancher.DomSyntax._
 import com.github.unisay.dancher.Widget._
 import com.github.unisay.dancher._
 import com.github.unisay.dancher.widget.BasicWidgets._
+import fs2.Task.delay
+import fs2._
 import fs2.interop.cats._
 import org.scalajs.dom.{Element, MouseEvent}
 
@@ -15,6 +17,8 @@ object LayoutWidgets {
   def verticalSplit(left: Widget, right: Widget) = split("d-split-vertical", left, right)
 
   def horizontalSplit(left: Widget, right: Widget) = split("d-split-horizontal", left, right)
+
+  case class SplitResized(binding: Binding, leftWidth: Int) extends DomainEvent
 
   private def split(baseClass: String, left: Widget, right: Widget): Widget = {
     val sideClass = baseClass + "-side"
@@ -28,52 +32,52 @@ object LayoutWidgets {
       .emitDomEvents(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)
 
     def screen(mouseEvent: MouseEvent) = Point(mouseEvent.screenX, mouseEvent.screenY)
+    object EmptyEvent extends DomainEvent
+    val NoAction: Task[DomainEvent] = Task.now(EmptyEvent)
     case class Drag(inside: Boolean,
                     initWidth: Option[Int] = None,
                     start: Option[Point] = None,
                     current: Option[Point] = None,
-                    effect: Option[Effect] = None)
+                    action: Task[DomainEvent] = NoAction)
 
-    // TODO: disable selection and cursor during drag
+    def calcWidth(start: Point, curr: Point, initialWidth: Int): Int =
+      (curr.x + initialWidth - start.x).round.max(1).toInt
 
-    def getWidth(drag: Drag): Option[Long] = {
-      for {
-        start <- drag.start
-        curr <- drag.current
-        width <- drag.initWidth
-      } yield Math.max(Math.round(width - start.x + curr.x), 1)
-    }
+    def resize(element: Element, width: Int) =
+      delay { println(s"resize: $width"); element.setStyle(s"width: ${width}px"); width }
 
-    def resize(element: Element)(width: Long) = Effect(element.setStyle(s"width: ${width}px"))
-    def setResizeCursor(element: Element) = Effect(element.addClasses(resizeClass))
-    def unsetResizeCursor(element: Element) = Effect(element.removeClasses(resizeClass))
+    def setResizeCursor(element: Element) =
+      delay { println(s"set cursor"); element.addClasses(resizeClass); EmptyEvent }
+
+    def unsetResizeCursor(element: Element) =
+      delay { println(s"unset cursor"); element.removeClasses(resizeClass); EmptyEvent }
 
     div(leftHolder :: edge :: rightHolder)
       .useElement(_.setClasses(baseClass))
       .emitDomEvents(MouseMove, MouseUp, MouseDown, MouseLeave)
       .map { binding =>
         val element = binding.nested.head.element
-        binding.pipeDomEvents {
-          _.scan(Drag(inside = false)) {
+        binding.handleDomEvents { _.through(StreamUtils.logIt("de"))
+          .scan(Drag(inside = false)) {
 
             case (drag, (event: MouseEvent))
               if drag.start.isDefined && event.`type` === MouseMove.name =>
-              drag.copy(current = screen(event).some, effect = None)
+              val current = screen(event)
+              val width = calcWidth(drag.start.get, current, drag.initWidth.get)
+              val action = resize(element, width).as(EmptyEvent)
+              drag.copy(current = current.some, action = action)
 
             case (drag, (event: MouseEvent))
               if !drag.inside && event.`type` === MouseEnter.name =>
-              drag.copy(inside = true, current = screen(event).some, effect = None)
+              drag.copy(inside = true, current = screen(event).some, action = NoAction)
 
             case (drag, (event: MouseEvent))
               if drag.inside && event.`type` === MouseLeave.name =>
-              drag.copy(inside = false, current = screen(event).some, effect = None)
+              drag.copy(inside = false, current = screen(event).some, action = NoAction)
 
             case (drag, (event: MouseEvent))
               if !drag.inside && event.`type` === MouseLeave.name =>
-              drag.copy(
-                start = None,
-                current = screen(event).some,
-                effect = unsetResizeCursor(binding.element).some)
+              drag.copy(start = None, current = screen(event).some, action = unsetResizeCursor(binding.element))
 
             case (drag, (event: MouseEvent))
               if drag.inside && drag.start.isEmpty && event.`type` === MouseDown.name =>
@@ -81,27 +85,19 @@ object LayoutWidgets {
                 start = screen(event).some,
                 current = screen(event).some,
                 initWidth = element.clientWidth.some,
-                effect = setResizeCursor(binding.element).some)
+                action = setResizeCursor(binding.element))
 
             case (drag, (event: MouseEvent))
               if drag.start.isDefined && event.`type` === MouseUp.name =>
-              drag.copy(
-                start = None,
-                current = screen(event).some,
-                effect = unsetResizeCursor(binding.element).some)
+              val current = screen(event)
+              val width = calcWidth(drag.start.get, current, drag.initWidth.get)
+              val action = unsetResizeCursor(binding.element) >> resize(element, width).as(SplitResized(binding, width))
+              drag.copy(start = None, current = current.some, action = action)
 
-            case (drag, _) if drag.effect.isDefined =>
-              drag.copy(effect = None)
-
-            case (drag, _) =>
-              drag
+            case (drag, _) => drag.copy(action = NoAction)
           }
-          .evalMap { drag =>
-            val resizeEffect = getWidth(drag).fold(NoEffect)(resize(element))
-            val otherEffect = drag.effect getOrElse NoEffect
-            otherEffect >> resizeEffect
-          }
-          .drain
+          .evalMap(_.action)
+          .filter(_ != EmptyEvent)
         }
       }
 
