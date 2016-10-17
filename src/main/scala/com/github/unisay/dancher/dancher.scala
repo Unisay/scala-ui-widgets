@@ -13,7 +13,7 @@ case class Binding(element: Element, domEvents: Flow[Event], domainEvents: Flow[
   def mapDomainEvent(f: DomainEvent => DomainEvent) = pipeDomainEvents(_.map(f))
   def pipeDomainEvents(pipe: Flow[DomainEvent] => Flow[DomainEvent]) = copy(domainEvents = domainEvents.through(pipe))
   def handleDomEvents(pipe: Flow[Event] => Flow[DomainEvent]) =
-    copy(domEvents = Stream.empty, domainEvents = Stream(new DomainEvent {}) ++ domainEvents.merge(domEvents.through(pipe)))
+    copy(domEvents = Stream.empty, domainEvents = domainEvents.merge(domEvents.through(pipe)))
   def append(child: Binding): Task[Binding] =
     Task.delay {
       element.appendChild(child.element)

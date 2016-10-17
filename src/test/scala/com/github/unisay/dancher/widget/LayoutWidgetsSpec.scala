@@ -86,11 +86,11 @@ class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors 
       val x = edgeDiv.offsetLeft
       val y = mainDiv.offsetTop + 5
 
-      mouseMove(leftDiv, x - 5, y)
-      mouseMove(edgeDiv, x + 1, y)
-      mouseDown(edgeDiv, x + 1, y)
-      mouseMove(leftDiv, x - 5, y)
-      mouseUp(leftDiv, x - 5, y)
+      mouseMove(mainDiv, x - 5, y)
+      mouseMove(mainDiv, x + 1, y)
+      mouseDown(mainDiv, x + 1, y)
+      mouseMove(mainDiv, x - 5, y)
+      mouseUp(mainDiv, x - 5, y)
 
       binding.domainEvents.take(1).runLog
     })
