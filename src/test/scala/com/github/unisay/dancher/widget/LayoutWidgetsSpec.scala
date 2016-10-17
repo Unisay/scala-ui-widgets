@@ -92,9 +92,9 @@ class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors 
       mouseMove(mainDiv, x - 5, y)
       mouseUp(mainDiv, x - 5, y)
 
-      binding.domainEvents.take(1).runLog
+      binding.domainEvents.take(1).runLog.map(binding -> _)
     })
-    .assert(_ must contain(SplitResized(_: Binding, 483)))
+    .assert { case (binding, log) => log must contain(SplitResized(binding, 483)) }
   }
 
   override protected def beforeEach() = doc.body.removeAllChildren()
