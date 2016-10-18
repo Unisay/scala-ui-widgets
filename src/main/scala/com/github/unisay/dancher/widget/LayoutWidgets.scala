@@ -33,19 +33,16 @@ object LayoutWidgets {
 
     def screen(mouseEvent: MouseEvent) = Point(mouseEvent.screenX, mouseEvent.screenY)
 
-    def calcWidth(start: Point, curr: Point, initialWidth: Int): Int =
-      (curr.x + initialWidth - start.x).round.max(1).toInt
+    def calcWidth(start: Point, curr: Point, width: Int): Int = (curr.x + width - start.x).round.max(1).toInt
 
-    def resize(element: Element, width: Int): Task[Int] =
-      delay { println(s"resize: $width"); element.setStyle(s"width: ${width}px"); width }
+    def resize(element: Element, width: Int) = delay { element.setStyle(s"width: ${width}px"); width }
 
-    def setResizeCursor(element: Element): Effect =
-      delay { println(s"set cursor"); element.addClasses(resizeClass); () }
+    def setResizeCursor(element: Element) = Effect(element.addClasses(resizeClass))
 
-    def unsetResizeCursor(element: Element): Effect =
-      delay { println(s"unset cursor"); element.removeClasses(resizeClass); () }
+    def unsetResizeCursor(element: Element) = Effect(element.removeClasses(resizeClass))
 
     val NoAction: Task[Option[Int]] = Task.now(None)
+
     case class Drag(inside: Boolean,
                     initWidth: Option[Int] = None,
                     start: Option[Point] = None,
@@ -96,7 +93,7 @@ object LayoutWidgets {
       .emitDomEvents(MouseMove, MouseUp, MouseDown, MouseLeave)
       .map { binding =>
         binding.handleDomEvents { _
-          .through(StreamUtils.logIt("de"))
+//          .through(StreamUtils.logIt("de"))
           .scan(Drag(inside = false))(dragIt(cursorTarget = binding.element, resizee = binding.nested.head.element))
           .evalMap(_.action)
           .collect { case Some(width) => SplitResized(binding, width) }
