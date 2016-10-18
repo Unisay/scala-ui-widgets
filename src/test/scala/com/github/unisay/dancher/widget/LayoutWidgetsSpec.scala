@@ -78,23 +78,30 @@ class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors 
   behavior of "VerticalSplit widget"
 
   it must "move edge" in {
-    (renderVerticalSplit flatMap { binding =>
-      val mainDiv = binding.element.asInstanceOf[Div]
-      val leftDiv = mainDiv.children.item(0).asInstanceOf[Div]
+    asynchronously {
+      val mainDiv = doc.getElementById("vs1").asInstanceOf[Div]
       val edgeDiv = mainDiv.children.item(1).asInstanceOf[Div]
 
       val x = edgeDiv.offsetLeft
-      val y = mainDiv.offsetTop + 5
+      val y = 42
+      mouseEnter  (edgeDiv, x + 0, y)
+      mouseEnter  (edgeDiv, x + 0, y)
+      mouseEnter  (edgeDiv, x + 0, y)
+      mouseDown   (edgeDiv, x + 1, y)
+      mouseDown   (edgeDiv, x + 1, y)
+      mouseDown   (edgeDiv, x + 1, y)
+      mouseMove   (mainDiv, x - 2, y)
+      mouseLeave  (edgeDiv, x - 2, y)
+      mouseMove   (mainDiv, x - 8, y)
+      mouseUp     (mainDiv, x - 8, y)
+    }
 
-      mouseMove(mainDiv, x - 5, y)
-      mouseMove(mainDiv, x + 1, y)
-      mouseDown(mainDiv, x + 1, y)
-      mouseMove(mainDiv, x - 5, y)
-      mouseUp  (mainDiv, x - 5, y)
-
-      binding.domainEvents.take(1).runLog.map(binding -> _)
-    })
-    .assert { case (binding, log) => log must contain(SplitResized(binding, 483)) }
+    renderVerticalSplit
+      .flatMap { binding => binding.domainEvents.take(1).runLog.map(binding -> _) }
+      .assert { case (binding, log) =>
+        val leftDiv = binding.element.children.item(0).asInstanceOf[Div]
+        log must contain(SplitResized(binding, leftWidth = leftDiv.offsetWidth.round.toInt - 9))
+      }
   }
 
   override protected def beforeEach() = doc.body.removeAllChildren()

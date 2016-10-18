@@ -42,11 +42,11 @@ object TestUtils {
   }
 
   def mouseEvent(element: Element, x: Number, y: Number, typeArg: String): Unit = {
-    val event = document.createEvent("MouseEvents")
+    val event = document.createEvent("MouseEvents").asInstanceOf[MouseEvent]
     val ix = x.intValue()
     val iy = y.intValue()
     println(s"Simulated mouse event ($typeArg): $ix:$iy")
-    event.asInstanceOf[MouseEvent].initMouseEvent(
+    event.initMouseEvent(
       typeArg = typeArg,
       canBubbleArg = true,
       cancelableArg = true,
@@ -61,7 +61,7 @@ object TestUtils {
       shiftKeyArg = false,
       metaKeyArg = false,
       buttonArg = 0,
-      relatedTargetArg = element
+      relatedTargetArg = null
     )
     element.dispatchEvent(event)
     ()
@@ -70,10 +70,12 @@ object TestUtils {
   def mouseMove(element: Element, x: Number, y: Number): Unit = mouseEvent(element, x, y, typeArg = "mousemove")
   def mouseUp(element: Element, x: Number, y: Number): Unit = mouseEvent(element, x, y, typeArg = "mouseup")
   def mouseDown(element: Element, x: Number, y: Number): Unit = mouseEvent(element, x, y, typeArg = "mousedown")
+  def mouseLeave(element: Element, x: Number, y: Number): Unit = mouseEvent(element, x, y, typeArg = "mouseleave")
+  def mouseEnter(element: Element, x: Number, y: Number): Unit = mouseEvent(element, x, y, typeArg = "mouseenter")
 
   def asynchronously[A](a: => A): Future[A] = {
     val p = Promise[A]
-    dom.window setTimeout(() => p.complete(Try(a)), 1000)
+    dom.window setTimeout(() => p.complete(Try(a)), 500)
     p.future
   }
 

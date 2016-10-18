@@ -31,6 +31,8 @@ object LayoutWidgets {
       .useElement(_.setClasses(baseClass + "-edge", resizeClass))
       .emitDomEvents(MouseEnter, MouseLeave, MouseMove, MouseUp, MouseDown)
 
+    def stop(mouseEvent: MouseEvent) = Effect(mouseEvent.stopImmediatePropagation())
+
     def screen(mouseEvent: MouseEvent) = Point(mouseEvent.screenX, mouseEvent.screenY)
 
     def calcWidth(start: Point, curr: Point, width: Int): Int = (curr.x + width - start.x).round.max(1).toInt
@@ -53,47 +55,62 @@ object LayoutWidgets {
 
       case (drag, (event: MouseEvent))
         if drag.start.isDefined && event.`type` === MouseMove.name =>
+        println("--MouseMove " + drag)
         val current = screen(event)
         val width = calcWidth(drag.start.get, current, drag.initWidth.get)
-        val action = resize(resizee, width).as(None)
+        val action = stop(event) >> resize(resizee, width).as(None)
         drag.copy(current = current.some, action = action)
 
       case (drag, (event: MouseEvent))
         if !drag.inside && event.`type` === MouseEnter.name =>
+        println("--MouseEnter " + drag)
         drag.copy(inside = true, current = screen(event).some, action = NoAction)
 
       case (drag, (event: MouseEvent))
         if drag.inside && event.`type` === MouseLeave.name =>
+        println("--MouseLeave " + drag)
         drag.copy(inside = false, current = screen(event).some, action = NoAction)
 
       case (drag, (event: MouseEvent))
         if !drag.inside && event.`type` === MouseLeave.name =>
+        println("--MouseLeave " + drag)
         drag.copy(start = None, current = screen(event).some, action = unsetResizeCursor(cursorTarget).as(None))
 
       case (drag, (event: MouseEvent))
         if drag.inside && drag.start.isEmpty && event.`type` === MouseDown.name =>
+        println("--MouseDown " + drag)
         drag.copy(
           start = screen(event).some,
           current = screen(event).some,
           initWidth = resizee.clientWidth.some,
-          action = setResizeCursor(resizee).as(None))
+          action = stop(event) >> setResizeCursor(resizee).as(None))
 
       case (drag, (event: MouseEvent))
         if drag.start.isDefined && event.`type` === MouseUp.name =>
+        println("--MouseUp " + drag)
         val current = screen(event)
         val width = calcWidth(drag.start.get, current, drag.initWidth.get)
-        val action = unsetResizeCursor(resizee) >> resize(resizee, width).map(_.some)
+        val action = stop(event) >> unsetResizeCursor(resizee) >> resize(resizee, width).map(_.some)
         drag.copy(start = None, current = current.some, action = action)
 
-      case (drag, _) => drag.copy(action = NoAction)
+      case (drag, event) =>
+        println("--" + event.`type` + ": Doesn't match " + drag)
+        drag.copy(action = NoAction)
     }
 
     div(leftHolder :: edge :: rightHolder)
       .useElement(_.setClasses(baseClass))
       .emitDomEvents(MouseMove, MouseUp, MouseDown, MouseLeave)
       .map { binding =>
-        binding.handleDomEvents { _
-//          .through(StreamUtils.logIt("de"))
+        binding
+        .handleDomEvents { _
+          .map { domEvent =>
+            val e: MouseEvent = domEvent.asInstanceOf[MouseEvent]
+            println(
+              s"${e.`type`}:bubbles ${e.bubbles}, target ${e.target}, phase ${e.eventPhase}, " +
+              s"trusted ${e.isTrusted}, cx ${e.clientX} cy ${e.clientY}, rt ${e.relatedTarget}")
+            domEvent
+          }
           .scan(Drag(inside = false))(dragIt(cursorTarget = binding.element, resizee = binding.nested.head.element))
           .evalMap(_.action)
           .collect { case Some(width) => SplitResized(binding, width) }
