@@ -31,15 +31,15 @@ object DomSyntax {
       type EventQueue = Queue[Task, Event]
       type EventListener = js.Function1[Event, Unit]
 
-      def clickEventListener(queue: EventQueue): EventListener = { evt: Event =>
-        queue.enqueue1(evt).unsafeRunAsync(_ => ())
+      def queueToEventListener(queue: EventQueue): EventListener = { event: Event =>
+        queue.enqueue1(event).unsafeRunAsync(_ => ())
       }
 
       def createQueue = {
         for {
           queue <- async.unboundedQueue[Task, Event]
-          listenerFn = clickEventListener(queue)
-          _ <- Task.delay(eventTypes.foreach(element.addEventListener(_, listenerFn)))
+          listenerFn = queueToEventListener(queue)
+          _ <- Task.delay(eventTypes.foreach(element.addEventListener(_, listenerFn, useCapture = false)))
         } yield (queue, listenerFn)
       }
 

@@ -90,7 +90,7 @@ class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors 
       mouseMove(mainDiv, x + 1, y)
       mouseDown(mainDiv, x + 1, y)
       mouseMove(mainDiv, x - 5, y)
-      mouseUp(mainDiv, x - 5, y)
+      mouseUp  (mainDiv, x - 5, y)
 
       binding.domainEvents.take(1).runLog.map(binding -> _)
     })

@@ -1,6 +1,7 @@
 package com.github.unisay.dancher
 
 import com.github.unisay.dancher.Widget._
+import com.github.unisay.dancher.DomSyntax._
 import fs2._
 import org.scalajs.dom.{Element, Event}
 
@@ -8,6 +9,7 @@ trait DomainEvent
 
 case class Binding(element: Element, domEvents: Flow[Event], domainEvents: Flow[DomainEvent], nested: Vector[Binding]) {
   def mapElement(f: Element => Element) = copy(element = f(element))
+  def emitDomEvents(types: Dom.Event.Type*) = copy(domEvents = domEvents merge element.stream(types: _*))
   def mapDomEvent(f: Event => Event) = pipeDomEvents(_.map(f))
   def pipeDomEvents(pipe: Flow[Event] => Flow[Event]) = copy(domEvents = domEvents.through(pipe))
   def mapDomainEvent(f: DomainEvent => DomainEvent) = pipeDomainEvents(_.map(f))

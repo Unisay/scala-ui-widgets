@@ -1,7 +1,6 @@
 package com.github.unisay.dancher
 
 import cats.implicits._
-import com.github.unisay.dancher.DomSyntax._
 import com.github.unisay.dancher.Syntax._
 import fs2.Strategy
 import fs2.interop.cats._
@@ -21,11 +20,8 @@ object Widget {
     def mapElement(f: Element => Element) = instance.map(_.mapElement(f))
     def useElement(f: Element => Unit) = mapElement{element => f(element); element}
     def identifiedBy(id: Symbol): Widget = useElement(_.setAttribute("id", id.name))
+    def emitDomEvents(types: Dom.Event.Type*) = instance.map(_.emitDomEvents(types: _*))
     def mapDomainEvent(f: DomainEvent => DomainEvent) = instance.map(_.mapDomainEvent(f))
-    def emitDomEvents(eventTypes: Dom.Event.Type*) =
-      instance.map { binding =>
-        binding.copy(domEvents = binding.domEvents merge binding.element.stream(eventTypes: _*))
-      }
 
     def append(widget: Widget): Widget = instance.flatMap(append)
     def append(child: Binding): Widget = instance.flatMap(_ append child)
