@@ -78,29 +78,27 @@ class LayoutWidgetsSpec extends AsyncFlatSpec with MustMatchers with Inspectors 
   behavior of "VerticalSplit widget"
 
   it must "move edge" in {
-    asynchronously {
-      val mainDiv = doc.getElementById("vs1").asInstanceOf[Div]
-      val edgeDiv = mainDiv.children.item(1).asInstanceOf[Div]
-
-      val x = edgeDiv.offsetLeft
-      val y = 42
-      mouseEnter  (edgeDiv, x + 0, y)
-      mouseEnter  (edgeDiv, x + 0, y)
-      mouseEnter  (edgeDiv, x + 0, y)
-      mouseDown   (edgeDiv, x + 1, y)
-      mouseDown   (edgeDiv, x + 1, y)
-      mouseDown   (edgeDiv, x + 1, y)
-      mouseMove   (mainDiv, x - 2, y)
-      mouseLeave  (edgeDiv, x - 2, y)
-      mouseMove   (mainDiv, x - 8, y)
-      mouseUp     (mainDiv, x - 8, y)
-    }
 
     renderVerticalSplit
-      .flatMap { binding => binding.domainEvents.take(1).runLog.map(binding -> _) }
-      .assert { case (binding, log) =>
-        val leftDiv = binding.element.children.item(0).asInstanceOf[Div]
-        log must contain(SplitResized(binding, leftWidth = leftDiv.offsetWidth.round.toInt - 9))
+      .flatMap { binding =>
+        val mainDiv = binding.element.asInstanceOf[Div]
+        val leftDiv = mainDiv.children.item(0).asInstanceOf[Div]
+        val edgeDiv = mainDiv.children.item(1).asInstanceOf[Div]
+        val originalWidth = leftDiv.offsetWidth.round.toInt
+
+        val x = edgeDiv.offsetLeft
+        val y = 42
+
+        asynchronously {
+          mouseDown  (edgeDiv, x + 1, y)
+          mouseMove  (mainDiv, x - 9, y)
+          mouseUp    (mainDiv, x - 9, y)
+        }
+
+        binding.domainEvents.take(1).runLog.map((originalWidth, _))
+      }
+      .assert { case (originalWidth, Vector(event: SplitResized)) =>
+        event.leftWidth mustEqual (originalWidth - 10)
       }
   }
 

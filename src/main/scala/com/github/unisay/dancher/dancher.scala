@@ -16,14 +16,13 @@ case class Binding(element: Element, domEvents: Flow[Event], domainEvents: Flow[
   def pipeDomainEvents(pipe: Flow[DomainEvent] => Flow[DomainEvent]) = copy(domainEvents = domainEvents.through(pipe))
   def handleDomEvents(pipe: Flow[Event] => Flow[DomainEvent]) =
     copy(domEvents = Stream.empty, domainEvents = domainEvents.merge(domEvents.through(pipe)))
-  def append(child: Binding): Task[Binding] =
-    Task.delay {
-      element.appendChild(child.element)
-      copy(
-        domEvents = domEvents.merge(child.domEvents),
-        domainEvents = domainEvents.merge(child.domainEvents),
-        nested = nested :+ child)
-    }
+  def append(child: Binding): Binding = {
+    element.appendChild(child.element)
+    copy(
+      domEvents = domEvents.merge(child.domEvents),
+      domainEvents = domainEvents.merge(child.domainEvents),
+      nested = nested :+ child)
+  }
 }
 
 object Binding {

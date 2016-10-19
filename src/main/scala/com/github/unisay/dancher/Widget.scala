@@ -24,7 +24,7 @@ object Widget {
     def mapDomainEvent(f: DomainEvent => DomainEvent) = instance.map(_.mapDomainEvent(f))
 
     def append(widget: Widget): Widget = instance.flatMap(append)
-    def append(child: Binding): Widget = instance.flatMap(_ append child)
+    def append(child: Binding): Widget = instance.map(_ append child)
     def appendFragment(f: Fragment): Widget = f.flatMap(_.foldLeft(instance)(_ append _))
 
     def ::(left: Widget): Fragment = (left :: instance :: Nil).sequence

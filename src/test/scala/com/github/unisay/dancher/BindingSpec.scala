@@ -24,42 +24,42 @@ class BindingSpec extends AsyncFlatSpec with MustMatchers {
   val childWithDomainEvents = child.copy(domainEvents = Stream[Task, DomainEvent](domainEvent1, domainEvent2))
 
   it must "return parent element after append" in {
-    parent.append(child).assert(_.element mustEqual parent.element)
+    parent.append(child).element mustEqual parent.element
   }
 
   it must "return binding with nested child" in {
-    parent.append(child).assert(_.nested must contain(child))
+    parent.append(child).nested must contain(child)
   }
 
   it must "return merged domEvents" in {
-    parent.append(childWithDomEvents).flatMap(_.domEvents.runLog).assert(_ must contain allOf(domEvent1, domEvent2))
+    parent.append(childWithDomEvents).domEvents.runLog.assert(_ must contain allOf(domEvent1, domEvent2))
   }
 
   it must "handle DOM events and return DomainEvents" in {
     parent.append(childWithDomEvents)
-      .map(_.handleDomEvents(_.map {
+      .handleDomEvents(_.map {
         case `domEvent1` => domainEvent1
         case `domEvent2` => domainEvent2
         case `domEvent3` => domainEvent3
-      }))
-      .flatMap(_.domainEvents.runLog)
+      })
+      .domainEvents.runLog
       .assert(_ must contain allOf(domainEvent1, domainEvent2))
   }
 
   it must "handle DOM events and return no DOM Events" in {
     parent.append(childWithDomEvents)
-      .map(_.handleDomEvents(_.map {
+      .handleDomEvents(_.map {
         case `domEvent1` => domainEvent1
         case `domEvent2` => domainEvent2
         case `domEvent3` => domainEvent3
-      }))
-      .flatMap(_.domEvents.runLog)
+      })
+      .domEvents.runLog
       .assert(_ mustBe empty)
   }
 
   it must "return domainEvents" in {
     parent.append(childWithDomainEvents)
-      .flatMap(_.domainEvents.runLog)
+      .domainEvents.runLog
       .assert(_ must contain allOf(domainEvent1, domainEvent2))
   }
 

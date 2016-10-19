@@ -75,7 +75,7 @@ object TestUtils {
 
   def asynchronously[A](a: => A): Future[A] = {
     val p = Promise[A]
-    dom.window setTimeout(() => p.complete(Try(a)), 500)
+    dom.window setTimeout(() => p.complete(Try(a)), 300)
     p.future
   }
 

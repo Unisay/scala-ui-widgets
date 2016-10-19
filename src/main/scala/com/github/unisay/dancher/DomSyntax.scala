@@ -32,6 +32,7 @@ object DomSyntax {
       type EventListener = js.Function1[Event, Unit]
 
       def queueToEventListener(queue: EventQueue): EventListener = { event: Event =>
+        if (event.bubbles) event.stopPropagation()
         queue.enqueue1(event).unsafeRunAsync(_ => ())
       }
 

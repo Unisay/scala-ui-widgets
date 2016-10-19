@@ -65,16 +65,15 @@ val seleniumEnv = new org.scalajs.jsenv.selenium.SeleniumJSEnv(
 lazy val dancher = project.in(file("."))
   .enablePlugins(ScalaJSPlugin)
   .settings(
-    name := "dancher",
-    version := "0.1-SNAPSHOT",
-    publish := {},
-    publishLocal := {},
-    version := "0.1-SNAPSHOT",
-    organization := "com.github.unisay",
-    scalacOptions in Test ++= Seq("-Yrangepos"),
-    maxErrors := 5,
-    logLevel := Level.Info,
-    requiresDOM := true,
-    scalaJSUseRhino := false,
-    jsEnv in Test := seleniumEnv //.withKeepAlive()
+    name := "dancher"
+    , version := "0.1-SNAPSHOT"
+    , publish := {}
+    , publishLocal := {}
+    , version := "0.1-SNAPSHOT"
+    , organization := "com.github.unisay"
+    , scalacOptions in Test ++= Seq("-Yrangepos")
+    , maxErrors := 5
+    , logLevel := Level.Info
+    , jsDependencies += RuntimeDOM
+    , jsEnv in Test := seleniumEnv //.withKeepAlive()
   )
